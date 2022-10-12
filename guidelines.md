@@ -41,7 +41,14 @@ int a = sum (4, 3);             /* Wrong */
 ```
 
 - Never use `__` or `_` as a prefix for variables/functions/macros/types. This is reserved for the C language itself
-    - Prefer `prv_` name as a prefix for strictly module-private functions
+    - Prefer the prefix standard `x_CoCo` where `x` indicates the prefix char for the variable:
+    - `p` -> pointer `pp` -> pointer to pointer `pg` -> global pointer and other combinations (`sp` static pointer, etc.)
+    - `g` -> global variable
+    - `l` -> local variable
+    - `s` -> static variables
+    - `c` -> constants / readonlys
+    - Counters do not require a prefix as long as they are short (int i, int j...). 
+    - Longer named counters need the `i` prefix
 - Use only lowercase characters for variables/functions/macros/types with an optional underscore `_` character
 - Opening curly bracket is always at the same line as keyword (`for`, `while`, `do`, `switch`, `if`, ...)
 ```c
@@ -65,7 +72,7 @@ a = 3+4;                /* Wrong */
 for (a=0;a<5;++a)       /* Wrong */
 ```
 
-- Use single space after every comma  (Opinions?)
+- Use single space after every comma
 ```c
 func_name(5, 4);        /* OK */
 func_name(4,3);         /* Wrong */
@@ -73,14 +80,14 @@ func_name(4,3);         /* Wrong */
 
 - Do not initialize `static` and `global` variables to `0` (or `NULL`), let compiler do it for you
 ```c
-static int a;       /* OK */
-static int b = 4;   /* OK */
-static int a = 0;   /* Wrong */
+static int s_a;       /* OK */
+static int s_b = 4;   /* OK */
+static int s_a = 0;   /* Wrong */
 
 void
 my_func(void) {
-    static int* ptr;/* OK */
-    static char abc = 0;/* Wrong */
+    static int* sp_ptr;/* OK */
+    static char s_abc = 0;/* Wrong */
 }
 ```
 
