@@ -95,7 +95,7 @@ Having a good guideline for creating commits and sticking to it makes working wi
 
 - Limit the subject line to 50 characters and Wrap the body at 72 characters.
 
-  _why_
+  _Why:_
 
   > Commits should be as fine-grained and focused as possible, it is not the place to be verbose. [read more...](https://medium.com/@preslavrachev/what-s-with-the-50-72-rule-8a906f61f09c)
 
