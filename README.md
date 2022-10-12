@@ -1,4 +1,5 @@
-<img src="https://informatica.i-learn.unito.it/pluginfile.php/123954/user/icon/lambda/f1?rev=291858" alt="Logo of the project" align="right">
+<img src="https://informatica.i-learn.unito.it/pluginfile.php/123954/user/icon/lambda/f1?rev=291858" alt="Logo of the project" align="left">
+<img src="https://share.cleanshot.com/8YNTkS/download" alt="Logo 2 of the project" align="right">
 
 # Operating Systems Project 22/23
 
