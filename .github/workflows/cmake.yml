@@ -12,7 +12,7 @@ env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   # Set the memory check environment variable based on the base branch or on the manual setting of the variable.
   BUILD_TYPE: Release
-  RUN_MEMORY_CHECK: ${{secrets.RUN_MEMORY_CHECK}}
+  RUN_MEMORY_CHECK: ${{ ((github.base_ref == 'master') || (secrets.RUN_MEMORY_CHECK == 'true')) }}
 
 jobs:
   build:
@@ -25,13 +25,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: step 1
-      ## Reference your environment variables
-      run: echo "Lelos maximus ${{secrets.RUN_MEMORY_CHECK}}"
-          echo "mi vendo a porta palazzo ${{env.RUN_MEMORY_CHECK}}"
     
-      
-      
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
@@ -51,7 +45,7 @@ jobs:
       # If we enabled the memory check environment variable, run the checks.
       if: ${{ env.RUN_MEMORY_CHECK == 'true' }}
       run: |
-        valgrind --leak-check=yes --log-file=valgrind.rpt Progetto_SO
+        valgrind --leak-check=yes --log-file=valgrind.rpt /home/runner/work/progettoso/progettoso/build/Progetto_SO
 
     - name: Test
       working-directory: ${{github.workspace}}/build
