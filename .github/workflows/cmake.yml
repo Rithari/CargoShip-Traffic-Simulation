@@ -12,7 +12,7 @@ env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   # Set the memory check environment variable based on the base branch or on the manual setting of the variable.
   BUILD_TYPE: Release
-  RUN_MEMORY_CHECK: ((${{github.base_ref}} == 'master') || (${{secrets.RUN_MEMORY_CHECK}} == 'true'))
+  RUN_MEMORY_CHECK: (${{secrets.RUN_MEMORY_CHECK}} == true || ${{github.base_ref}} == 'master')
 
 jobs:
   build:
