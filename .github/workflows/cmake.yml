@@ -45,7 +45,7 @@ jobs:
       # If we enabled the memory check environment variable, run the checks.
       if: ${{ env.RUN_MEMORY_CHECK == 'true' }}
       run: |
-        valgrind --leak-check=yes --log-file=valgrind.rpt /home/runner/work/progettoso/progettoso/build/Progetto_SO
+        valgrind --leak-check=yes --log-file=valgrind.rpt /home/runner/work/progettoso/progettoso/build/OS_Project
 
     - name: Test
       working-directory: ${{github.workspace}}/build
