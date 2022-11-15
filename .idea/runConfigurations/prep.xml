@@ -1,7 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="prep" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="progettoso" TARGET_NAME="prep" CONFIG_NAME="prep" version="1">
-    <method v="2">
-      <option name="CLION.COMPOUND.BUILD" enabled="true" />
-    </method>
+  <configuration default="false" name="prep" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
+    <makefile filename="$PROJECT_DIR$/makefile" target="prep" workingDirectory="" arguments="">
+      <envs />
+    </makefile>
+    <method v="2" />
   </configuration>
 </component>
