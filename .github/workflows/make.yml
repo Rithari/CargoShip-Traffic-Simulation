@@ -1,4 +1,4 @@
-name: CMake
+name: Make
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   # Set the memory check environment variable based on the base branch or on the manual setting of the variable.
-  BUILD_TYPE: Release
+  BUILD_TYPE: release
   RUN_MEMORY_CHECK: ${{ ((github.base_ref == 'master') || (secrets.RUN_MEMORY_CHECK == 'true')) }}
 
 jobs:
@@ -26,14 +26,19 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Configure CMake
+    #- name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+     # run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
+    # Create the directories and set up the environment by running the prep target before any others
+    - name: Preparations
+      run: make prep
+    
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      #run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: make ${{env.BUILD_TYPE}}
       
     - name: Install Valgrind
       if: ${{ env.RUN_MEMORY_CHECK == 'true' }}
@@ -47,9 +52,9 @@ jobs:
       run: |
         valgrind --leak-check=yes --log-file=valgrind.rpt /home/runner/work/progettoso/progettoso/build/OS_Project
 
-    - name: Test
-      working-directory: ${{github.workspace}}/build
+   # - name: Test
+   #   working-directory: ${{github.workspace}}/build
       # Execute tests defined by the CMake configuration.  
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest -C ${{env.BUILD_TYPE}}
+    #  run: ctest -C ${{env.BUILD_TYPE}}
       
