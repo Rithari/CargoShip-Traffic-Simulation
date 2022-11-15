@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CLionExternalBuildManager">
+    <target id="451c8ed9-c973-4ecf-9cbd-a6bdfac299eb" name="default" defaultType="MAKE">
+      <configuration id="14cfa5dc-e6a3-4503-a193-458a3900f2bc" name="default">
+        <build type="MAKE">
+          <make targetName="default" />
+        </build>
+        <clean type="MAKE">
+          <make targetName="clean" />
+        </clean>
+      </configuration>
+    </target>
+    <target id="13039d5c-8752-4cd3-b61d-09c12d8d187f" name="release" defaultType="MAKE">
+      <configuration id="5a73ac23-cd8c-43b6-b93b-ebaa55363cb3" name="release">
+        <build type="MAKE">
+          <make targetName="release" />
+        </build>
+        <clean type="MAKE">
+          <make targetName="clean" />
+        </clean>
+      </configuration>
+    </target>
+    <target id="db0f54ac-5b4e-49ce-8a61-6a42246fefed" name="debug" defaultType="MAKE">
+      <configuration id="1e175fb7-7235-4db9-94ee-0ffeddb0b4f1" name="debug">
+        <build type="MAKE">
+          <make targetName="debug" />
+        </build>
+        <clean type="MAKE">
+          <make targetName="clean" />
+        </clean>
+      </configuration>
+    </target>
+    <target id="06527ba1-5736-4b62-a7be-2734753a57e9" name="prep" defaultType="MAKE">
+      <configuration id="124d806c-7165-457c-a063-58a76c3f877f" name="prep">
+        <build type="MAKE">
+          <make targetName="prep" />
+        </build>
+        <clean type="MAKE">
+          <make targetName="clean" />
+        </clean>
+      </configuration>
+    </target>
+    <target id="60c4b507-fbf6-4354-98e9-b7b739dfa1a4" name="remake" defaultType="MAKE">
+      <configuration id="64d179c0-9ec6-4761-a4d4-6ccb7e4ccbdc" name="remake">
+        <build type="MAKE">
+          <make targetName="remake" />
+        </build>
+        <clean type="MAKE">
+          <make targetName="clean" />
+        </clean>
+      </configuration>
+    </target>
+  </component>
+</project>

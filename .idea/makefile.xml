@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="MakefileBuildTargetsManager">
+    <user-build-targets>
+      <build-target name="default">
+        <build-configurations>
+          <build-configuration>
+            <make-targets>
+              <make-target>default</make-target>
+            </make-targets>
+          </build-configuration>
+        </build-configurations>
+      </build-target>
+      <build-target name="release">
+        <build-configurations>
+          <build-configuration>
+            <make-targets>
+              <make-target>release</make-target>
+            </make-targets>
+          </build-configuration>
+        </build-configurations>
+      </build-target>
+      <build-target name="debug">
+        <build-configurations>
+          <build-configuration>
+            <make-targets>
+              <make-target>debug</make-target>
+            </make-targets>
+          </build-configuration>
+        </build-configurations>
+      </build-target>
+      <build-target name="prep">
+        <build-configurations>
+          <build-configuration>
+            <make-targets>
+              <make-target>prep</make-target>
+            </make-targets>
+          </build-configuration>
+        </build-configurations>
+      </build-target>
+      <build-target name="remake">
+        <build-configurations>
+          <build-configuration>
+            <make-targets>
+              <make-target>remake</make-target>
+            </make-targets>
+          </build-configuration>
+        </build-configurations>
+      </build-target>
+      <build-target name="clean">
+        <build-configurations>
+          <build-configuration>
+            <make-targets>
+              <make-target>clean</make-target>
+            </make-targets>
+          </build-configuration>
+        </build-configurations>
+      </build-target>
+    </user-build-targets>
+  </component>
+</project>
