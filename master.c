@@ -9,16 +9,28 @@ https://www.geeksforgeeks.org/generic-implementation-of-quicksort-algorithm-in-c
 
 #define _GNU_SOURCE
 
-int SO_NAVI;
-int SO_PORTI;
-int SO_MERCI;
-int SO_SIZE;
-int SO_MIN_VITA;
-int SO_MAX_VITA;
-double SO_LATO;
-int SO_SPEED;
-int SO_CAPACITY;
-int STEP;
+#ifdef RELEASE
+    #define PATH_NAVE   "release/nave.out"
+    #define PATH_PORTO  "release/porto.out"
+    #define PATH_MASTER "release/master.out"
+    #define PATH_METEO  "release/meteo.out"
+#else
+    #define PATH_NAVE   "debug/nave.out"
+    #define PATH_PORTO  "debug/porto.out"
+    #define PATH_MASTER "debug/master.out"
+    #define PATH_METEO  "debug/meteo.out"
+#endif
+
+int     SO_NAVI;
+int     SO_PORTI;
+int     SO_MERCI;
+int     SO_SIZE;
+int     SO_MIN_VITA;
+int     SO_MAX_VITA;
+double  SO_LATO;
+int     SO_SPEED;
+int     SO_CAPACITY;
+int     STEP;
 
 goods *goods_types;
 
@@ -26,17 +38,26 @@ void initialize_so_vars() {
     int i;
     goods_types = (goods*) malloc(sizeof(goods) * SO_MERCI);
 
-    srandom(getpid());
+    srand(getpid());
 
     for(i = 0; i < SO_MERCI; i++) {
         goods_types[i].id = i;
-        goods_types[i].dim = (int) random() % SO_SIZE + 1;
-        goods_types[i].lifespan = (int) (random() % (SO_MAX_VITA - SO_MIN_VITA)) + SO_MIN_VITA;
+        goods_types[i].dim = (int) rand() % SO_SIZE + 1;
+        goods_types[i].lifespan = (int) (rand() % (SO_MAX_VITA - SO_MIN_VITA)) + SO_MIN_VITA;
     }
 }
 
-int main() {
-    execlp("nave.out", "nave.out", NULL);
+int main(void) {
+    printf("SIUM\nSIUM\n");
+    fflush(stdin);
+
+    char* arg[] = {
+        "nave.out", 
+        NULL,
+    };
+
+    execv(PATH_NAVE, arg, NULL);
     perror("");
+    
     return 0;
 }

@@ -2,14 +2,14 @@
 # Compiler flags
 #
 CC     = gcc
-CFLAGS = -Wall -Werror -Wextra
+CFLAGS = -Wall -Werror -Wextra -std=c89
+EXE = master.out
 
 #
 # Project files
 #
-SRCS = master.c nave.c porto.c
-OBJS = $(SRCS:.c=.o)
-EXE  = master
+SRCS = master.c nave.c porto.c meteo.c
+OBJS = $(SRCS:.c=.out)
 
 #
 # Debug build settings
@@ -17,7 +17,7 @@ EXE  = master
 DBGDIR = debug
 DBGEXE = $(DBGDIR)/$(EXE)
 DBGOBJS = $(addprefix $(DBGDIR)/, $(OBJS))
-DBGCFLAGS = -g -O0 -DDEBUG
+DBGCFLAGS = -g -O0 -DDEBUG -D DEBUG
 
 #
 # Release build settings
@@ -25,36 +25,42 @@ DBGCFLAGS = -g -O0 -DDEBUG
 RELDIR = release
 RELEXE = $(RELDIR)/$(EXE)
 RELOBJS = $(addprefix $(RELDIR)/, $(OBJS))
-RELCFLAGS = -O2 -DNDEBUG
+RELCFLAGS = -O2 -DNDEBUG -D RELEASE
 
-.PHONY: default clean debug prep release remake
+.PHONY: relrun dbgrun default clean debug prep release remake
 
 # Default build
-default: prep release
+default: clean prep release
+
+relrun:
+	./$(RELEXE)
+
+dbgrun:
+	./$(DBGEXE)
 
 #
 # Debug rules
 #
-debug: $(DBGEXE)
+debug: clean prep $(DBGEXE)
 
-$(DBGEXE): $(DBGOBJS)
-	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGEXE) $(DBGDIR)/master.o
+$(DBGEXE):
+	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/master.out master.c
+	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/nave.out nave.c
+	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/porto.out porto.c
+	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/meteo.out meteo.c
 	./$(DBGEXE)
-
-$(DBGDIR)/%.o: %.c
-	$(CC) -c $(CFLAGS) $(DBGCFLAGS) -o $@ $<
 
 #
 # Release rules
 #
-release: $(RELEXE)
+release: clean prep $(RELEXE)
 
-$(RELEXE): $(RELOBJS)
-	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELEXE) $(DBGDIR)/master.o
+$(RELEXE):
+	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/master.out master.c
+	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/nave.out nave.c
+	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/porto.out porto.c
+	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/meteo.out meteo.c
 	./$(RELEXE)
-
-$(RELDIR)/%.o: %.c
-	$(CC) -c $(CFLAGS) $(RELCFLAGS) -o $@ $<
 
 #
 # Other rules
@@ -65,4 +71,4 @@ prep:
 remake: clean default
 
 clean:
-	rm -f $(RELEXE) $(RELOBJS) $(DBGEXE) $(DBGOBJS)
+	rm -f -r $(RELDIR) $(DBGDIR)
