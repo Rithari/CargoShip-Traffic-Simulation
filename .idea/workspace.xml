@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="CMakePresetLoader">{
+  &quot;useNewFormat&quot;: true
+}</component>
+  <component name="CMakeRunConfigurationManager">
+    <generated>
+      <config projectName="progettoso" targetName="release" />
+      <config projectName="progettoso" targetName="remake" />
+      <config projectName="progettoso" targetName="dbgrun" />
+      <config projectName="progettoso" targetName="relrun" />
+      <config projectName="progettoso" targetName="drun" />
+      <config projectName="progettoso" targetName="debug" />
+      <config projectName="progettoso" targetName="prep" />
+      <config projectName="progettoso" targetName="default" />
+      <config projectName="progettoso" targetName="run" />
+    </generated>
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" ENABLED="true" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="Remove workspace.xml from gitignore">
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/release.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/runConfigurations/release.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="Update/Makefile" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GithubProjectSettings">
+    <option name="branchProtectionPatterns">
+      <list>
+        <option value="master" />
+      </list>
+    </option>
+  </component>
+  <component name="MakefileLocalSettings">
+    <option name="availableProjects">
+      <map>
+        <entry>
+          <key>
+            <ExternalProjectPojo>
+              <option name="name" value="progettoso" />
+              <option name="path" value="$PROJECT_DIR$" />
+            </ExternalProjectPojo>
+          </key>
+          <value>
+            <list>
+              <ExternalProjectPojo>
+                <option name="name" value="progettoso" />
+                <option name="path" value="$PROJECT_DIR$" />
+              </ExternalProjectPojo>
+            </list>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="projectSyncType">
+      <map>
+        <entry key="$PROJECT_DIR$" value="RE_IMPORT" />
+      </map>
+    </option>
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectApplicationVersion">
+    <option name="ide" value="CLion" />
+    <option name="majorVersion" value="2022" />
+    <option name="minorVersion" value="2.4" />
+  </component>
+  <component name="ProjectId" id="2HaRhcSCPg5o4YQqFGS8XWTfGWZ" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "last_opened_file_path": "/Users/leoluca/Developer/SO/progettoso/makefile",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
+  }
+}]]></component>
+  <component name="RunManager" selected="Makefile Application.release">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="Makefile Application.release" />
+      <item itemvalue="Makefile Application.debug" />
+      <item itemvalue="Makefile Target.clean" />
+      <item itemvalue="Makefile Target.drun" />
+      <item itemvalue="Makefile Target.run" />
+      <item itemvalue="Makefile Target.release" />
+      <item itemvalue="Makefile Target.prep" />
+      <item itemvalue="Makefile Target.default" />
+      <item itemvalue="Makefile Target.remake" />
+    </list>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="" />
+      <created>1668521327043</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1668521327043</updated>
+      <workItem from="1668521328150" duration="147000" />
+      <workItem from="1668521654940" duration="4890000" />
+      <workItem from="1668599161842" duration="357000" />
+      <workItem from="1668599527041" duration="6175000" />
+      <workItem from="1668610557039" duration="492000" />
+      <workItem from="1668611146680" duration="2644000" />
+    </task>
+    <task id="LOCAL-00001" summary="Last gitignore fix">
+      <created>1668521442846</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1668521442846</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Add configuration files">
+      <created>1668521771111</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1668521771111</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Amend configuration file settings&#10;Remove the targets from the runs and put them as targets">
+      <created>1668523814138</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1668523814138</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Add default config target">
+      <created>1668523896243</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1668523896243</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Amend executable for release">
+      <created>1668524012213</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1668524012213</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Amend executable for debug">
+      <created>1668524043704</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1668524043704</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Changes CLion makefiel configurations &#10;Removes master.c testing code">
+      <created>1668611882911</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1668611882911</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Changes CLion makefile configurations &#10;Removes master.c testing code">
+      <created>1668611902281</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1668611902281</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Add mysteriously missing master.h file">
+      <created>1668616352709</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1668616352709</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Adjustment to directories on release.xml">
+      <created>1668616735412</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1668616735412</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Remove workspace.xml from gitignore">
+      <created>1668616951270</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1668616951270</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Last gitignore fix" />
+    <MESSAGE value="Add configuration files" />
+    <MESSAGE value="Amend configuration file settings&#10;Remove the targets from the runs and put them as targets" />
+    <MESSAGE value="Add default config target" />
+    <MESSAGE value="Amend executable for release" />
+    <MESSAGE value="Amend executable for debug" />
+    <MESSAGE value="Changes CLion makefiel configurations &#10;Removes master.c testing code" />
+    <MESSAGE value="Changes CLion makefile configurations &#10;Removes master.c testing code" />
+    <MESSAGE value="Add mysteriously missing master.h file" />
+    <MESSAGE value="Adjustment to directories on release.xml" />
+    <MESSAGE value="Remove workspace.xml from gitignore" />
+    <option name="LAST_COMMIT_MESSAGE" value="Remove workspace.xml from gitignore" />
+  </component>
+</project>
