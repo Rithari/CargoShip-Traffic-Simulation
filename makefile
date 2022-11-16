@@ -32,35 +32,36 @@ RELCFLAGS = -O2 -DNDEBUG -D RELEASE
 # Default build
 default: clean prep release
 
-relrun:
+# Use these to build the debug and release versions manually (if you want)
+# CLion's start (play) button is configured to run the executable automatically
+run:
 	./$(RELEXE)
 
-dbgrun:
+drun:
 	./$(DBGEXE)
 
 #
 # Debug rules
 #
-debug: clean prep $(DBGEXE)
+debug: prep $(DBGEXE)
 
 $(DBGEXE):
 	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/master.out master.c
 	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/nave.out nave.c
 	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/porto.out porto.c
 	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/meteo.out meteo.c
-	./$(DBGEXE)
+
 
 #
 # Release rules
 #
-release: clean prep $(RELEXE)
+release: prep $(RELEXE)
 
 $(RELEXE):
 	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/master.out master.c
 	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/nave.out nave.c
 	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/porto.out porto.c
 	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/meteo.out meteo.c
-	./$(RELEXE)
 
 #
 # Other rules
@@ -71,4 +72,5 @@ prep:
 remake: clean default
 
 clean:
+	echo "Cleaning..."
 	rm -f -r $(RELDIR) $(DBGDIR)

@@ -1,10 +1,6 @@
-#include <stdio.h>
-
-/*Generic qsort
-https://www.geeksforgeeks.org/generic-implementation-of-quicksort-algorithm-in-c*/
-
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>
 #include "master.h"
 
 #define _GNU_SOURCE
@@ -48,16 +44,5 @@ void initialize_so_vars() {
 }
 
 int main(void) {
-    printf("SIUM\nSIUM\n");
-    fflush(stdin);
-
-    char* arg[] = {
-        "nave.out", 
-        NULL,
-    };
-
-    execv(PATH_NAVE, arg, NULL);
-    perror("");
-    
     return 0;
 }
