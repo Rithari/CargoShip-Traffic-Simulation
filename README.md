@@ -1,35 +1,29 @@
-<img src="https://informatica.i-learn.unito.it/pluginfile.php/123954/user/icon/lambda/f1?rev=291858" alt="Logo of the project" align="left">
-<img src="https://share.cleanshot.com/8YNTkS/download" alt="Logo 2 of the project" align="right">
-
 # Operating Systems Project 22/23
 
 
 ## Installing / Getting started (WIP)
 
-A quick introduction of the minimal setup you need to get a hello world up &
-running.
+A quick introduction of the minimal setup you need to get the program running.
 
 ```shell
-commands here
+make default
+make run
 ```
 
-Here you should say what actually happens when you execute the code above.
+The default target cleans the directory, preps it with the release directories and ultimately compiles the project.
+The run target executes the master process that's been compiled and is in the release subdirectory.
 
 ## Developing
 
-### Built With (WIP)
-List main libraries, frameworks used including versions (React, Angular etc...)
+### Built With
+Built using C and makefile, no external libraries are used.
 
-### Prerequisites (WIP)
-What is needed to set up the dev environment. For instance, global dependencies or any other tools. include download links.
-
-
-We can maybe use [SemVer](http://semver.org/) for versioning. For the versions available, see the [link to tags on this repository](/tags).
-
+### Prerequisites
+There are no real requirements other than a machine running macOS or Linux, supporting the execution of C in its ANSI standard (C89).
 
 ## Configuration (WIP)
 
-Here you should write what are all of the configurations a user can enter when using the project.
+Currently no configuration is needed. WIP to add a few cycle-depending variables such as the seconds for a day to pass etc.
 
 
 
@@ -58,19 +52,6 @@ There are a set of rules to keep in mind:
   _Why:_
 
   > It notifies team members that you have completed a feature. It also enables easy peer-review of the code and dedicates a forum for discussing the proposed feature.
-
-- Update your local branch and do an interactive rebase before pushing your feature and making a Pull Request.
-
-  _Why:_
-
-  > Rebasing will merge in the requested branch (`master`) and apply the commits that you have made locally to the top of the history without creating a merge commit (assuming there were no conflicts). Resulting in a nice and clean history. [read more ...](https://www.atlassian.com/git/tutorials/merging-vs-rebasing)
-
-- Resolve potential conflicts while rebasing and before making a Pull Request.
-- Delete local and remote feature branches after merging.
-
-  _Why:_
-
-  > It will clutter up your list of branches with dead branches. It ensures you only ever merge the branch back into (`master`) once. Feature branches should only exist while the work is still in progress.
 
 - Before making a Pull Request, make sure your feature branch builds successfully and passes all tests (including code style checks).
 
@@ -110,6 +91,6 @@ Having a good guideline for creating commits and sticking to it makes working wi
 
 - Use the body to explain **what** and **why** as opposed to **how**.
 
-## Style guide (WIP)
+## Style guide
 
 Refer to [guidelines.md](guidelines.md)
