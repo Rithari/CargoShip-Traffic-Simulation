@@ -21,7 +21,6 @@ Issue tracker is **ONLY** used for reporting bugs. New features should be discus
 
 ## Context (Environment)
 <!--- How has this issue affected you? What are you trying to accomplish? -->
-<!--- Providing context helps us come up with a solution that is most useful in the real world -->
 
 <!--- Provide a general summary of the issue in the Title above -->
 
