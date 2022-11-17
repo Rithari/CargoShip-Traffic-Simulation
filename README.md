@@ -1,5 +1,6 @@
 # Operating Systems Project 22/23
 
+# [Project Brief 17/11/2022](https://informatica.i-learn.unito.it/pluginfile.php/351914/mod_resource/content/4/2022.11.16_progetto.pdf)
 
 ## Installing / Getting started (WIP)
 
@@ -24,7 +25,6 @@ There are no real requirements other than a machine running macOS or Linux, supp
 ## Configuration (WIP)
 
 Currently no configuration is needed. WIP to add a few cycle-depending variables such as the seconds for a day to pass etc.
-
 
 
 ## Tests (WIP)
