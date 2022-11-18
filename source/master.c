@@ -1,4 +1,4 @@
-#include "master.h"
+#include "../headers/master.h"
 
 int     SO_NAVI;
 int     SO_PORTI;
@@ -7,7 +7,7 @@ int     SO_SIZE;
 int     SO_MIN_VITA;
 int     SO_MAX_VITA;
 double  SO_LATO;
-int     SO_SPEED;
+int     SO_SPEED = 10;
 int     SO_CAPACITY;
 int     STEP;
 

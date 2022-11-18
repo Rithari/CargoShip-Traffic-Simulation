@@ -1,4 +1,4 @@
-#include "../master.h"
+#include "master.h"
 
 #ifndef PROGETTOSO_UTILS_H
 #define PROGETTOSO_UTILS_H

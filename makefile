@@ -1,76 +1,65 @@
 #
-# Compiler flags
+# In order to execute this "Makefile" just type "make"
+#	A. Delis (ad@di.uoa.gr)
 #
-CC     = gcc
-CFLAGS = -Wall -std=c89
-EXE = master.out
 
-#
-# Project files
-# TODO: compilatore deve prendere gli oggetti corretti
-SRCS = master.c nave.c porto.c meteo.c utils/source/utils.c utils/source/common_ipcs.c
-OBJS = $(SRCS:.c=.out)
+OBJS	= master.o common_ipcs.o utils.o nave.o porto.o meteo.o
+SOURCE	= master.c common_ipcs.c utils.c nave.c porto.c meteo.c
+HEADER	= master.h common_ipcs.h utils.h
+OUT	= master nave porto meteo
+CC	 = gcc
+FLAGS	 = -g3 -c -Wall
+LFLAGS	 = -lm
+# -g option enables debugging mode
+# -c flag generates object code for separate files
 
-#
-# Debug build settings
-#
-DBGDIR = debug
-DBGEXE = $(DBGDIR)/$(EXE)
-DBGOBJS = $(addprefix $(DBGDIR)/, $(OBJS))
-DBGCFLAGS = -g -O0 -pedantic -DDEBUG
+vpath %.c source
+vpath %.h headers
 
-#
-# Release build settings
-#
-RELDIR = release
-RELEXE = $(RELDIR)/$(EXE)
-RELOBJS = $(addprefix $(RELDIR)/, $(OBJS))
-RELCFLAGS = -O2 -Werror -Wextra -DNDEBUG
-
-.PHONY: relrun dbgrun default clean debug prep release remake
-
-# Default build
-default: clean prep release
-
-# Use these to build the debug and release versions manually (if you want)
-# CLion's start (play) button is configured to run the executable automatically
-run:
-	./$(RELEXE)
-
-drun:
-	./$(DBGEXE)
-
-#
-# Debug rules
-#
-debug: prep $(DBGEXE)
-
-$(DBGEXE):
-	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/master.out master.c
-	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/nave.out  nave.c
-	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/porto.out porto.c
-	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/meteo.out meteo.c
+all: $(OBJS)
+	$(CC) -g $(OBJS) -o $(OUT) $(LFLAGS)
 
 
-#
-# Release rules
-#
-release: prep $(RELEXE)
+# create/compile the individual files >>separately<<
+master.o: master.c
+	$(CC) $(FLAGS) master.c -std=c90
 
-$(RELEXE):
-	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/master.out master.c
-	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/nave.out nave.c
-	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/porto.out porto.c
-	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/meteo.out meteo.c
+common_ipcs.o: common_ipcs.c
+	$(CC) $(FLAGS) common_ipcs.c -std=c90
 
-#
-# Other rules
-#
-prep:
-	@mkdir -p $(DBGDIR) $(RELDIR)
+utils.o: utils.c
+	$(CC) $(FLAGS) utils.c -std=c90
 
-remake: clean default
+nave.o: nave.c
+	$(CC) $(FLAGS) nave.c -std=c90
 
+porto.o: porto.c
+	$(CC) $(FLAGS) porto.c -std=c90
+
+meteo.o: meteo.c
+	$(CC) $(FLAGS) meteo.c -std=c90
+
+
+# clean house
 clean:
-	echo "Cleaning..."
-	rm -f -r $(RELDIR) $(DBGDIR)
+	rm -f $(OBJS) $(OUT)
+
+# run the program
+run: $(OUT)
+	./$(OUT)
+
+# compile program with debugging information
+debug: $(OUT)
+	valgrind $(OUT)
+
+# run program with valgrind for errors
+valgrind: $(OUT)
+	valgrind $(OUT)
+
+# run program with valgrind for leak checks
+valgrind_leakcheck: $(OUT)
+	valgrind --leak-check=full $(OUT)
+
+# run program with valgrind for leak checks (extreme)
+valgrind_extreme: $(OUT)
+	valgrind --leak-check=full --show-leak-kinds=all --leak-resolution=high --track-origins=yes --vgdb=yes $(OUT)

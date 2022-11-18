@@ -14,7 +14,7 @@
 #include <assert.h>
 #include <time.h>
 #include <errno.h>
-#include "utils/utils.h"
+#include "utils.h"
 
 #define KEY_GOODS_TON 0x12345678
 
@@ -29,6 +29,8 @@
     #define PATH_MASTER "debug/master.out"
     #define PATH_METEO  "debug/meteo.out"
 #endif
+
+/*TODO: pensare ad un quadtree?*/
 
 extern int     SO_NAVI;
 extern int     SO_PORTI;
