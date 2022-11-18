@@ -2,13 +2,13 @@
 # Compiler flags
 #
 CC     = gcc
-CFLAGS = -Wall -Werror -Wextra -std=c89
+CFLAGS = -Wall -std=c89
 EXE = master.out
 
 #
 # Project files
-#
-SRCS = master.c nave.c porto.c meteo.c
+# TODO: compilatore deve prendere gli oggetti corretti
+SRCS = master.c nave.c porto.c meteo.c utils/source/utils.c utils/source/common_ipcs.c
 OBJS = $(SRCS:.c=.out)
 
 #
@@ -17,7 +17,7 @@ OBJS = $(SRCS:.c=.out)
 DBGDIR = debug
 DBGEXE = $(DBGDIR)/$(EXE)
 DBGOBJS = $(addprefix $(DBGDIR)/, $(OBJS))
-DBGCFLAGS = -g -O0 -DDEBUG -D DEBUG
+DBGCFLAGS = -g -O0 -pedantic -DDEBUG
 
 #
 # Release build settings
@@ -25,7 +25,7 @@ DBGCFLAGS = -g -O0 -DDEBUG -D DEBUG
 RELDIR = release
 RELEXE = $(RELDIR)/$(EXE)
 RELOBJS = $(addprefix $(RELDIR)/, $(OBJS))
-RELCFLAGS = -O2 -DNDEBUG -D RELEASE
+RELCFLAGS = -O2 -Werror -Wextra -DNDEBUG
 
 .PHONY: relrun dbgrun default clean debug prep release remake
 
@@ -47,7 +47,7 @@ debug: prep $(DBGEXE)
 
 $(DBGEXE):
 	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/master.out master.c
-	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/nave.out nave.c
+	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/nave.out  nave.c
 	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/porto.out porto.c
 	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/meteo.out meteo.c
 
