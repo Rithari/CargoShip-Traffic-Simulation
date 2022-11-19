@@ -8,37 +8,39 @@
 }</component>
   <component name="CMakeRunConfigurationManager">
     <generated>
-      <config projectName="progettoso" targetName="release" />
-      <config projectName="progettoso" targetName="remake" />
       <config projectName="progettoso" targetName="dbgrun" />
       <config projectName="progettoso" targetName="relrun" />
+      <config projectName="progettoso" targetName="all" />
+      <config projectName="progettoso" targetName="porto" />
+      <config projectName="progettoso" targetName="run" />
+      <config projectName="progettoso" targetName="remake" />
+      <config projectName="progettoso" targetName="master" />
       <config projectName="progettoso" targetName="drun" />
-      <config projectName="progettoso" targetName="debug" />
+      <config projectName="progettoso" targetName="meteo" />
       <config projectName="progettoso" targetName="prep" />
       <config projectName="progettoso" targetName="default" />
-      <config projectName="progettoso" targetName="run" />
+      <config projectName="progettoso" targetName="nave" />
     </generated>
   </component>
   <component name="CMakeSettings">
-    <configurations>
-      <configuration PROFILE_NAME="Debug" ENABLED="true" CONFIG_NAME="Debug" />
-    </configurations>
+    <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="Feature updates&#10;&#10;-Added common_ipcs.c/.h&#10;-Added utils.c/.h&#10;&#10;-Update nave.c&#10;-Update master.c/h&#10;-Update makefile&#10;&#10;-Removed logger.c/h (using assert.h instead)&#10;&#10;Some minor changes in all .c files">
-      <change afterPath="$PROJECT_DIR$/source/common_ipcs.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/clean.xml" beforeDir="false" />
+    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="Run clean before the makefile applications">
+      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/all.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/master" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/debug.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/default.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/drun.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/prep.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/release.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/release2.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/remake.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/run.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/makefile" beforeDir="false" afterPath="$PROJECT_DIR$/makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/master.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/master.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/master.h" beforeDir="false" afterPath="$PROJECT_DIR$/headers/master.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/meteo.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/meteo.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/nave.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/nave.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/porto.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/porto.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/common_ipcs.h" beforeDir="false" afterPath="$PROJECT_DIR$/headers/common_ipcs.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/source/common_ipcs.c" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/source/utils.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/utils.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/utils.h" beforeDir="false" afterPath="$PROJECT_DIR$/headers/utils.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/master.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/master.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/nave.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/nave.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -56,10 +58,17 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="master" />
+        <entry key="$PROJECT_DIR$" value="Update/Workflow" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GithubProjectSettings">
+    <option name="branchProtectionPatterns">
+      <list>
+        <option value="master" />
+      </list>
+    </option>
   </component>
   <component name="MakefileLocalSettings">
     <option name="availableProjects">
@@ -101,80 +110,78 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
-    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/leoluca/Developer/SO/progettoso/makefile&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "last_opened_file_path": "/Users/leoluca/Developer/SO/progettoso/makefile",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "Debugger.ObjectiveC"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/source" />
-      <recent name="$PROJECT_DIR$/headers" />
-      <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/utils" />
     </key>
   </component>
-  <component name="RunManager" selected="Makefile Target.all">
+  <component name="RunManager" selected="Makefile Application.all">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="all" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
       <makefile filename="$PROJECT_DIR$/makefile" target="all" workingDirectory="" arguments="">
         <envs />
       </makefile>
       <method v="2" />
     </configuration>
-    <configuration name="clean" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
+    <configuration name="clean" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
       <makefile filename="$PROJECT_DIR$/makefile" target="clean" workingDirectory="" arguments="">
         <envs />
       </makefile>
       <method v="2" />
     </configuration>
-    <configuration name="debug" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
-      <makefile filename="$PROJECT_DIR$/makefile" target="debug" workingDirectory="" arguments="">
+    <configuration name="meteo" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
+      <makefile filename="$PROJECT_DIR$/makefile" target="meteo" workingDirectory="" arguments="">
         <envs />
       </makefile>
       <method v="2" />
     </configuration>
-    <configuration name="master" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
-      <makefile filename="$PROJECT_DIR$/makefile" target="master" workingDirectory="" arguments="">
+    <configuration name="nave" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
+      <makefile filename="$PROJECT_DIR$/makefile" target="nave" workingDirectory="" arguments="">
         <envs />
       </makefile>
       <method v="2" />
     </configuration>
-    <configuration name="release" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
-      <makefile filename="$PROJECT_DIR$/makefile" target="release" workingDirectory="" arguments="">
+    <configuration name="run" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
+      <makefile filename="$PROJECT_DIR$/makefile" target="run" workingDirectory="" arguments="">
         <envs />
       </makefile>
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Makefile Application.release" />
-      <item itemvalue="Makefile Application.debug" />
+      <item itemvalue="Makefile Application.all" />
+      <item itemvalue="Makefile Target.meteo" />
+      <item itemvalue="Makefile Target.nave" />
       <item itemvalue="Makefile Target.clean" />
-      <item itemvalue="Makefile Target.drun" />
       <item itemvalue="Makefile Target.run" />
-      <item itemvalue="Makefile Target.prep" />
-      <item itemvalue="Makefile Target.default" />
-      <item itemvalue="Makefile Target.remake" />
       <item itemvalue="Makefile Target.all" />
-      <item itemvalue="Makefile Target.debug" />
-      <item itemvalue="Makefile Target.master" />
-      <item itemvalue="Makefile Target.release" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Makefile Target.all" />
-        <item itemvalue="Makefile Target.master" />
-        <item itemvalue="Makefile Target.release" />
-        <item itemvalue="Makefile Target.debug" />
+        <item itemvalue="Makefile Target.run" />
+        <item itemvalue="Makefile Target.clean" />
+        <item itemvalue="Makefile Target.nave" />
+        <item itemvalue="Makefile Target.meteo" />
       </list>
     </recent_temporary>
   </component>
@@ -192,7 +199,11 @@
       <workItem from="1668599527041" duration="6175000" />
       <workItem from="1668610557039" duration="492000" />
       <workItem from="1668611146680" duration="2644000" />
-      <workItem from="1668696735626" duration="25418000" />
+      <workItem from="1668696735626" duration="14962000" />
+      <workItem from="1668797945156" duration="901000" />
+      <workItem from="1668801647359" duration="792000" />
+      <workItem from="1668805507093" duration="2788000" />
+      <workItem from="1668851380386" duration="5717000" />
     </task>
     <task id="LOCAL-00001" summary="Last gitignore fix">
       <created>1668521442846</created>
@@ -271,14 +282,7 @@
       <option name="project" value="LOCAL" />
       <updated>1668616951270</updated>
     </task>
-    <task id="LOCAL-00012" summary="Feature updates&#10;&#10;-Added common_ipcs.c/.h&#10;-Added utils.c/.h&#10;&#10;-Update nave.c&#10;-Update master.c/h&#10;-Update makefile&#10;&#10;-Removed logger.c/h (using assert.h instead)&#10;&#10;Some minor changes in all .c files">
-      <created>1668773687412</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
-      <option name="project" value="LOCAL" />
-      <updated>1668773687412</updated>
-    </task>
-    <option name="localTasksCounter" value="13" />
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -307,8 +311,6 @@
     <MESSAGE value="Add mysteriously missing master.h file" />
     <MESSAGE value="Adjustment to directories on release.xml" />
     <MESSAGE value="Remove workspace.xml from gitignore" />
-    <MESSAGE value="Feature updates&#10;&#10;-Added common_ipcs.c/.h&#10;-Added utils.c/.h&#10;&#10;-Update nave.c&#10;-Update master.c/h&#10;-Update makefile&#10;&#10;-Removed logger.c/h (using assert.h instead)&#10;&#10;Some minor changes in all classes" />
-    <MESSAGE value="Feature updates&#10;&#10;-Added common_ipcs.c/.h&#10;-Added utils.c/.h&#10;&#10;-Update nave.c&#10;-Update master.c/h&#10;-Update makefile&#10;&#10;-Removed logger.c/h (using assert.h instead)&#10;&#10;Some minor changes in all .c files" />
-    <option name="LAST_COMMIT_MESSAGE" value="Feature updates&#10;&#10;-Added common_ipcs.c/.h&#10;-Added utils.c/.h&#10;&#10;-Update nave.c&#10;-Update master.c/h&#10;-Update makefile&#10;&#10;-Removed logger.c/h (using assert.h instead)&#10;&#10;Some minor changes in all .c files" />
+    <option name="LAST_COMMIT_MESSAGE" value="Remove workspace.xml from gitignore" />
   </component>
 </project>

@@ -19,8 +19,8 @@ void move(coord destination) {
 
 
     /*distance / SO_SPEED*/
-    double navigation_time = sqrt(dx * dx + dy * dy) / SO_SPEED;
-    printf("Navigation time: %f", navigation_time);
+    double navigation_time = sqrt(dx * dx + dy * dy) / 2;
+    printf("Navigation time: %f\n", navigation_time);
     ts.tv_sec = 1;
     ts.tv_nsec = 0;
 
@@ -56,7 +56,6 @@ int main(void) {
     sa.sa_handler = nave_sig_handler;
 
     sigaction(SIGTERM, &sa, NULL);
-    printf("CIAO");
     fflush(stdout);
 
     c.x = 1000;

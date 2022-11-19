@@ -37,6 +37,8 @@ int main(void) {
         NULL,
     };
 
-    execv(PATH_NAVE, arg);
+    /* nave.o path is in source  */
+    execv("source/nave.o", arg);
+    perror("execv");
     return 0;
 }
