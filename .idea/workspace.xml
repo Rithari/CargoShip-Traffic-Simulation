@@ -26,21 +26,7 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="makefile rework and other additions&#10;&#10;- Delete 8 configuration files&#10;- Add a temporary all configuration file &#10;- Temporarily hardcode the nave.o directory in master.c&#10;- Remove non-existent reference to SO_SPEEd on line 22 of nave.c and substitute it with the constant 2">
-      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/all.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/debug.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/default.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/drun.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/prep.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/release.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/release2.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/remake.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/run.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/makefile" beforeDir="false" afterPath="$PROJECT_DIR$/makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/master.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/master.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/nave.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/nave.c" afterDir="false" />
-    </list>
+    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="Adds last commit to workspace.xml" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -202,7 +188,7 @@
       <workItem from="1668797945156" duration="901000" />
       <workItem from="1668801647359" duration="792000" />
       <workItem from="1668805507093" duration="2788000" />
-      <workItem from="1668851380386" duration="6023000" />
+      <workItem from="1668851380386" duration="6083000" />
     </task>
     <task id="LOCAL-00001" summary="Last gitignore fix">
       <created>1668521442846</created>
@@ -281,7 +267,21 @@
       <option name="project" value="LOCAL" />
       <updated>1668616951270</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="makefile rework and other additions&#10;&#10;- Delete 8 configuration files&#10;- Add a temporary all configuration file &#10;- Temporarily hardcode the nave.o directory in master.c&#10;- Remove non-existent reference to SO_SPEEd on line 22 of nave.c and substitute it with the constant 2">
+      <created>1668860822153</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1668860822153</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Adds last commit to workspace.xml">
+      <created>1668860864992</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1668860864992</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -311,6 +311,7 @@
     <MESSAGE value="Adjustment to directories on release.xml" />
     <MESSAGE value="Remove workspace.xml from gitignore" />
     <MESSAGE value="makefile rework and other additions&#10;&#10;- Delete 8 configuration files&#10;- Add a temporary all configuration file &#10;- Temporarily hardcode the nave.o directory in master.c&#10;- Remove non-existent reference to SO_SPEEd on line 22 of nave.c and substitute it with the constant 2" />
-    <option name="LAST_COMMIT_MESSAGE" value="makefile rework and other additions&#10;&#10;- Delete 8 configuration files&#10;- Add a temporary all configuration file &#10;- Temporarily hardcode the nave.o directory in master.c&#10;- Remove non-existent reference to SO_SPEEd on line 22 of nave.c and substitute it with the constant 2" />
+    <MESSAGE value="Adds last commit to workspace.xml" />
+    <option name="LAST_COMMIT_MESSAGE" value="Adds last commit to workspace.xml" />
   </component>
 </project>
