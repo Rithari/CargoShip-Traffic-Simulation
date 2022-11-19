@@ -26,9 +26,8 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="Run clean before the makefile applications">
+    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="makefile rework and other additions&#10;&#10;- Delete 8 configuration files&#10;- Add a temporary all configuration file &#10;- Temporarily hardcode the nave.o directory in master.c&#10;- Remove non-existent reference to SO_SPEEd on line 22 of nave.c and substitute it with the constant 2">
       <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/all.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/master" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/debug.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/default.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/drun.xml" beforeDir="false" />
@@ -131,7 +130,7 @@
       <recent name="$PROJECT_DIR$/utils" />
     </key>
   </component>
-  <component name="RunManager" selected="Makefile Application.all">
+  <component name="RunManager" selected="Makefile Target.clean">
     <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="CLION.EXTERNAL.BUILD" enabled="true" />
@@ -177,9 +176,9 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Makefile Target.clean" />
         <item itemvalue="Makefile Target.all" />
         <item itemvalue="Makefile Target.run" />
-        <item itemvalue="Makefile Target.clean" />
         <item itemvalue="Makefile Target.nave" />
         <item itemvalue="Makefile Target.meteo" />
       </list>
@@ -203,7 +202,7 @@
       <workItem from="1668797945156" duration="901000" />
       <workItem from="1668801647359" duration="792000" />
       <workItem from="1668805507093" duration="2788000" />
-      <workItem from="1668851380386" duration="5717000" />
+      <workItem from="1668851380386" duration="6023000" />
     </task>
     <task id="LOCAL-00001" summary="Last gitignore fix">
       <created>1668521442846</created>
@@ -311,6 +310,7 @@
     <MESSAGE value="Add mysteriously missing master.h file" />
     <MESSAGE value="Adjustment to directories on release.xml" />
     <MESSAGE value="Remove workspace.xml from gitignore" />
-    <option name="LAST_COMMIT_MESSAGE" value="Remove workspace.xml from gitignore" />
+    <MESSAGE value="makefile rework and other additions&#10;&#10;- Delete 8 configuration files&#10;- Add a temporary all configuration file &#10;- Temporarily hardcode the nave.o directory in master.c&#10;- Remove non-existent reference to SO_SPEEd on line 22 of nave.c and substitute it with the constant 2" />
+    <option name="LAST_COMMIT_MESSAGE" value="makefile rework and other additions&#10;&#10;- Delete 8 configuration files&#10;- Add a temporary all configuration file &#10;- Temporarily hardcode the nave.o directory in master.c&#10;- Remove non-existent reference to SO_SPEEd on line 22 of nave.c and substitute it with the constant 2" />
   </component>
 </project>
