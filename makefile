@@ -47,3 +47,4 @@ run: $(DIRRLS)/$(TARGET)
 clean:
 	# remove all files and directories in the debug and release folders
 	rm -rf $(DIRDBG)/*
+	rm -rf $(DIRRLS)/*
