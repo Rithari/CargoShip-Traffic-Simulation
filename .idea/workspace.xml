@@ -13,6 +13,7 @@
       <config projectName="progettoso" targetName="all" />
       <config projectName="progettoso" targetName="porto" />
       <config projectName="progettoso" targetName="run" />
+      <config projectName="progettoso" targetName="dbg" />
       <config projectName="progettoso" targetName="remake" />
       <config projectName="progettoso" targetName="master" />
       <config projectName="progettoso" targetName="drun" />
@@ -20,13 +21,21 @@
       <config projectName="progettoso" targetName="prep" />
       <config projectName="progettoso" targetName="default" />
       <config projectName="progettoso" targetName="nave" />
+      <config projectName="progettoso" targetName="rls" />
     </generated>
   </component>
   <component name="CMakeSettings">
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="Adds last commit to workspace.xml" />
+    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="Adds last commit to workspace.xml">
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/all.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/runConfigurations/all.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/headers/master.h" beforeDir="false" afterPath="$PROJECT_DIR$/headers/master.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/makefile" beforeDir="false" afterPath="$PROJECT_DIR$/makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/master.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/master.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/nave.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/nave.c" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -107,7 +116,7 @@
     "cidr.known.project.marker": "true",
     "last_opened_file_path": "/Users/leoluca/Developer/SO/progettoso/makefile",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "Debugger.ObjectiveC"
+    "settings.editor.selected.configurable": "CLionExternalConfigurable"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -116,10 +125,20 @@
       <recent name="$PROJECT_DIR$/utils" />
     </key>
   </component>
-  <component name="RunManager" selected="Makefile Target.clean">
-    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+  <component name="RunManager" selected="Makefile Application.drun">
+    <configuration name="drun" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="progettoso" TARGET_NAME="dbg" CONFIG_NAME="dbg" version="1" RUN_PATH="$PROJECT_DIR$/debug/master">
       <method v="2">
-        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run" type="CLionNativeAppRunConfigurationType" nameIsGenerated="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="progettoso" TARGET_NAME="run" CONFIG_NAME="run" version="1" RUN_PATH="$PROJECT_DIR$/release/master">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
     <configuration name="all" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
@@ -128,20 +147,26 @@
       </makefile>
       <method v="2" />
     </configuration>
-    <configuration name="clean" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
+    <configuration name="clean" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
       <makefile filename="$PROJECT_DIR$/makefile" target="clean" workingDirectory="" arguments="">
         <envs />
       </makefile>
       <method v="2" />
     </configuration>
-    <configuration name="meteo" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
-      <makefile filename="$PROJECT_DIR$/makefile" target="meteo" workingDirectory="" arguments="">
+    <configuration name="dbg" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
+      <makefile filename="$PROJECT_DIR$/makefile" target="dbg" workingDirectory="" arguments="">
         <envs />
       </makefile>
       <method v="2" />
     </configuration>
-    <configuration name="nave" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
-      <makefile filename="$PROJECT_DIR$/makefile" target="nave" workingDirectory="" arguments="">
+    <configuration name="drun" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
+      <makefile filename="$PROJECT_DIR$/makefile" target="" workingDirectory="" arguments="">
+        <envs />
+      </makefile>
+      <method v="2" />
+    </configuration>
+    <configuration name="rls" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
+      <makefile filename="$PROJECT_DIR$/makefile" target="rls" workingDirectory="" arguments="">
         <envs />
       </makefile>
       <method v="2" />
@@ -153,20 +178,22 @@
       <method v="2" />
     </configuration>
     <list>
+      <item itemvalue="Makefile Application.drun" />
       <item itemvalue="Makefile Application.all" />
-      <item itemvalue="Makefile Target.meteo" />
-      <item itemvalue="Makefile Target.nave" />
+      <item itemvalue="Makefile Application.run" />
+      <item itemvalue="Makefile Target.drun" />
       <item itemvalue="Makefile Target.clean" />
+      <item itemvalue="Makefile Target.dbg" />
+      <item itemvalue="Makefile Target.rls" />
       <item itemvalue="Makefile Target.run" />
       <item itemvalue="Makefile Target.all" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Makefile Target.clean" />
-        <item itemvalue="Makefile Target.all" />
+        <item itemvalue="Makefile Target.rls" />
+        <item itemvalue="Makefile Target.drun" />
         <item itemvalue="Makefile Target.run" />
-        <item itemvalue="Makefile Target.nave" />
-        <item itemvalue="Makefile Target.meteo" />
+        <item itemvalue="Makefile Target.all" />
       </list>
     </recent_temporary>
   </component>
@@ -189,6 +216,7 @@
       <workItem from="1668801647359" duration="792000" />
       <workItem from="1668805507093" duration="2788000" />
       <workItem from="1668851380386" duration="6083000" />
+      <workItem from="1668937713998" duration="4761000" />
     </task>
     <task id="LOCAL-00001" summary="Last gitignore fix">
       <created>1668521442846</created>

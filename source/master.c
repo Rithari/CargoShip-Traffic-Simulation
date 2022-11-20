@@ -38,7 +38,9 @@ int main(void) {
     };
 
     /* nave.o path is in source  */
-    execv("source/nave.o", arg);
+    system("ls");
+
+    execv("nave.o", arg);
     perror("execv");
     return 0;
 }

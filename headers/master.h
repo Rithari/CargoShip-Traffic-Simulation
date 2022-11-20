@@ -19,15 +19,15 @@
 #define KEY_GOODS_TON 0x12345678
 
 #ifdef NDEBUG
-    #define PATH_NAVE   "release/nave.out"
-    #define PATH_PORTO  "release/porto.out"
-    #define PATH_MASTER "release/master.out"
-    #define PATH_METEO  "release/meteo.out"
+    #define PATH_NAVE   "release/nave.o"
+    #define PATH_PORTO  "release/porto.o"
+    #define PATH_MASTER "release/master.o"
+    #define PATH_METEO  "release/meteo.o"
 #else
-    #define PATH_NAVE   "debug/nave.out"
-    #define PATH_PORTO  "debug/porto.out"
-    #define PATH_MASTER "debug/master.out"
-    #define PATH_METEO  "debug/meteo.out"
+    #define PATH_NAVE   "debug/nave.o"
+    #define PATH_PORTO  "debug/porto.o"
+    #define PATH_MASTER "debug/master.o"
+    #define PATH_METEO  "debug/meteo.o"
 #endif
 
 /*TODO: pensare ad un quadtree?*/

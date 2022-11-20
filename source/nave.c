@@ -21,7 +21,7 @@ void move(coord destination) {
     /*distance / SO_SPEED*/
     double navigation_time = sqrt(dx * dx + dy * dy) / 2;
     printf("Navigation time: %f\n", navigation_time);
-    ts.tv_sec = 1;
+    ts.tv_sec = 0;
     ts.tv_nsec = 0;
 
     while (nanosleep(&ts, &rem) && errno != EINVAL) {
