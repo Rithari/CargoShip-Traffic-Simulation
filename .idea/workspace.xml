@@ -28,13 +28,10 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="Adds last commit to workspace.xml">
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/all.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/runConfigurations/all.xml" afterDir="false" />
+    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="Update the clean target to also delete recursively">
+      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/drun.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/rls.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/headers/master.h" beforeDir="false" afterPath="$PROJECT_DIR$/headers/master.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/makefile" beforeDir="false" afterPath="$PROJECT_DIR$/makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/master.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/master.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/nave.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/nave.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -104,96 +101,47 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true",
-    "last_opened_file_path": "/Users/leoluca/Developer/SO/progettoso/makefile",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "CLionExternalConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/leoluca/Developer/SO/progettoso/makefile&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;CLionExternalConfigurable&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/source" />
       <recent name="$PROJECT_DIR$/utils" />
     </key>
   </component>
-  <component name="RunManager" selected="Makefile Application.drun">
-    <configuration name="drun" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="progettoso" TARGET_NAME="dbg" CONFIG_NAME="dbg" version="1" RUN_PATH="$PROJECT_DIR$/debug/master">
-      <method v="2">
-        <option name="CLION.COMPOUND.BUILD" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="run" type="CLionNativeAppRunConfigurationType" nameIsGenerated="true" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="progettoso" TARGET_NAME="run" CONFIG_NAME="run" version="1" RUN_PATH="$PROJECT_DIR$/release/master">
-      <method v="2">
-        <option name="CLION.COMPOUND.BUILD" enabled="true" />
-      </method>
-    </configuration>
+  <component name="RunManager" selected="Makefile Target.run">
     <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="all" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
-      <makefile filename="$PROJECT_DIR$/makefile" target="all" workingDirectory="" arguments="">
-        <envs />
-      </makefile>
-      <method v="2" />
-    </configuration>
-    <configuration name="clean" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
-      <makefile filename="$PROJECT_DIR$/makefile" target="clean" workingDirectory="" arguments="">
-        <envs />
-      </makefile>
-      <method v="2" />
-    </configuration>
-    <configuration name="dbg" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
-      <makefile filename="$PROJECT_DIR$/makefile" target="dbg" workingDirectory="" arguments="">
-        <envs />
-      </makefile>
-      <method v="2" />
-    </configuration>
-    <configuration name="drun" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
-      <makefile filename="$PROJECT_DIR$/makefile" target="" workingDirectory="" arguments="">
-        <envs />
-      </makefile>
-      <method v="2" />
-    </configuration>
-    <configuration name="rls" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
-      <makefile filename="$PROJECT_DIR$/makefile" target="rls" workingDirectory="" arguments="">
-        <envs />
-      </makefile>
-      <method v="2" />
-    </configuration>
-    <configuration name="run" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
-      <makefile filename="$PROJECT_DIR$/makefile" target="run" workingDirectory="" arguments="">
-        <envs />
-      </makefile>
-      <method v="2" />
-    </configuration>
     <list>
       <item itemvalue="Makefile Application.drun" />
       <item itemvalue="Makefile Application.all" />
-      <item itemvalue="Makefile Application.run" />
-      <item itemvalue="Makefile Target.drun" />
-      <item itemvalue="Makefile Target.clean" />
+      <item itemvalue="Makefile Application.rls" />
       <item itemvalue="Makefile Target.dbg" />
+      <item itemvalue="Makefile Target.clean" />
       <item itemvalue="Makefile Target.rls" />
       <item itemvalue="Makefile Target.run" />
-      <item itemvalue="Makefile Target.all" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Makefile Target.rls" />
-        <item itemvalue="Makefile Target.drun" />
+        <item itemvalue="Makefile Target.clean" />
         <item itemvalue="Makefile Target.run" />
-        <item itemvalue="Makefile Target.all" />
+        <item itemvalue="Makefile Target.rls" />
       </list>
     </recent_temporary>
   </component>
@@ -309,7 +257,14 @@
       <option name="project" value="LOCAL" />
       <updated>1668860864992</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Update the clean target to also delete recursively">
+      <created>1668956084906</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1668956084906</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -340,6 +295,7 @@
     <MESSAGE value="Remove workspace.xml from gitignore" />
     <MESSAGE value="makefile rework and other additions&#10;&#10;- Delete 8 configuration files&#10;- Add a temporary all configuration file &#10;- Temporarily hardcode the nave.o directory in master.c&#10;- Remove non-existent reference to SO_SPEEd on line 22 of nave.c and substitute it with the constant 2" />
     <MESSAGE value="Adds last commit to workspace.xml" />
-    <option name="LAST_COMMIT_MESSAGE" value="Adds last commit to workspace.xml" />
+    <MESSAGE value="Update the clean target to also delete recursively" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update the clean target to also delete recursively" />
   </component>
 </project>
