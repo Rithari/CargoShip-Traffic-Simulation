@@ -28,9 +28,7 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="Update the clean target to also delete recursively">
-      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/drun.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/rls.xml" afterDir="false" />
+    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="Updates the run configuration to run the correct target.&#10;Saves all configurations in the project file.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -122,28 +120,15 @@
       <recent name="$PROJECT_DIR$/utils" />
     </key>
   </component>
-  <component name="RunManager" selected="Makefile Target.run">
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
+  <component name="RunManager" selected="Makefile Application.run">
     <list>
+      <item itemvalue="Makefile Application.run" />
       <item itemvalue="Makefile Application.drun" />
-      <item itemvalue="Makefile Application.all" />
-      <item itemvalue="Makefile Application.rls" />
       <item itemvalue="Makefile Target.dbg" />
       <item itemvalue="Makefile Target.clean" />
       <item itemvalue="Makefile Target.rls" />
       <item itemvalue="Makefile Target.run" />
     </list>
-    <recent_temporary>
-      <list>
-        <item itemvalue="Makefile Target.clean" />
-        <item itemvalue="Makefile Target.run" />
-        <item itemvalue="Makefile Target.rls" />
-      </list>
-    </recent_temporary>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
@@ -165,6 +150,7 @@
       <workItem from="1668805507093" duration="2788000" />
       <workItem from="1668851380386" duration="6083000" />
       <workItem from="1668937713998" duration="4761000" />
+      <workItem from="1668958659009" duration="230000" />
     </task>
     <task id="LOCAL-00001" summary="Last gitignore fix">
       <created>1668521442846</created>
@@ -264,7 +250,14 @@
       <option name="project" value="LOCAL" />
       <updated>1668956084906</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="Updates the run configuration to run the correct target.&#10;Saves all configurations in the project file.">
+      <created>1668956398984</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1668956398984</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -296,6 +289,7 @@
     <MESSAGE value="makefile rework and other additions&#10;&#10;- Delete 8 configuration files&#10;- Add a temporary all configuration file &#10;- Temporarily hardcode the nave.o directory in master.c&#10;- Remove non-existent reference to SO_SPEEd on line 22 of nave.c and substitute it with the constant 2" />
     <MESSAGE value="Adds last commit to workspace.xml" />
     <MESSAGE value="Update the clean target to also delete recursively" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update the clean target to also delete recursively" />
+    <MESSAGE value="Updates the run configuration to run the correct target.&#10;Saves all configurations in the project file." />
+    <option name="LAST_COMMIT_MESSAGE" value="Updates the run configuration to run the correct target.&#10;Saves all configurations in the project file." />
   </component>
 </project>
