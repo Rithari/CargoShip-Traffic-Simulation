@@ -11,7 +11,7 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   # Set the memory check environment variable based on the base branch or on the manual setting of the variable.
-  BUILD_TYPE: rls
+  BUILD_TYPE: release
   RUN_MEMORY_CHECK: ${{ ((github.base_ref == 'master') || (secrets.RUN_MEMORY_CHECK == 'true')) }}
 
 jobs:
@@ -31,8 +31,9 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
      # run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
-    - name: Build
-      run: make ${{env.BUILD_TYPE}}
+    # Runs targets clean, prep, rls
+    - name: Preparation
+      run: make all
     
     - name: Run
       # Build your program with the given configuration
