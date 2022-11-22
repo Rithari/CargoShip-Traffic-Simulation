@@ -40,7 +40,7 @@ int main(void) {
     /* nave.o path is in source  */
     system("ls");
 
-    execv("nave.o", arg);
+    execv(PATH_NAVE, arg);
     perror("execv");
     return 0;
 }

@@ -20,10 +20,13 @@ RCFLAGS = $(CFLAGS) -O2 -Wall -Werror -Wextra -DNDEBUG
 # $@ is the target
 # $^ is all the prerequisites
 
-.PHONY: all rls dbg drun run clean
+.PHONY: all prep rls dbg drun run clean
 
 # build all the prerequisites for compile the project
-all: clean dbg rls
+all: clean prep rls
+
+prep:
+	@mkdir -p $(DIRDBG) $(DIRRLS)
 
 rls: $(addprefix $(DIRSRC)/, $(SOURCE))
 	$(CC) $(RCFLAGS) $(addprefix $(DIRSRC)/, $(COMMON)) $(DIRSRC)/nave.c -o $(DIRRLS)/nave.o $(LDFLAGS)
