@@ -14,7 +14,7 @@ DIRRLS	= release
 # compiling flags
 CFLAGS	= -std=c89
 DCFLAGS	= $(CFLAGS) -g -O0 -pedantic -DDEBUG
-RCFLAGS = $(CFLAGS) -O2 -Wall -Werror -Wextra -DNDEBUG
+RCFLAGS = $(CFLAGS) -O2 -Wall -Wextra -DNDEBUG
 
 # $< is the first prerequisite
 # $@ is the target
