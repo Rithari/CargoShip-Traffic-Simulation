@@ -22,7 +22,7 @@ RCFLAGS = $(CFLAGS) -O2 -Wall -Wextra -DNDEBUG
 
 .PHONY: all prep rls dbg drun run clean
 
-# build all the prerequisites for compile the project
+# build all the prerequisites for compiling the project
 all: clean prep rls
 
 prep:
@@ -33,6 +33,7 @@ rls: $(addprefix $(DIRSRC)/, $(SOURCE))
 	$(CC) $(RCFLAGS) $(addprefix $(DIRSRC)/, $(COMMON)) $(DIRSRC)/porto.c -o $(DIRRLS)/porto.o $(LDFLAGS)
 	$(CC) $(RCFLAGS) $(addprefix $(DIRSRC)/, $(COMMON)) $(DIRSRC)/meteo.c -o $(DIRRLS)/meteo.o $(LDFLAGS)
 	$(CC) $(RCFLAGS) $(addprefix $(DIRSRC)/, $(COMMON)) $(DIRSRC)/master.c -o $(DIRRLS)/$(TARGET) $(LDFLAGS)
+
 
 dbg: $(addprefix $(DIRSRC)/, $(SOURCE))
 	$(CC) $(DCFLAGS) $(addprefix $(DIRSRC)/, $(COMMON)) $(DIRSRC)/nave.c -o $(DIRDBG)/nave.o $(LDFLAGS)
