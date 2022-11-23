@@ -1,6 +1,6 @@
 # Operating Systems Project 22/23
 
-# [Project Brief 17/11/2022](https://informatica.i-learn.unito.it/pluginfile.php/351914/mod_resource/content/4/2022.11.16_progetto.pdf)
+# [Project Brief 23/11/2022](https://informatica.i-learn.unito.it/pluginfile.php/352260/mod_resource/content/5/2022.11.23_progetto.pdf)
 
 ## Installing / Getting started (WIP)
 
