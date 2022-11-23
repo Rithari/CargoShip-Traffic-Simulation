@@ -7,7 +7,7 @@
 A quick introduction of the minimal setup you need to get the program running.
 
 ```shell
-make default
+make all
 make run
 ```
 
