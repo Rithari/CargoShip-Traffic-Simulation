@@ -8,12 +8,13 @@
 }</component>
   <component name="CMakeRunConfigurationManager">
     <generated>
+      <config projectName="progettoso" targetName="release" />
       <config projectName="progettoso" targetName="dbgrun" />
       <config projectName="progettoso" targetName="relrun" />
+      <config projectName="progettoso" targetName="debug" />
       <config projectName="progettoso" targetName="all" />
       <config projectName="progettoso" targetName="porto" />
       <config projectName="progettoso" targetName="run" />
-      <config projectName="progettoso" targetName="dbg" />
       <config projectName="progettoso" targetName="remake" />
       <config projectName="progettoso" targetName="master" />
       <config projectName="progettoso" targetName="drun" />
@@ -21,22 +22,18 @@
       <config projectName="progettoso" targetName="prep" />
       <config projectName="progettoso" targetName="default" />
       <config projectName="progettoso" targetName="nave" />
-      <config projectName="progettoso" targetName="rls" />
     </generated>
   </component>
   <component name="CMakeSettings">
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="Remove all.xml add run.xml (hopefully)">
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/clean.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/dbg.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/rls.xml" beforeDir="false" />
+    <list default="true" id="8759b741-bb0c-4f48-b920-9cceb508e490" name="Changes" comment="Fixes typo in makefile">
+      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/debug.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/drun.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/run.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/makefile" beforeDir="false" afterPath="$PROJECT_DIR$/makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/master.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/master.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/nave.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/nave.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/source/porto.c" beforeDir="false" afterPath="$PROJECT_DIR$/source/porto.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -106,28 +103,28 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true",
-    "last_opened_file_path": "/Users/leoluca/Developer/SO/progettoso/makefile",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.editor"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/leoluca/Developer/SO/progettoso/makefile&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/source" />
       <recent name="$PROJECT_DIR$/utils" />
     </key>
   </component>
-  <component name="RunManager" selected="Makefile Target.rls">
+  <component name="RunManager" selected="Makefile Application.release">
     <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="CLION.EXTERNAL.BUILD" enabled="true" />
@@ -145,20 +142,14 @@
       </makefile>
       <method v="2" />
     </configuration>
-    <configuration name="dbg" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
-      <makefile filename="$PROJECT_DIR$/makefile" target="dbg" workingDirectory="" arguments="">
+    <configuration name="debug" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
+      <makefile filename="$PROJECT_DIR$/makefile" target="debug" workingDirectory="" arguments="">
         <envs />
       </makefile>
       <method v="2" />
     </configuration>
-    <configuration name="prep" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
-      <makefile filename="$PROJECT_DIR$/makefile" target="prep" workingDirectory="" arguments="">
-        <envs />
-      </makefile>
-      <method v="2" />
-    </configuration>
-    <configuration name="rls" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
-      <makefile filename="$PROJECT_DIR$/makefile" target="rls" workingDirectory="" arguments="">
+    <configuration name="release" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile" temporary="true">
+      <makefile filename="$PROJECT_DIR$/makefile" target="release" workingDirectory="" arguments="">
         <envs />
       </makefile>
       <method v="2" />
@@ -170,22 +161,21 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Makefile Application.run" />
-      <item itemvalue="Makefile Application.drun" />
+      <item itemvalue="Makefile Application.debug" />
+      <item itemvalue="Makefile Application.release" />
+      <item itemvalue="Makefile Target.clean" />
+      <item itemvalue="Makefile Target.debug" />
+      <item itemvalue="Makefile Target.release" />
       <item itemvalue="Makefile Target.all" />
       <item itemvalue="Makefile Target.run" />
-      <item itemvalue="Makefile Target.dbg" />
-      <item itemvalue="Makefile Target.prep" />
-      <item itemvalue="Makefile Target.clean" />
-      <item itemvalue="Makefile Target.rls" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Makefile Target.rls" />
-        <item itemvalue="Makefile Target.dbg" />
         <item itemvalue="Makefile Target.run" />
+        <item itemvalue="Makefile Target.release" />
+        <item itemvalue="Makefile Target.debug" />
+        <item itemvalue="Makefile Target.clean" />
         <item itemvalue="Makefile Target.all" />
-        <item itemvalue="Makefile Target.prep" />
       </list>
     </recent_temporary>
   </component>
@@ -211,7 +201,11 @@
       <workItem from="1668937713998" duration="4761000" />
       <workItem from="1668958659009" duration="275000" />
       <workItem from="1668958949576" duration="46000" />
-      <workItem from="1669119107591" duration="1547000" />
+      <workItem from="1669119107591" duration="2883000" />
+      <workItem from="1669122453400" duration="1530000" />
+      <workItem from="1669125852635" duration="1643000" />
+      <workItem from="1669213966316" duration="2748000" />
+      <workItem from="1669221574539" duration="972000" />
     </task>
     <task id="LOCAL-00001" summary="Last gitignore fix">
       <created>1668521442846</created>
@@ -325,7 +319,28 @@
       <option name="project" value="LOCAL" />
       <updated>1668958905054</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="Adds trailing line at EOF&#10;Uses define variable in master for execv path&#10;Adds prep target in makefile">
+      <created>1669120799498</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1669120799498</updated>
+    </task>
+    <task id="LOCAL-00018" summary="Remove -Werror">
+      <created>1669124775308</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1669124775308</updated>
+    </task>
+    <task id="LOCAL-00019" summary="Fixes typo in makefile">
+      <created>1669215153284</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1669215153284</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -359,6 +374,9 @@
     <MESSAGE value="Update the clean target to also delete recursively" />
     <MESSAGE value="Updates the run configuration to run the correct target.&#10;Saves all configurations in the project file." />
     <MESSAGE value="Remove all.xml add run.xml (hopefully)" />
-    <option name="LAST_COMMIT_MESSAGE" value="Remove all.xml add run.xml (hopefully)" />
+    <MESSAGE value="Adds trailing line at EOF&#10;Uses define variable in master for execv path&#10;Adds prep target in makefile" />
+    <MESSAGE value="Remove -Werror" />
+    <MESSAGE value="Fixes typo in makefile" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixes typo in makefile" />
   </component>
 </project>
