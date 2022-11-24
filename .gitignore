@@ -137,5 +137,7 @@ Temporary Items
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
 .idea/**/shelf
+**/.idea/workspace.xml
+**/.idea/tasks.xml
 /debug/
 /release/
