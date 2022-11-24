@@ -20,8 +20,6 @@ RCFLAGS = $(CFLAGS) -O2 -Wall -Wextra -DNDEBUG
 # $@ is the target
 # $^ is all the prerequisites
 
-.PHONY: all drun run debug release clean
-
 # build all the prerequisites for compile the project
 all: clean prep debug release
 

@@ -5,6 +5,7 @@
 #define _GNU_SOURCE
 
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -14,34 +15,48 @@
 #include <assert.h>
 #include <time.h>
 #include <errno.h>
-#include "utils.h"
+#include <string.h>
 
-#define KEY_GOODS_TON 0x12345678
+#define PATH_CONFIG     "config1.txt"
+#define PATH_CONFIG_2   "config2.txt"
+#define PATH_CONFIG_3   "config3.txt"
 
 #ifdef NDEBUG
-    #define PATH_NAVE   "release/nave.o"
-    #define PATH_PORTO  "release/porto.o"
-    #define PATH_MASTER "release/master.o"
-    #define PATH_METEO  "release/meteo.o"
+#define PATH_NAVE   "release/nave.out"
+    #define PATH_PORTO  "release/porto.out"
+    #define PATH_MASTER "release/master.out"
+    #define PATH_METEO  "release/meteo.out"
 #else
-    #define PATH_NAVE   "debug/nave.o"
-    #define PATH_PORTO  "debug/porto.o"
-    #define PATH_MASTER "debug/master.o"
-    #define PATH_METEO  "debug/meteo.o"
+#define PATH_NAVE   "debug/nave.out"
+#define PATH_PORTO  "debug/porto.out"
+#define PATH_MASTER "debug/master.out"
+#define PATH_METEO  "debug/meteo.out"
 #endif
 
 /*TODO: pensare ad un quadtree?*/
 
-extern int     SO_NAVI;
-extern int     SO_PORTI;
-extern int     SO_MERCI;
-extern int     SO_SIZE;
-extern int     SO_MIN_VITA;
-extern int     SO_MAX_VITA;
-extern double  SO_LATO;
-extern int     SO_SPEED;
-extern int     SO_CAPACITY;
-extern int     STEP;
+
+typedef struct {
+    int     SO_NAVI;
+    int     SO_PORTI;
+    int     SO_MERCI;
+    int     SO_SIZE;
+    int     SO_MIN_VITA;
+    int     SO_MAX_VITA;
+    double  SO_LATO;
+    int     SO_SPEED;
+    int     SO_CAPACITY;
+    int     SO_BANCHINE;
+    int     SO_FILL;
+    int     SO_LOADSPEED;
+    int     STEP;
+    int     SO_DAYS;
+    int     TOPK;
+    int     STORM_DURATION;
+    int     SWELL_DURATION;
+    int     ML_INTENSITY;
+    unsigned int check;
+} config;
 
 typedef struct {
     int id;
@@ -56,6 +71,7 @@ typedef struct {
 } coord;
 
 extern const goods *goods_types;
+extern config cfg;
 
 
 
