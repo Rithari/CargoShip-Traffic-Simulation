@@ -104,7 +104,7 @@ void create_ships(config *cfg, pid_t *ships) {
                 exit(EXIT_FAILURE);
             case 0:
                 execv(PATH_NAVE, arg);
-                perror("execv has failed");
+                perror("execv has failed trying to run the ship");
                 exit(EXIT_FAILURE);
             default:
                 break;
@@ -126,7 +126,7 @@ void create_ports(config *cfg, pid_t *ports) {
                 exit(EXIT_FAILURE);
             case 0:
                 execv(PATH_PORTO, arg);
-                perror("execv has failed");
+                perror("execv has failed trying to run port");
                 exit(EXIT_FAILURE);
             default:
                 break;
