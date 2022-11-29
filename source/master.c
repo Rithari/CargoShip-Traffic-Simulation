@@ -88,79 +88,133 @@ void initialize_so_vars(config *cfg, char* path_cfg_file) {
         perror("SO_PORTI is less than 4");
         exit(EXIT_FAILURE);
     }
+}
 
+void create_ships(config *cfg, pid_t *ships) {
+    int i;
+    char *arg[] = {
+            PATH_NAVE,
+            NULL,
+    };
 
+    for(i = 0; i < cfg->SO_NAVI; i++) {
+        switch(ships[i] = fork()) {
+            case -1:
+                perror("Error during: create_ships->fork()");
+                exit(EXIT_FAILURE);
+            case 0:
+                execv(PATH_NAVE, arg);
+                perror("execv has failed");
+                exit(EXIT_FAILURE);
+            default:
+                break;
+        }
+    }
+}
 
+void create_ports(config *cfg, pid_t *ports) {
+    int i;
+    char *arg[] = {
+            PATH_PORTO,
+            NULL,
+    };
+
+    for(i = 0; i < cfg->SO_PORTI; i++) {
+        switch(ports[i] = fork()) {
+            case -1:
+                perror("Error during: create_ports->fork()");
+                exit(EXIT_FAILURE);
+            case 0:
+                execv(PATH_PORTO, arg);
+                perror("execv has failed");
+                exit(EXIT_FAILURE);
+            default:
+                break;
+        }
+    }
+}
+
+int initialize_message_queue(int key) {
+    int mq_id;
+    if((mq_id = msgget(key, IPC_CREAT | 0666)) < 0) {
+        if (errno == EEXIST) {
+            mq_id = msgget(key, 0666);
+            msgctl(mq_id, IPC_RMID, NULL);
+            mq_id = msgget(key, 0666);
+        } else {
+            printf("error during initialization of message queue\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    return mq_id;
 }
 
 int main(int argc, char** argv) {
     struct sigaction sa;
     config *shm_cfg;
     int shm_id;
-    char *arg[] = {
-            PATH_NAVE,
-            NULL,
-    };
-
-    /*???????????????????????????????????????????????????????????????????????????????????????????*/
-    system("ls");
-    /*???????????????????????????????????????????????????????????????????????????????????????????*/
-
-    printf("PARENT KEY: %d", KEY_CONFIG);
+    int requests_id;
+    int paths_id;
+    pid_t *ships_pid;
+    pid_t *ports_pid;
+    int i = 0;
 
     if((shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), IPC_CREAT | IPC_EXCL | 0600)) < 0) {
         if(errno == EEXIST) {
             shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), 0600);
             shmctl(shm_id, IPC_RMID, NULL);
+            shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), IPC_CREAT | IPC_EXCL | 0600);
+        } else {
+            printf("Error during master->shmget() for config while checking for duplicates.\n");
+            exit(EXIT_FAILURE);
         }
+    }
 
-        printf("Error during master->shmget()");
-
+    /* Attach the shared memory segment and update cfg pointer */
+    if((shm_cfg = shmat(shm_id, NULL, 0)) == (void *) -1) {
+        printf("Error during master->shmat() for config.\n");
         exit(EXIT_FAILURE);
     }
 
-    if((shm_cfg = shmat(shm_id, NULL, 0)) == (void*) -1) {
-        perror("Error during master->shmat()");
-        exit(EXIT_FAILURE);
-    }
-
+    requests_id = initialize_message_queue(KEY_MQ_REQUESTS);
+    paths_id = initialize_message_queue(KEY_MQ_PATHS);
     initialize_so_vars(shm_cfg, PATH_CONFIG);
+
+    /* Array of pids for the children */
+    ships_pid = malloc(sizeof(pid_t) * shm_cfg->SO_NAVI);
+    ports_pid = malloc(sizeof(pid_t) * shm_cfg->SO_PORTI);
     print_config(shm_cfg);
 
 
     sa.sa_handler = master_sig_handler;
     sigaction(SIGINT, &sa, NULL);
 
-    system("ls");
-
-    if(!fork()) {
-        execv(PATH_NAVE, arg);
-        perror("execv has failed");
-        exit(EXIT_FAILURE);
-    }
+    create_ships(shm_cfg, ships_pid);
+    create_ports(shm_cfg, ports_pid);
+    /* TODO: When a child is killed, it should be removed from the array */
+    /* Can be handled with a signal handler */
 
     while (wait(NULL) > 0)
     {
         /* code */
+        /* che code? quelle per il dubai alle 13? */
     }
 
-    /*??????????????????????????????????????????????????????????????????????????????????????????????????????*/
+
     shmctl(shm_id, IPC_RMID, NULL);
-    /*??????????????????????????????????????????????????????????????????????????????????????????????????????*/
-
-    printf("Ho terminato!\n");
-
-
-    return 0;
+    msgctl(requests_id, IPC_RMID, NULL);
+    msgctl(paths_id, IPC_RMID, NULL);
+    free(ships_pid);
+    free(ports_pid);
 }
 
 void master_sig_handler(int signum) {
     switch (signum)
     {
+        /* Kill all processes and terminate when done. Save children PIDs to do that */
         case SIGINT:
-
             break;
-
         default:
             break;
     }

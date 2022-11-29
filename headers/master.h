@@ -16,6 +16,11 @@
 #include <time.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
+#include <sys/msg.h>
+#include <sys/stat.h>
 
 #define PATH_CONFIG     "config1.txt"
 #define PATH_CONFIG_2   "config2.txt"
@@ -69,6 +74,13 @@ typedef struct {
     double x;
     double y;
 } coord;
+
+void initialize_so_vars(config *cfg, char* path_cfg_file);
+void initialize_semaphores(int sem_id);
+int initialize_message_queue(int key);
+void create_ships(config *cfg, pid_t *ships);
+void create_ports(config *cfg, pid_t *ports);
+void create_weather();
 
 
 
