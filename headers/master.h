@@ -70,9 +70,6 @@ typedef struct {
     double y;
 } coord;
 
-extern const goods *goods_types;
-extern config cfg;
-
 
 
 #endif /*PROGETTOSO_MASTER_H*/

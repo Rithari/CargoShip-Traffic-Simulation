@@ -4,11 +4,12 @@
 
 #define BUFFER_SIZE 128
 
-const goods *goods_types;
-
 void master_sig_handler(int signum);
 
 void initialize_so_vars(config *cfg, char* path_cfg_file) {
+
+
+    /* Configuration file setup */
     FILE *fp;
     char buffer[BUFFER_SIZE];
 
@@ -28,6 +29,7 @@ void initialize_so_vars(config *cfg, char* path_cfg_file) {
         if(buffer[0] == '#') {
             continue;
         }
+
 
         if(sscanf(buffer, "SO_NAVI: %d", &cfg->SO_NAVI) == 1) {
             cfg->check |= 1;
@@ -86,6 +88,9 @@ void initialize_so_vars(config *cfg, char* path_cfg_file) {
         perror("SO_PORTI is less than 4");
         exit(EXIT_FAILURE);
     }
+
+
+
 }
 
 int main(int argc, char** argv) {
