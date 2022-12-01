@@ -51,8 +51,6 @@ int main(int argc, char** argv) {
     /* TODO: wait for ports to finish generating before generating ships.*/
     create_ports(shm_cfg, ports_pid);
     create_ships(shm_cfg, ships_pid);
-    /* TODO: When a child is killed, it should be "reborn" and its pid replaced in the array */
-    /* Can be handled with a signal handler */
 
     while (wait(NULL) > 0)
     {
@@ -204,9 +202,6 @@ int initialize_message_queue(int key) {
     return mq_id;
 }
 
-/* TODO: SIGALRM dopo SO_DAYS bisogna killare tutto, prima salvando tutti i dati per statistica */
-
-
 void master_sig_handler(int signum) {
     int i;
     int status;
@@ -221,8 +216,19 @@ void master_sig_handler(int signum) {
                 kill(ports_pid[i], SIGTERM);
             }
             break;
+        /* Still needs to deal with statistics first */
         case SIGALRM:
-
+            shm_cfg->CURRENT_DAY++;
+            /* Check SO_DAYS against the current day. If they're the same kill everything */
+            if(shm_cfg->SO_DAYS == shm_cfg->CURRENT_DAY) {
+                printf("Reached SO_DAYS, killing all processes.\n");
+                for(i = 0; i < shm_cfg->SO_NAVI; i++) {
+                    kill(ships_pid[i], SIGTERM);
+                }
+                for(i = 0; i < shm_cfg->SO_PORTI; i++) {
+                    kill(ports_pid[i], SIGTERM);
+                }
+            }
             break;
         case SIGCHLD:
             /* Waitpid to capture recently exited children's exit code */

@@ -44,6 +44,7 @@
 
 
 typedef struct {
+    int     CURRENT_DAY;
     int     SO_NAVI;
     int     SO_PORTI;
     int     SO_MERCI;
