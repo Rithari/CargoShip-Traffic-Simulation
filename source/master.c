@@ -11,7 +11,7 @@ pid_t *ports_pid;
 config *shm_cfg;
 
 
-int main(int argc, char** argv) {
+int main() {
     struct sigaction sa;
     int shm_id;
     int requests_id;
@@ -170,17 +170,51 @@ void create_ships(config *cfg, pid_t *ships) {
 
 void create_ports(config *cfg, pid_t *ports) {
     int i;
+    /* args array to save the two positional values */
+    char *args[3];
 
     /* TODO: Create the first 4 ports in the map's 4 corners */
+    /* Pass arguments to the port process to tell it where to create the port */
     for(i = 0; i < cfg->SO_PORTI; i++) {
         switch(ports[i] = fork()) {
             case -1:
                 perror("Error during: create_ports->fork()");
                 exit(EXIT_FAILURE);
             case 0:
-                execv(PATH_PORTO, NULL);
-                perror("execv has failed trying to run port");
-                exit(EXIT_FAILURE);
+                switch(i) {
+                    case 0:
+                        /* top left corner */
+                        args[0] = "0";
+                        sprintf(args[1], "%lf", shm_cfg->SO_LATO);
+                        execv(PATH_PORTO, args);
+                        perror("execv has failed trying to run port");
+                        exit(EXIT_FAILURE);
+                    case 1:
+                        /* top right corner */
+                        sprintf(args[0], "%lf", shm_cfg->SO_LATO);
+                        sprintf(args[1], "%lf", shm_cfg->SO_LATO);
+                        execv(PATH_PORTO, args);
+                        perror("execv has failed trying to run port");
+                        exit(EXIT_FAILURE);
+                    case 2:
+                        /* bottom left corner */
+                        args[0] = "0";
+                        args[1] = "0";
+                        execv(PATH_PORTO, args);
+                        perror("execv has failed trying to run port");
+                        exit(EXIT_FAILURE);
+                    case 3:
+                        /* bottom right corner */
+                        sprintf(args[0], "%lf", shm_cfg->SO_LATO);
+                        args[1] = "0";
+                        execv(PATH_PORTO, args);
+                        perror("execv has failed trying to run port");
+                        exit(EXIT_FAILURE);
+                    default:
+                        execv(PATH_PORTO, args);
+                        perror("execv has failed trying to run port");
+                        exit(EXIT_FAILURE);
+                }
             default:
                 break;
         }
