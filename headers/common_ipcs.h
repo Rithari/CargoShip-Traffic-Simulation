@@ -11,10 +11,5 @@
 #define KEY_MQ_PATHS    ftok(PATH_CONFIG, 0x03)
 #define KEY_GOODS_TON   ftok(PATH_CONFIG, 0x04)
 
-void
-/* Prototypes */
-int create_msg(int key, int flags);
-int create_shm(int key, int flags, size_t size);
-
 
 #endif /*PROGETTOSO_COMMON_IPCS_H*/
