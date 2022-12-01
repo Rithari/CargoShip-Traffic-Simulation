@@ -22,7 +22,7 @@ void move(config *cfg, coord destination) {
     /*distance / SO_SPEED*/
     double navigation_time = sqrt(dx * dx + dy * dy) / cfg->SO_SPEED;
 
-    printf("Navigation time: %f\n", navigation_time);
+    /* printf("Navigation time: %f\n", navigation_time); */
     ts.tv_sec = 0;
     ts.tv_nsec = 0;
 
@@ -34,7 +34,7 @@ void move(config *cfg, coord destination) {
             case EINTR:
                 clock_gettime(CLOCK_REALTIME, &start);
                 perror("nave.c");
-                /*TODO: aggiungere funzionalità*/
+                /* TODO: aggiungere funzionalità */
                 clock_gettime(CLOCK_REALTIME, &end);
                 timespec_sub(&end, &end, &start);
                 timespec_sub(&rem, &rem, &end);
@@ -55,7 +55,7 @@ int main(void) {
     struct sigaction sa;
     int shm_id;
 
-    printf("KEY_CONFIG: %d\n", KEY_CONFIG);
+    /* printf("KEY_CONFIG: %d\n", KEY_CONFIG); */
 
     if((shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), 0600)) < 0) {
         perror("Error during nave->shmget()");
