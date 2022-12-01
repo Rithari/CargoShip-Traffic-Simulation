@@ -16,7 +16,7 @@ Banchina: gestita come una risorsa condivisa protetta da un semaforo (n_docks)*/
 
 void porto_sig_handler(int);
 
-? porto_goodsOffers_generator();
+/* ? porto_goodsOffers_generator(); */
 
 int main(void) {
 
