@@ -26,6 +26,8 @@
 #define PATH_CONFIG_2   "config2.txt"
 #define PATH_CONFIG_3   "config3.txt"
 
+#define EXIT_DEATH      127
+
 #ifdef NDEBUG
 #define PATH_NAVE   "release/nave.out"
     #define PATH_PORTO  "release/porto.out"

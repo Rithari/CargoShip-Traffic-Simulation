@@ -6,9 +6,71 @@
 
 void master_sig_handler(int signum);
 
+pid_t *ships_pid;
+pid_t *ports_pid;
+config *shm_cfg;
+
+
+int main(int argc, char** argv) {
+    struct sigaction sa;
+    int shm_id;
+    int requests_id;
+    int paths_id;
+
+    if((shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), IPC_CREAT | IPC_EXCL | 0600)) < 0) {
+        if(errno == EEXIST) {
+            shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), 0600);
+            shmctl(shm_id, IPC_RMID, NULL);
+            shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), IPC_CREAT | IPC_EXCL | 0600);
+        } else {
+            printf("Error during master->shmget() for config while checking for duplicates.\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    /* Attach the shared memory segment and update cfg pointer */
+    if((shm_cfg = shmat(shm_id, NULL, 0)) == (void *) -1) {
+        printf("Error during master->shmat() for config.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    requests_id = initialize_message_queue(KEY_MQ_REQUESTS);
+    paths_id = initialize_message_queue(KEY_MQ_PATHS);
+    initialize_so_vars(shm_cfg, PATH_CONFIG);
+
+    /* Array of pids for the children */
+    ships_pid = malloc(sizeof(pid_t) * shm_cfg->SO_NAVI);
+    ports_pid = malloc(sizeof(pid_t) * shm_cfg->SO_PORTI);
+    print_config(shm_cfg);
+
+
+    sa.sa_handler = master_sig_handler;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGCHLD, &sa, NULL);
+
+    /* TODO: wait for ports to finish generating before generating ships.*/
+    create_ports(shm_cfg, ports_pid);
+    create_ships(shm_cfg, ships_pid);
+    /* TODO: When a child is killed, it should be "reborn" and its pid replaced in the array */
+    /* Can be handled with a signal handler */
+
+    while (wait(NULL) > 0)
+    {
+        /* code */
+        /* che code? quelle per il dubai alle 13? */
+    }
+
+
+    /* You only get here when SO_DAYS have passed and all processes are killed */
+    shmctl(shm_id, IPC_RMID, NULL);
+    msgctl(requests_id, IPC_RMID, NULL);
+    msgctl(paths_id, IPC_RMID, NULL);
+
+    free(ships_pid);
+    free(ports_pid);
+}
+
 void initialize_so_vars(config *cfg, char* path_cfg_file) {
-
-
     /* Configuration file setup */
     FILE *fp;
     char buffer[BUFFER_SIZE];
@@ -92,10 +154,6 @@ void initialize_so_vars(config *cfg, char* path_cfg_file) {
 
 void create_ships(config *cfg, pid_t *ships) {
     int i;
-    char *arg[] = {
-            PATH_NAVE,
-            NULL,
-    };
 
     for(i = 0; i < cfg->SO_NAVI; i++) {
         switch(ships[i] = fork()) {
@@ -103,7 +161,7 @@ void create_ships(config *cfg, pid_t *ships) {
                 perror("Error during: create_ships->fork()");
                 exit(EXIT_FAILURE);
             case 0:
-                execv(PATH_NAVE, arg);
+                execv(PATH_NAVE, NULL);
                 perror("execv has failed trying to run the ship");
                 exit(EXIT_FAILURE);
             default:
@@ -114,18 +172,15 @@ void create_ships(config *cfg, pid_t *ships) {
 
 void create_ports(config *cfg, pid_t *ports) {
     int i;
-    char *arg[] = {
-            PATH_PORTO,
-            NULL,
-    };
 
+    /* TODO: Create the first 4 ports in the map's 4 corners */
     for(i = 0; i < cfg->SO_PORTI; i++) {
         switch(ports[i] = fork()) {
             case -1:
                 perror("Error during: create_ports->fork()");
                 exit(EXIT_FAILURE);
             case 0:
-                execv(PATH_PORTO, arg);
+                execv(PATH_PORTO, NULL);
                 perror("execv has failed trying to run port");
                 exit(EXIT_FAILURE);
             default:
@@ -136,84 +191,67 @@ void create_ports(config *cfg, pid_t *ports) {
 
 int initialize_message_queue(int key) {
     int mq_id;
-    if((mq_id = msgget(key, IPC_CREAT | 0666)) < 0) {
+    if((mq_id = msgget(key, IPC_CREAT | IPC_EXCL | 0666)) < 0) {
         if (errno == EEXIST) {
             mq_id = msgget(key, 0666);
             msgctl(mq_id, IPC_RMID, NULL);
-            mq_id = msgget(key, 0666);
+            mq_id = msgget(key, IPC_CREAT | IPC_EXCL | 0666);
         } else {
             printf("error during initialization of message queue\n");
             exit(EXIT_FAILURE);
         }
     }
-
     return mq_id;
 }
 
-int main(int argc, char** argv) {
-    struct sigaction sa;
-    config *shm_cfg;
-    int shm_id;
-    int requests_id;
-    int paths_id;
-    pid_t *ships_pid;
-    pid_t *ports_pid;
-    int i = 0;
+/* TODO: SIGALRM dopo SO_DAYS bisogna killare tutto, prima salvando tutti i dati per statistica */
 
-    if((shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), IPC_CREAT | IPC_EXCL | 0600)) < 0) {
-        if(errno == EEXIST) {
-            shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), 0600);
-            shmctl(shm_id, IPC_RMID, NULL);
-            shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), IPC_CREAT | IPC_EXCL | 0600);
-        } else {
-            printf("Error during master->shmget() for config while checking for duplicates.\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    /* Attach the shared memory segment and update cfg pointer */
-    if((shm_cfg = shmat(shm_id, NULL, 0)) == (void *) -1) {
-        printf("Error during master->shmat() for config.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    requests_id = initialize_message_queue(KEY_MQ_REQUESTS);
-    paths_id = initialize_message_queue(KEY_MQ_PATHS);
-    initialize_so_vars(shm_cfg, PATH_CONFIG);
-
-    /* Array of pids for the children */
-    ships_pid = malloc(sizeof(pid_t) * shm_cfg->SO_NAVI);
-    ports_pid = malloc(sizeof(pid_t) * shm_cfg->SO_PORTI);
-    print_config(shm_cfg);
-
-
-    sa.sa_handler = master_sig_handler;
-    sigaction(SIGINT, &sa, NULL);
-
-    create_ships(shm_cfg, ships_pid);
-    create_ports(shm_cfg, ports_pid);
-    /* TODO: When a child is killed, it should be removed from the array */
-    /* Can be handled with a signal handler */
-
-    while (wait(NULL) > 0)
-    {
-        /* code */
-        /* che code? quelle per il dubai alle 13? */
-    }
-
-
-    shmctl(shm_id, IPC_RMID, NULL);
-    msgctl(requests_id, IPC_RMID, NULL);
-    msgctl(paths_id, IPC_RMID, NULL);
-    free(ships_pid);
-    free(ports_pid);
-}
 
 void master_sig_handler(int signum) {
-    switch (signum)
-    {
-        /* Kill all processes and terminate when done. Save children PIDs to do that */
+    int i;
+    int status;
+    pid_t killed_id;
+    switch(signum) {
         case SIGINT:
+            printf("SIGINT received, killing all processes.\n");
+            for(i = 0; i < shm_cfg->SO_NAVI; i++) {
+                kill(ships_pid[i], SIGTERM);
+            }
+            for(i = 0; i < shm_cfg->SO_PORTI; i++) {
+                kill(ports_pid[i], SIGTERM);
+            }
+            break;
+        case SIGALRM:
+
+            break;
+        case SIGCHLD:
+            /* Waitpid to capture recently exited children's exit code */
+            while((killed_id = waitpid(-1, &status, 0)) > 0) {
+                printf("Child has exited with status %d\n", WEXITSTATUS(status));
+                if(WEXITSTATUS(status) == EXIT_DEATH) {
+                    pid_t replacement_id;
+                    printf("A ship has died. Restarting it and replacing its PID in the array.\n");
+
+                    switch(replacement_id = fork()) {
+                        case -1:
+                            perror("Error during: master_sig_handler->fork()");
+                            exit(EXIT_FAILURE);
+                        case 0:
+                            /* Find killed_id in the array and replace it with the new one */
+                            for(i = 0; i < shm_cfg->SO_NAVI; i++) {
+                                if(ships_pid[i] == killed_id) {
+                                    ships_pid[i] = replacement_id;
+                                    break;
+                                }
+                            }
+                            execv(PATH_NAVE, NULL);
+                            perror("execv has failed trying to run the ship");
+                            exit(EXIT_FAILURE);
+                        default:
+                            break;
+                    }
+                }
+            }
             break;
         default:
             break;

@@ -12,9 +12,4 @@
 #define KEY_GOODS_TON   ftok(PATH_CONFIG, 0x04)
 
 
-/* Prototypes */
-int create_msg(int key, int flags);
-int create_shm(int key, int flags, size_t size);
-
-
 #endif /*PROGETTOSO_COMMON_IPCS_H*/
