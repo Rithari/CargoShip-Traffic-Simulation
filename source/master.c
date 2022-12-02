@@ -11,7 +11,7 @@ pid_t *ports_pid;
 config *shm_cfg;
 
 
-int main() {
+int main(void) {
     struct sigaction sa;
     int shm_id;
     int requests_id;
@@ -267,7 +267,6 @@ void master_sig_handler(int signum) {
         case SIGCHLD:
             /* Waitpid to capture recently exited children's exit code */
             while((killed_id = waitpid(-1, &status, 0)) > 0) {
-                printf("Child has exited with status %d\n", WEXITSTATUS(status));
                 if(WEXITSTATUS(status) == EXIT_DEATH) {
                     pid_t replacement_id;
                     printf("A ship has died. Restarting it and replacing its PID in the array.\n");

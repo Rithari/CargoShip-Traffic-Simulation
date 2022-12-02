@@ -52,6 +52,5 @@ int main(int argc, char *argv[]) {
     /* n_ docks dovranno essere gestite come risorsa condivisa protetta da un semaforo */
 
 
-
     return 0;
 }

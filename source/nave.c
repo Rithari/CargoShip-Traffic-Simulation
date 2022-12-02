@@ -20,9 +20,9 @@ void move(config *cfg, coord destination) {
     double dy = destination.y - actual_coordinate.y;
 
     /*distance / SO_SPEED*/
-    double navigation_time = sqrt(dx * dx + dy * dy) / cfg->SO_SPEED;
+    /* double navigation_time = sqrt(dx * dx + dy * dy) / cfg->SO_SPEED; +/
 
-    /* printf("Navigation time: %f\n", navigation_time); */
+    printf("Navigation time: %f\n", navigation_time); */
     ts.tv_sec = 0;
     ts.tv_nsec = 0;
 
