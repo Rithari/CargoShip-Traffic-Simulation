@@ -16,6 +16,7 @@ int paths_id;
 
 int main(void) {
     struct sigaction sa;
+    int i;
 
     if((shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), IPC_CREAT | IPC_EXCL | 0600)) < 0) {
         if(errno == EEXIST) {
@@ -45,16 +46,17 @@ int main(void) {
 
 
     sa.sa_handler = master_sig_handler;
+    sa.sa_flags = SA_RESTART;
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGCHLD, &sa, NULL);
     sigaction(SIGALRM, &sa, NULL);
 
     /* TODO: wait for ports to finish generating before generating ships.*/
-    create_ports(shm_cfg, ports_pid);
-    /* create_ships(shm_cfg, ships_pid); */
+    create_ports(shm_cfg);
+    create_ships(shm_cfg);
 
     alarm(1);
-    while(wait(NULL) > 0) {
+    while(waitpid(-1, NULL, 0) > 0) {
         switch (errno) {
             case EINTR:
                 printf("I'm in eintr.");
@@ -163,11 +165,11 @@ void initialize_so_vars(config *cfg, char* path_cfg_file) {
     }
 }
 
-void create_ships(config *cfg, pid_t *ships) {
+void create_ships(config *cfg) {
     int i;
 
     for(i = 0; i < cfg->SO_NAVI; i++) {
-        switch(ships[i] = fork()) {
+        switch(ships_pid[i] = fork()) {
             case -1:
                 perror("Error during: create_ships->fork()");
                 exit(EXIT_FAILURE);
@@ -181,12 +183,9 @@ void create_ships(config *cfg, pid_t *ships) {
     }
 }
 
-void create_ports(config *cfg, pid_t *ports) {
+void create_ports(config *cfg) {
     int i, j;
-    /* args array to save the two positional values */
-    char *args[3] = {"NULL", "NULL", NULL};
     char s_x[BUFFER_SIZE], s_y[BUFFER_SIZE];
-
     coord *ports_coords = malloc(sizeof(*ports_coords) * cfg->SO_PORTI);
 
     ports_coords[0].x = 0;
@@ -199,8 +198,8 @@ void create_ports(config *cfg, pid_t *ports) {
     ports_coords[3].y = cfg->SO_LATO;
 
     for(i = 4; i < cfg->SO_PORTI; i++) {
-        double rndx = (double) rand() / RAND_MAX * cfg->SO_LATO;
-        double rndy = (double) rand() / RAND_MAX * cfg->SO_LATO;
+        double rndx = (double) random() / RAND_MAX * cfg->SO_LATO;
+        double rndy = (double) random() / RAND_MAX * cfg->SO_LATO;
 
         for(j = 0; j < i; j++) {
             if(ports_coords[j].x == rndx && ports_coords[j].y == rndy) {
@@ -215,7 +214,7 @@ void create_ports(config *cfg, pid_t *ports) {
     /* TODO: Create the first 4 ports in the map's 4 corners */
     /* Pass arguments to the port process to tell it where to create the port */
     for(i = 0; i < cfg->SO_PORTI; i++) {
-        switch(ports[i] = fork()) {
+        switch(ports_pid[i] = fork()) {
             case -1:
                 perror("Error during: create_ports->fork()");
                 exit(EXIT_FAILURE);
@@ -233,11 +232,11 @@ void create_ports(config *cfg, pid_t *ports) {
 
 int initialize_message_queue(int key) {
     int mq_id;
-    if((mq_id = msgget(key, IPC_CREAT | IPC_EXCL | 0666)) < 0) {
+    if((mq_id = msgget(key, IPC_CREAT | IPC_EXCL | 0600)) < 0) {
         if (errno == EEXIST) {
-            mq_id = msgget(key, 0666);
+            mq_id = msgget(key, 0600);
             msgctl(mq_id, IPC_RMID, NULL);
-            mq_id = msgget(key, IPC_CREAT | IPC_EXCL | 0666);
+            mq_id = msgget(key, IPC_CREAT | IPC_EXCL | 0600);
         } else {
             printf("error during initialization of message queue\n");
             exit(EXIT_FAILURE);
@@ -253,7 +252,6 @@ void master_sig_handler(int signum) {
     pid_t killed_id;
 
     switch(signum) {
-
         case SIGTERM:
         case SIGINT:
             printf("SIGINT received, killing all processes.\n");
@@ -268,8 +266,9 @@ void master_sig_handler(int signum) {
         /* Still needs to deal with statistics first */
         case SIGALRM:
             /* Remota possibilità di concorrenza in shm_cfg->CURRENT_DAY */
-            printf("A day has passed...\n");
             shm_cfg->CURRENT_DAY++;
+            printf("Day [%d]/[%d].\n", shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
+
             /* Check SO_DAYS against the current day. If they're the same kill everything */
             if(shm_cfg->SO_DAYS == shm_cfg->CURRENT_DAY) {
                 printf("Reached SO_DAYS, killing all processes.\n");
@@ -278,6 +277,13 @@ void master_sig_handler(int signum) {
                 }
                 for(i = 0; i < shm_cfg->SO_PORTI; i++) {
                     kill(ports_pid[i], SIGTERM);
+                }
+            } else {
+                for(i = 0; i < shm_cfg->SO_NAVI; i++) {
+                    kill(ships_pid[i], SIGALRM);
+                }
+                for(i = 0; i < shm_cfg->SO_PORTI; i++) {
+                    kill(ports_pid[i], SIGALRM);
                 }
             }
             alarm(1);
