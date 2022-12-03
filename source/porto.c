@@ -19,7 +19,7 @@ void porto_sig_handler(int);
 /* ? porto_goodsOffers_generator(); */
 
 int main(int argc, char *argv[]) {
-    double pos[2];
+    coord actual_coordinate;
     config *shm_cfg;
     int shm_id;
     long n_docks;
@@ -28,14 +28,14 @@ int main(int argc, char *argv[]) {
 
     if(argc != 2) {
         /* random position */
-        pos[0] = (double)random() / RAND_MAX;
-        pos[1] = (double)random() / RAND_MAX;
+        printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
+        exit(EXIT_FAILURE);
     }
-    else {
-        /* position from command line */
-        pos[0] = strtod(argv[1], NULL);
-        pos[1] = strtod(argv[2], NULL);
-    }
+    /* position from command line */
+    actual_coordinate.x = strtod(argv[0], NULL);
+    actual_coordinate.y = strtod(argv[1], NULL);
+
+    printf("[%d] coord.x: %lf\tcoord.y: %lf\n", getpid(), actual_coordinate.x, actual_coordinate.y);
 
     if((shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), 0600)) < 0) {
         perror("Error during porto->shmget()");
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    n_docks = random()%(shm_cfg->SO_BANCHINE)+1 ;
+    n_docks = random() % (shm_cfg->SO_BANCHINE) + 1;
     printf("Il porto: %d, ha: %ld banchine\n", getpid(), n_docks);
     /* n_ docks dovranno essere gestite come risorsa condivisa protetta da un semaforo */
 

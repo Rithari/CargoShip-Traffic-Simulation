@@ -51,13 +51,16 @@ int main(void) {
 
     /* TODO: wait for ports to finish generating before generating ships.*/
     create_ports(shm_cfg, ports_pid);
-    create_ships(shm_cfg, ships_pid);
+    /* create_ships(shm_cfg, ships_pid); */
 
     alarm(1);
     while(wait(NULL) > 0) {
         switch (errno) {
             case EINTR:
+                printf("I'm in eintr.");
                 continue;
+            default:
+                perror("switch wait");
         }
     }
 
@@ -174,9 +177,35 @@ void create_ships(config *cfg, pid_t *ships) {
 }
 
 void create_ports(config *cfg, pid_t *ports) {
-    int i;
+    int i, j;
     /* args array to save the two positional values */
-    char *args[3] = {"NULL", "NULL", (char*)0};
+    char *args[3] = {"NULL", "NULL", NULL};
+    char s_x[BUFFER_SIZE], s_y[BUFFER_SIZE];
+
+    coord *ports_coords = malloc(sizeof(*ports_coords) * cfg->SO_PORTI);
+
+    ports_coords[0].x = 0;
+    ports_coords[0].y = 0;
+    ports_coords[1].x = cfg->SO_LATO;
+    ports_coords[1].y = 0;
+    ports_coords[2].x = cfg->SO_LATO;
+    ports_coords[2].y = cfg->SO_LATO;
+    ports_coords[3].x = 0;
+    ports_coords[3].y = cfg->SO_LATO;
+
+    for(i = 4; i < cfg->SO_PORTI; i++) {
+        double rndx = (double) rand() / RAND_MAX * cfg->SO_LATO;
+        double rndy = (double) rand() / RAND_MAX * cfg->SO_LATO;
+
+        for(j = 0; j < i; j++) {
+            if(ports_coords[j].x == rndx && ports_coords[j].y == rndy) {
+                i--;
+            } else {
+                ports_coords[i].x = rndx;
+                ports_coords[i].y = rndy;
+            }
+        }
+    }
 
     /* TODO: Create the first 4 ports in the map's 4 corners */
     /* Pass arguments to the port process to tell it where to create the port */
@@ -186,44 +215,11 @@ void create_ports(config *cfg, pid_t *ports) {
                 perror("Error during: create_ports->fork()");
                 exit(EXIT_FAILURE);
             case 0:
-                switch(i) {
-                    case 0:
-                        /* top left corner */
-                        args[0] = 0;
-                        sprintf(args[1], "%lf", cfg->SO_LATO);
-
-                        execv(PATH_PORTO, args);
-                        perror("execv has failed trying to run port");
-                        exit(EXIT_FAILURE);
-                    case 1:
-                        /* top right corner */
-                        sprintf(args[0], "%lf", cfg->SO_LATO);
-                        sprintf(args[1], "%lf", cfg->SO_LATO);
-
-                        execv(PATH_PORTO, args);
-                        perror("execv has failed trying to run port");
-                        exit(EXIT_FAILURE);
-                    case 2:
-                        /* bottom left corner */
-                        args[0] = 0;
-                        args[1] = 0;
-
-                        execv(PATH_PORTO, args);
-                        perror("execv has failed trying to run port");
-                        exit(EXIT_FAILURE);
-                    case 3:
-                        /* bottom right corner */
-                        sprintf(args[0], "%lf", cfg->SO_LATO);
-                        args[1] = 0;
-
-                        execv(PATH_PORTO, args);
-                        perror("execv has failed trying to run port");
-                        exit(EXIT_FAILURE);
-                    default:
-                        execv(PATH_PORTO, NULL);
-                        perror("execv has failed trying to run port");
-                        exit(EXIT_FAILURE);
-                }
+                snprintf(s_x, BUFFER_SIZE, "%lf", ports_coords[i].x);
+                snprintf(s_y, BUFFER_SIZE, "%lf", ports_coords[i].y);
+                execl(PATH_PORTO, s_x, s_y, NULL);
+                perror("execv has failed trying to run port");
+                exit(EXIT_FAILURE);
             default:
                 break;
         }
@@ -246,9 +242,11 @@ int initialize_message_queue(int key) {
 }
 
 void master_sig_handler(int signum) {
+    int old_errno = errno;
     int i;
     int status;
     pid_t killed_id;
+
     switch(signum) {
         case SIGINT:
             printf("SIGINT received, killing all processes.\n");
@@ -261,6 +259,7 @@ void master_sig_handler(int signum) {
             break;
         /* Still needs to deal with statistics first */
         case SIGALRM:
+            /* Remota possibilità di concorrenza in shm_cfg->CURRENT_DAY */
             printf("A day has passed...\n");
             shm_cfg->CURRENT_DAY++;
             /* Check SO_DAYS against the current day. If they're the same kill everything */
@@ -306,4 +305,5 @@ void master_sig_handler(int signum) {
         default:
             break;
     }
+    errno = old_errno;
 }

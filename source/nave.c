@@ -70,6 +70,7 @@ int main(void) {
     }
 
     sleep(1);
+    printf("[%d] Generated ship with\n", getpid());
 
     actual_capacity = 0;
     actual_coordinate.x = 0;
