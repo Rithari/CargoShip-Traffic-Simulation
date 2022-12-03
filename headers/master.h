@@ -70,8 +70,19 @@ typedef struct {
     int id;
     int ton;
     int lifespan;
-} goods;
+} goodsOffers;
 
+typedef struct {
+    int id;
+    int ton;
+    pid_t affiliatied;
+} goodsRequests;
+
+
+typedef struct {
+    goodsOffers current;
+    goodsOffers next;
+} goodsList;
 
 typedef struct {
     double x;
