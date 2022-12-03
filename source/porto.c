@@ -12,17 +12,22 @@ Funzione/i per la creazione di tratte()
 Funzione/i per la comunicazione con le queue()
 Banchina: gestita come una risorsa condivisa protetta da un semaforo (n_docks)*/
 
-
-
 void porto_sig_handler(int);
+
+config *shm_cfg;
 
 /* ? porto_goodsOffers_generator(); */
 
 int main(int argc, char *argv[]) {
     coord actual_coordinate;
-    config *shm_cfg;
     int shm_id;
     long n_docks;
+    struct sigaction sa;
+
+    sa.sa_handler = porto_sig_handler;
+
+    sigaction(SIGALRM, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
 
     srandom(getpid());
 
@@ -52,5 +57,19 @@ int main(int argc, char *argv[]) {
     /* n_ docks dovranno essere gestite come risorsa condivisa protetta da un semaforo */
 
 
+    while (1) {
+        /* Codice del porto da eseguire */
+    }
+
     return 0;
+}
+
+void porto_sig_handler(int signum) {
+    switch (signum) {
+        case SIGINT:
+            exit(EXIT_FAILURE);
+        case SIGALRM:
+            printf("PORTO\n");
+            break;
+    }
 }

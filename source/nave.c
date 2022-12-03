@@ -12,6 +12,11 @@ void nave_sig_handler(int);
 int actual_capacity;
 coord actual_coordinate;
 
+void print_time(struct timespec *ts) {
+    printf("SECONDS:            %ld\n", ts->tv_sec);
+    printf("NANOSECONDS:        %ld\n", ts->tv_nsec);
+}
+
 void move(config *cfg, coord destination) {
     struct timespec ts, rem;
     struct timespec start, end;
@@ -20,11 +25,14 @@ void move(config *cfg, coord destination) {
     double dy = destination.y - actual_coordinate.y;
 
     /*distance / SO_SPEED*/
-    /* double navigation_time = sqrt(dx * dx + dy * dy) / cfg->SO_SPEED; +/
+    double navigation_time = sqrt(dx * dx + dy * dy) / cfg->SO_SPEED;
 
-    printf("Navigation time: %f\n", navigation_time); */
-    ts.tv_sec = 0;
-    ts.tv_nsec = 0;
+    printf("Navigation time: %f\n", navigation_time);
+
+
+
+    ts.tv_sec = (long) navigation_time;
+    ts.tv_nsec = (navigation_time - ts.tv_sec) * 1000000000;
 
     while (nanosleep(&ts, &rem) && errno != EINVAL) {
         switch (errno) {
@@ -32,20 +40,25 @@ void move(config *cfg, coord destination) {
                 perror("nave.c: Problem with copying information from user space.");
                 exit(EXIT_FAILURE);
             case EINTR:
-                clock_gettime(CLOCK_REALTIME, &start);
+
                 perror("nave.c");
                 /* TODO: aggiungere funzionalità */
-                clock_gettime(CLOCK_REALTIME, &end);
-                timespec_sub(&end, &end, &start);
-                timespec_sub(&rem, &rem, &end);
+                /*
+                 *  clock_gettime(CLOCK_REALTIME, &start);
+                    clock_gettime(CLOCK_REALTIME, &end);
+                    timespec_sub(&end, &end, &start);
+                    timespec_sub(&rem, &rem, &end);
+                 * */
                 ts = rem;
+                print_time(&ts);
                 continue;
             default:
                 perror("Generic error in nave.c");
                 exit(EXIT_FAILURE);
         }
     }
-
+    printf("Moved form [%lf, %lf] to [%lf, %lf].\n\n", actual_coordinate.x, actual_coordinate.y, destination.x, destination.y);
+    fflush(stdout);
     actual_coordinate = destination;
 }
 
@@ -54,6 +67,7 @@ int main(void) {
     coord c;
     struct sigaction sa;
     int shm_id;
+    srandom(getpid());
 
     /* printf("KEY_CONFIG: %d\n", KEY_CONFIG); */
 
@@ -69,26 +83,36 @@ int main(void) {
         exit(EXIT_FAILURE);
     }
 
-    sleep(1);
-    printf("[%d] Generated ship with\n", getpid());
+    actual_coordinate.x = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+    actual_coordinate.y = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+
+    /*printf("[%d] Generated ship.\n", getpid());*/
 
     actual_capacity = 0;
     actual_coordinate.x = 0;
     actual_coordinate.y = 0;
     sa.sa_handler = nave_sig_handler;
+    sa.sa_flags = SA_RESTART;
 
-    sigaction(SIGTERM, &sa, NULL);
-
-    c.x = 1000;
-    c.y = 1000;
-
-    move(shm_cfg, c);
+    sigaction(SIGALRM, &sa, NULL);
 
     /* TODO: The ship can't exit on its own, it has to be killed by the master or weather */
     /* So make it wait for input */
 
+    while (1) {
+        c.x = (double) random() / RAND_MAX *  shm_cfg->SO_LATO;
+        c.y = (double) random() / RAND_MAX *  shm_cfg->SO_LATO;
+        move(shm_cfg, c);
+    }
+
 }
 
-void nave_sig_handler(int sigsum) {
-    sigsum++;
+void nave_sig_handler(int signum) {
+    switch (signum) {
+        case SIGALRM:
+            printf("NAVE\n");
+            break;
+        default:
+            printf("SIUM\n");
+    }
 }
