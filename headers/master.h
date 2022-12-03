@@ -3,6 +3,7 @@
 
 #define _POSIX_C_SOURCE 199309L
 #define _GNU_SOURCE
+#define _DARWIN_C_SOURCE
 
 #include <sys/types.h>
 #include <sys/wait.h>
