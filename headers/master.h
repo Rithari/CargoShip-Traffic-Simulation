@@ -84,6 +84,7 @@ int initialize_message_queue(int key);
 void create_ships(config *cfg, pid_t *ships);
 void create_ports(config *cfg, pid_t *ports);
 void create_weather(void);
+void detach_all(void);
 
 
 

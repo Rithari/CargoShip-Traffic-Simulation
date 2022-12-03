@@ -9,13 +9,13 @@ void master_sig_handler(int signum);
 pid_t *ships_pid;
 pid_t *ports_pid;
 config *shm_cfg;
+int shm_id;
+int requests_id;
+int paths_id;
 
 
 int main(void) {
     struct sigaction sa;
-    int shm_id;
-    int requests_id;
-    int paths_id;
 
     if((shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), IPC_CREAT | IPC_EXCL | 0600)) < 0) {
         if(errno == EEXIST) {
@@ -64,8 +64,13 @@ int main(void) {
         }
     }
 
-
     /* You only get here when SO_DAYS have passed and all processes are killed */
+    detach_all();
+    return 0;
+}
+
+
+void detach_all(void) {
     shmctl(shm_id, IPC_RMID, NULL);
     msgctl(requests_id, IPC_RMID, NULL);
     msgctl(paths_id, IPC_RMID, NULL);
@@ -248,6 +253,8 @@ void master_sig_handler(int signum) {
     pid_t killed_id;
 
     switch(signum) {
+
+        case SIGTERM:
         case SIGINT:
             printf("SIGINT received, killing all processes.\n");
             for(i = 0; i < shm_cfg->SO_NAVI; i++) {
@@ -256,7 +263,8 @@ void master_sig_handler(int signum) {
             for(i = 0; i < shm_cfg->SO_PORTI; i++) {
                 kill(ports_pid[i], SIGTERM);
             }
-            break;
+            detach_all();
+            exit(EXIT_FAILURE);
         /* Still needs to deal with statistics first */
         case SIGALRM:
             /* Remota possibilità di concorrenza in shm_cfg->CURRENT_DAY */
