@@ -57,6 +57,8 @@ int main(void) {
 
     /* printf("KEY_CONFIG: %d\n", KEY_CONFIG); */
 
+    /* TODO: Attach to message queues */
+
     if((shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), 0600)) < 0) {
         perror("Error during nave->shmget()");
         exit(EXIT_FAILURE);
@@ -67,7 +69,7 @@ int main(void) {
         exit(EXIT_FAILURE);
     }
 
-    sleep(5);
+    sleep(1);
 
     actual_capacity = 0;
     actual_coordinate.x = 0;
@@ -81,7 +83,9 @@ int main(void) {
 
     move(shm_cfg, c);
 
-    return 0;
+    /* TODO: The ship can't exit on its own, it has to be killed by the master or weather */
+    /* So make it wait for input */
+
 }
 
 void nave_sig_handler(int sigsum) {

@@ -47,15 +47,18 @@ int main(void) {
     sa.sa_handler = master_sig_handler;
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGCHLD, &sa, NULL);
+    sigaction(SIGALRM, &sa, NULL);
 
     /* TODO: wait for ports to finish generating before generating ships.*/
     create_ports(shm_cfg, ports_pid);
     create_ships(shm_cfg, ships_pid);
 
-    while (wait(NULL) > 0)
-    {
-        /* code */
-        /* che code? quelle per il dubai alle 13? */
+    alarm(1);
+    while(wait(NULL) > 0) {
+        switch (errno) {
+            case EINTR:
+                continue;
+        }
     }
 
 
@@ -131,6 +134,8 @@ void initialize_so_vars(config *cfg, char* path_cfg_file) {
     }
     fclose(fp);
 
+    cfg->CURRENT_DAY = 0;
+
     if(cfg->check != 0x3FFFF) {
         errno = EINVAL;
         perror("Missing config");
@@ -171,7 +176,7 @@ void create_ships(config *cfg, pid_t *ships) {
 void create_ports(config *cfg, pid_t *ports) {
     int i;
     /* args array to save the two positional values */
-    char *args[3];
+    char *args[3] = {"NULL", "NULL", (char*)0};
 
     /* TODO: Create the first 4 ports in the map's 4 corners */
     /* Pass arguments to the port process to tell it where to create the port */
@@ -184,34 +189,38 @@ void create_ports(config *cfg, pid_t *ports) {
                 switch(i) {
                     case 0:
                         /* top left corner */
-                        args[0] = "0";
-                        sprintf(args[1], "%lf", shm_cfg->SO_LATO);
+                        args[0] = 0;
+                        sprintf(args[1], "%lf", cfg->SO_LATO);
+
                         execv(PATH_PORTO, args);
                         perror("execv has failed trying to run port");
                         exit(EXIT_FAILURE);
                     case 1:
                         /* top right corner */
-                        sprintf(args[0], "%lf", shm_cfg->SO_LATO);
-                        sprintf(args[1], "%lf", shm_cfg->SO_LATO);
+                        sprintf(args[0], "%lf", cfg->SO_LATO);
+                        sprintf(args[1], "%lf", cfg->SO_LATO);
+
                         execv(PATH_PORTO, args);
                         perror("execv has failed trying to run port");
                         exit(EXIT_FAILURE);
                     case 2:
                         /* bottom left corner */
-                        args[0] = "0";
-                        args[1] = "0";
+                        args[0] = 0;
+                        args[1] = 0;
+
                         execv(PATH_PORTO, args);
                         perror("execv has failed trying to run port");
                         exit(EXIT_FAILURE);
                     case 3:
                         /* bottom right corner */
-                        sprintf(args[0], "%lf", shm_cfg->SO_LATO);
-                        args[1] = "0";
+                        sprintf(args[0], "%lf", cfg->SO_LATO);
+                        args[1] = 0;
+
                         execv(PATH_PORTO, args);
                         perror("execv has failed trying to run port");
                         exit(EXIT_FAILURE);
                     default:
-                        execv(PATH_PORTO, args);
+                        execv(PATH_PORTO, NULL);
                         perror("execv has failed trying to run port");
                         exit(EXIT_FAILURE);
                 }
@@ -252,6 +261,7 @@ void master_sig_handler(int signum) {
             break;
         /* Still needs to deal with statistics first */
         case SIGALRM:
+            printf("A day has passed...\n");
             shm_cfg->CURRENT_DAY++;
             /* Check SO_DAYS against the current day. If they're the same kill everything */
             if(shm_cfg->SO_DAYS == shm_cfg->CURRENT_DAY) {
@@ -263,6 +273,7 @@ void master_sig_handler(int signum) {
                     kill(ports_pid[i], SIGTERM);
                 }
             }
+            alarm(1);
             break;
         case SIGCHLD:
             /* Waitpid to capture recently exited children's exit code */
