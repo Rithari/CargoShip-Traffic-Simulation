@@ -71,7 +71,6 @@ int main(void) {
     return 0;
 }
 
-
 void detach_all(void) {
     shmctl(shm_id, IPC_RMID, NULL);
     msgctl(requests_id, IPC_RMID, NULL);

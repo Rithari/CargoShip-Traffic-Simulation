@@ -15,18 +15,22 @@ Banchina: gestita come una risorsa condivisa protetta da un semaforo (n_docks)*/
 void porto_sig_handler(int);
 
 config *shm_cfg;
+int sem_id;
 
 /* ? porto_goodsOffers_generator(); */
 
 int main(int argc, char *argv[]) {
     coord actual_coordinate;
     int shm_id;
-    long n_docks;
+    int n_docks;
     struct sigaction sa;
+    int key = KEY_SEM + getpid();
+
 
     sa.sa_handler = porto_sig_handler;
-
+    sa.sa_flags = SA_RESTART;
     sigaction(SIGALRM, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
 
     srandom(getpid());
@@ -36,6 +40,7 @@ int main(int argc, char *argv[]) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
         exit(EXIT_FAILURE);
     }
+
     /* position from command line */
     actual_coordinate.x = strtod(argv[0], NULL);
     actual_coordinate.y = strtod(argv[1], NULL);
@@ -53,7 +58,7 @@ int main(int argc, char *argv[]) {
     }
 
     n_docks = random() % (shm_cfg->SO_BANCHINE) + 1;
-    printf("Il porto: %d, ha: %ld banchine\n", getpid(), n_docks);
+    sem_id = initialize_semaphore(key, n_docks);
     /* n_ docks dovranno essere gestite come risorsa condivisa protetta da un semaforo */
 
 
@@ -63,13 +68,34 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+/* Semaphore initialization */
+int initialize_semaphore(int key, int n_semaphores) {
+    int id;
+    if ((id = semget(key, n_semaphores, IPC_CREAT | IPC_EXCL | 0600)) < 0 ) {
+        if(errno == EEXIST) {
+            printf("Semaphore already exists. Trying to get it...\n");
+            id = semget(key, n_semaphores, 0600);
+            semctl(id, 0, IPC_RMID);
+            id = semget(key, n_semaphores, IPC_CREAT | IPC_EXCL | 0600);
+            printf("Semaphore created with id: %d", id);
+        } else {
+            printf("Error during semget() initialization. Exiting...\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+    return id;
+}
 
 void porto_sig_handler(int signum) {
     switch (signum) {
+        case SIGTERM:
         case SIGINT:
+            semctl(sem_id, 0, IPC_RMID);
             exit(EXIT_FAILURE);
         case SIGALRM:
             printf("PORTO\n");
+            break;
+        default:
             break;
     }
 }

@@ -79,14 +79,11 @@ typedef struct {
     double y;
 } coord;
 
+/* master.c */
 void initialize_so_vars(config *cfg, char* path_cfg_file);
-void initialize_semaphores(int sem_id);
-int initialize_message_queue(int key);
 void create_ships(config *cfg);
 void create_ports(config *cfg);
 void create_weather(void);
-void detach_all(void);
-
 
 
 #endif /*PROGETTOSO_MASTER_H*/
