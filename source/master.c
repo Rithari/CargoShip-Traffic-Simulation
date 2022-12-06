@@ -67,7 +67,6 @@ int main(void) {
 
     /* You only get here when SO_DAYS have passed and all processes are killed */
     detach_all(shm_id, requests_id, paths_id, ships_pid, ports_pid);
-    sem_unlock(32, 1);
     return 0;
 }
 
@@ -176,7 +175,7 @@ void create_ships(config *cfg) {
 void create_ports(config *cfg) {
     int i, j;
     char s_x[BUFFER_SIZE], s_y[BUFFER_SIZE];
-    coord *ports_coords = malloc(sizeof(*ports_coords) * cfg->SO_PORTI);
+    ports_coords = malloc(sizeof(*ports_coords) * cfg->SO_PORTI);
 
     ports_coords[0].x = 0;
     ports_coords[0].y = 0;

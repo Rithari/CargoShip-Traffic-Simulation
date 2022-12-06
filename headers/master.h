@@ -87,7 +87,10 @@ typedef struct {
 typedef struct {
     double x;
     double y;
+    int semaphore_id;
 } coord;
+
+extern coord *ports_coords = NULL;
 
 /* master.c */
 void initialize_so_vars(config *cfg, char* path_cfg_file);

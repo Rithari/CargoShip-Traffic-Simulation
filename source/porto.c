@@ -35,6 +35,7 @@ int main(int argc, char *argv[]) {
     int n_docks;
     struct sigaction sa;
     int key = KEY_SEM + getpid();
+    int i;
 
 
     sa.sa_handler = porto_sig_handler;
@@ -68,7 +69,14 @@ int main(int argc, char *argv[]) {
 
     n_docks = (int)random() % (shm_cfg->SO_BANCHINE) + 1;
     sem_id = initialize_semaphore(key, n_docks);
-    /* n_ docks dovranno essere gestite come risorsa condivisa protetta da un semaforo */
+
+    /* Find this port in the array of port coordinates, and save the semaphore id */
+    for(i = 0; i < shm_cfg->SO_PORTI; i++) {
+        if(ports_coords[i].x == actual_coordinates.x && ports_coords[i].y == actual_coordinates.y) {
+            ports_coords[i].semaphore_id = sem_id;
+            break;
+        }
+    }
 
     /*start_of_goods_generation();*/
 
