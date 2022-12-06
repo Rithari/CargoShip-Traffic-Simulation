@@ -17,7 +17,21 @@ void porto_sig_handler(int);
 config *shm_cfg;
 int sem_id;
 
-/* ? porto_goodsOffers_generator(); */
+/*L'handler riceve il segnale di creazione delle merci e invoca la funzione designata --> "start_of_goods_generation"*/
+
+goodsList start_of_goods_generation(config *shm_cfg);  /*IMPORTANTE la lista non mi ritorna nel main ma nell'handler() ??LISTAGLOBALE?? --> SI*/
+
+goodsOffers goodsOffers_struct_generation(int id, int ton, int lifespan);
+goodsRequests goodsRequest_struct_generation(int id, int ton, pid_t affiliated);
+void goodsOffers_generator(config *shm_cfg, int *goodsSetOffers, int *lifespanArray, int offersValue, int offersLength);
+void goodsRequest_generator(config *shm_cfg, int *goodsSetRequests, int *lifespanArray, int requestValue, int requestsLength);
+
+goodsList myOffers;
+coord actual_coordinate;
+
+void add(goodsList myOffers, goodsOffers); /*qua solo per il test*/
+
+/*L'handler riceve il segnale di creazione delle merci e invoca la funzione designata*/
 
 int main(int argc, char *argv[]) {
     coord actual_coordinate;
@@ -57,16 +71,82 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    n_docks = random() % (shm_cfg->SO_BANCHINE) + 1;
+    n_docks = (int)random() % (shm_cfg->SO_BANCHINE) + 1;
     sem_id = initialize_semaphore(key, n_docks);
     /* n_ docks dovranno essere gestite come risorsa condivisa protetta da un semaforo */
 
+    start_of_goods_generation(shm_cfg);
 
     while (1) {
         /* Codice del porto da eseguire */
     }
 
     return 0;
+}
+
+goodsList start_of_goods_generation(config *shm_cfg) {
+    int maxFillValue = (int)((shm_cfg->SO_FILL / shm_cfg->SO_DAYS) / shm_cfg->SO_PORTI); /*100*/
+    /* NB: parte di codice in cui capisco cosa chiedo e cosa sto già offrendo */
+    int *goodsSetOffers = calloc(shm_cfg->SO_MERCI, sizeof(int));
+    int *goodsSetRequests = calloc(shm_cfg->SO_MERCI, sizeof(int));
+    int lifespanArray[shm_cfg->SO_MERCI]; /*non serve*/
+    int offersLength = 0;
+    int requestsLength = 0;
+    int rng;
+    int i = 0;
+
+    while(i >= shm_cfg->SO_MERCI) {
+        switch(rng = (int)(random()%3)) {    /*con: 0==Nulla , 1==offerta , 2==Richiesta*/
+            case 0:
+                break;
+            case 1:
+                goodsSetOffers[offersLength] = i;
+                offersLength++;
+                break;
+            case 2:
+                goodsSetRequests[requestsLength] = i;
+                requestsLength++;
+                break;
+        }
+        i++;
+    }
+    goodsSetOffers = realloc(goodsSetOffers, offersLength);
+    goodsSetRequests = realloc(goodsSetRequests, requestsLength);
+
+    goodsOffers_generator(shm_cfg, goodsSetOffers, lifespanArray, maxFillValue, offersLength);
+    goodsRequest_generator(shm_cfg, goodsSetRequests, lifespanArray, maxFillValue, requestsLength);
+}
+
+goodsOffers goodsOffers_struct_generation(int id, int ton, int lifespan) {
+    goodsOffers newOffers;
+    newOffers.id = id;
+    newOffers.ton = ton;
+    newOffers.lifespan = lifespan;
+    return newOffers;
+}
+goodsRequests goodsRequest_struct_generation(int id, int ton, pid_t affiliated) {
+    /*Creazione di Request*/
+}
+
+void goodsOffers_generator(config *shm_cfg, int *goodsSetOffers, int *lifespanArray, int offersValue, int offersLength) {
+
+    int assignment_goods = offersValue / offersLength;
+    int add_surplus = (int)(random()%offersLength);
+    int surplus = offersValue % offersLength;
+    int i = 0;
+    while(i >= offersLength){
+        if(i == add_surplus) {
+            add(myOffers, goodsOffers_struct_generation(goodsSetOffers[i], (assignment_goods+surplus), lifespanArray[goodsSetOffers[i]]) );
+        }
+        add(myOffers, goodsOffers_struct_generation(goodsSetOffers[i], assignment_goods, lifespanArray[goodsSetOffers[i]]) );
+        i++;
+    }
+}
+
+
+void goodsRequest_generator(config *shm_cfg, int *goodsSetRequests, int *lifespanArray, int requestValue, int requestsLength) {
+
+    /*Nessun return, la goods viene pusciata in MQ*/
 }
 
 void porto_sig_handler(int signum) {
