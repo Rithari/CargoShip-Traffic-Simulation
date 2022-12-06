@@ -68,23 +68,6 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-/* Semaphore initialization */
-int initialize_semaphore(int key, int n_semaphores) {
-    int id;
-    if ((id = semget(key, n_semaphores, IPC_CREAT | IPC_EXCL | 0600)) < 0 ) {
-        if(errno == EEXIST) {
-            printf("Semaphore already exists. Trying to get it...\n");
-            id = semget(key, n_semaphores, 0600);
-            semctl(id, 0, IPC_RMID);
-            id = semget(key, n_semaphores, IPC_CREAT | IPC_EXCL | 0600);
-            printf("Semaphore created with id: %d", id);
-        } else {
-            printf("Error during semget() initialization. Exiting...\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-    return id;
-}
 
 void porto_sig_handler(int signum) {
     switch (signum) {

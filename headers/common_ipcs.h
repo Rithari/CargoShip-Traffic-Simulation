@@ -14,8 +14,15 @@
 
 
 
+/* IPC initialization functions */
 int initialize_message_queue(int key);
 int initialize_semaphore(int key, int n_semaphores);
-void detach_all(void);
+void detach_all(int shm_id, int requests_id, int paths_id, int *ships_pid, int *ports_pid);
+
+/* Semaphore operation functions */
+void sem_lock(int sem_id, int sem_num);
+void sem_unlock(int sem_id, int sem_num);
+void sem_lock_nowait(int sem_id, int sem_num);
+void sem_unlock_nowait(int sem_id, int sem_num);
 
 #endif /*PROGETTOSO_COMMON_IPCS_H*/

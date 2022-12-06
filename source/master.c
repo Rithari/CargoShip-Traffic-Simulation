@@ -16,7 +16,6 @@ int paths_id;
 
 int main(void) {
     struct sigaction sa;
-    int i;
 
     if((shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), IPC_CREAT | IPC_EXCL | 0600)) < 0) {
         if(errno == EEXIST) {
@@ -67,17 +66,9 @@ int main(void) {
     }
 
     /* You only get here when SO_DAYS have passed and all processes are killed */
-    detach_all();
+    detach_all(shm_id, requests_id, paths_id, ships_pid, ports_pid);
+    sem_unlock(32, 1);
     return 0;
-}
-
-void detach_all(void) {
-    shmctl(shm_id, IPC_RMID, NULL);
-    msgctl(requests_id, IPC_RMID, NULL);
-    msgctl(paths_id, IPC_RMID, NULL);
-
-    free(ships_pid);
-    free(ports_pid);
 }
 
 void initialize_so_vars(config *cfg, char* path_cfg_file) {
@@ -229,21 +220,6 @@ void create_ports(config *cfg) {
     }
 }
 
-int initialize_message_queue(int key) {
-    int mq_id;
-    if((mq_id = msgget(key, IPC_CREAT | IPC_EXCL | 0600)) < 0) {
-        if (errno == EEXIST) {
-            mq_id = msgget(key, 0600);
-            msgctl(mq_id, IPC_RMID, NULL);
-            mq_id = msgget(key, IPC_CREAT | IPC_EXCL | 0600);
-        } else {
-            printf("error during initialization of message queue\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-    return mq_id;
-}
-
 void master_sig_handler(int signum) {
     int old_errno = errno;
     int i;
@@ -260,7 +236,7 @@ void master_sig_handler(int signum) {
             for(i = 0; i < shm_cfg->SO_PORTI; i++) {
                 kill(ports_pid[i], SIGTERM);
             }
-            detach_all();
+            detach_all(shm_id, requests_id, paths_id, ships_pid, ports_pid);
             exit(EXIT_FAILURE);
         /* Still needs to deal with statistics first */
         case SIGALRM:
