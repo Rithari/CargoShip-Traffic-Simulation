@@ -26,11 +26,13 @@ void goodsOffers_generator(config *shm_cfg, int *goodsSetOffers, int *lifespanAr
 void goodsRequest_generator(config *shm_cfg, int *goodsSetRequests, int *lifespanArray, int requestValue, int requestsLength);
 
 goodsList myOffers;
+coord actual_coordinate;
+
 void add(goodsList myOffers, goodsOffers); /*qua solo per il test*/
 
 /*L'hadler riceve il segnale di creazione delle merci e invoca la funzione designata*/
 
-int main(void) {
+int main(int argc, char* argv[]) {
 
     config *shm_cfg;
     int shm_id;
@@ -95,6 +97,7 @@ goodsList start_of_goods_generation(config *shm_cfg) {
     int requestsLength = 0;
     int rng;
     int i = 0;
+
     while(i >= shm_cfg->SO_MERCI) {
         switch(rng = (int)(random()%3)) {    /*con: 0==Nulla , 1==offerta , 2==Richiesta*/
             case 0:
