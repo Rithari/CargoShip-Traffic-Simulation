@@ -36,7 +36,25 @@ int main(void) {
     int shm_id;
     int n_docks;
 
+    struct sigaction sa;
+
+    sa.sa_handler = porto_sig_handler;
+
+    sigaction(SIGALRM, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+
     srandom(getpid());
+
+    if(argc != 2) {
+        /* random position */
+        printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
+        exit(EXIT_FAILURE);
+    }
+    /* position from command line */
+    actual_coordinate.x = strtod(argv[0], NULL);
+    actual_coordinate.y = strtod(argv[1], NULL);
+
+    printf("[%d] coord.x: %lf\tcoord.y: %lf\n", getpid(), actual_coordinate.x, actual_coordinate.y);
 
     if((shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), 0600)) < 0) {
         perror("Error during porto->shmget()");
@@ -55,6 +73,16 @@ int main(void) {
     start_of_goods_generation(shm_cfg);
 
     return 0;
+}
+
+void porto_sig_handler(int signum) {
+    switch (signum) {
+        case SIGINT:
+            exit(EXIT_FAILURE);
+        case SIGALRM:
+            printf("PORTO\n");
+            break;
+    }
 }
 
 goodsList start_of_goods_generation(config *shm_cfg) {
