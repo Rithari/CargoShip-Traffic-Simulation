@@ -78,7 +78,6 @@ typedef struct {
     pid_t affiliatied;
 } goodsRequests;
 
-
 typedef struct {
     goodsOffers current;
     goodsOffers next;

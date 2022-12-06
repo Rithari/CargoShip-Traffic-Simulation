@@ -18,12 +18,15 @@ void porto_sig_handler(int);
 
 /*L'hadler riceve il segnale di creazione delle merci e invoca la funzione designata --> "start_of_goods_generation"*/
 
-goodsList start_of_goods_generation(config *shm_cfg);  /*IMPORTANTE la lista non mi ritorna nel main ma nell'handler() ??LISTAGLOBALE??*/
+goodsList start_of_goods_generation(config *shm_cfg);  /*IMPORTANTE la lista non mi ritorna nel main ma nell'handler() ??LISTAGLOBALE?? --> SI*/
 
 goodsOffers goodsOffers_struct_generation(int id, int ton, int lifespan);
 goodsRequests goodsRequest_struct_generation(int id, int ton, pid_t affiliated);
-goodsList goodsOffers_generator(int offersValue, int goodsSet);
-void goodsRequest_generator(int requestValue);
+void goodsOffers_generator(config *shm_cfg, int *goodsSetOffers, int *lifespanArray, int offersValue, int offersLength);
+void goodsRequest_generator(config *shm_cfg, int *goodsSetRequests, int *lifespanArray, int requestValue, int requestsLength);
+
+goodsList myOffers;
+void add(goodsList myOffers, goodsOffers); /*qua solo per il test*/
 
 /*L'hadler riceve il segnale di creazione delle merci e invoca la funzione designata*/
 
@@ -49,26 +52,41 @@ int main(void) {
     printf("Il porto: %d, ha: %d banchine\n", getpid(), n_docks);
     /* n_ docks dovranno essere gestite come risorsa condivisa protetta da un semaforo */
 
-    goodsList myOffers = start_of_goods_generation(shm_cfg);
+    start_of_goods_generation(shm_cfg);
 
     return 0;
 }
 
-/*creazione struct*/
-
 goodsList start_of_goods_generation(config *shm_cfg) {
-    int maxFillValue = (int)((shm_cfg->SO_FILL / shm_cfg->SO_DAYS) / shm_cfg->SO_PORTI);
-    int offersValue = (int)(random()%maxFillValue);
-    int requestValue = maxFillValue - offersValue;
-    /* parte di codice in cui capisco cosa chiedo e cosa sto già offrendo */
-    int goodsSet[shm_cfg->SO_MERCI];
+    int maxFillValue = (int)((shm_cfg->SO_FILL / shm_cfg->SO_DAYS) / shm_cfg->SO_PORTI); /*100*/
+    /* NB: parte di codice in cui capisco cosa chiedo e cosa sto già offrendo */
+    int *goodsSetOffers = calloc(shm_cfg->SO_MERCI, sizeof(int));
+    int *goodsSetRequests = calloc(shm_cfg->SO_MERCI, sizeof(int));
+    int lifespanArray[shm_cfg->SO_MERCI]; /*non serve*/
+    int offersLength = 0;
+    int requestsLength = 0;
+    int rng;
     int i = 0;
-    for(; i<shm_cfg->SO_MERCI; i++) {
-        goodsSet[i] = (int)(random()%3);  /*con: 0==Nulla , 1==Richiesta , 2==offerta*/
+    while(i >= shm_cfg->SO_MERCI) {
+        switch(rng = (int)(random()%3)) {    /*con: 0==Nulla , 1==offerta , 2==Richiesta*/
+            case 0:
+                break;
+            case 1:
+                goodsSetOffers[offersLength] = i;
+                offersLength++;
+                break;
+            case 2:
+                goodsSetRequests[requestsLength] = i;
+                requestsLength++;
+                break;
+        }
+        i++;
     }
-    goodsOffers_generator(offersValue, goodsSet/*, ipotetico array di lifespan*/); /* crea la goodslist delle offerte */
+    goodsSetOffers = realloc(goodsSetOffers, offersLength);
+    goodsSetRequests = realloc(goodsSetRequests, requestsLength);
 
-    /*goodsRequest_generator(requestValue);  pusha in MQ le request */
+    goodsOffers_generator(shm_cfg, goodsSetOffers, lifespanArray, maxFillValue, offersLength);
+    goodsRequest_generator(shm_cfg, goodsSetRequests, lifespanArray, maxFillValue, requestsLength);
 }
 
 goodsOffers goodsOffers_struct_generation(int id, int ton, int lifespan) {
@@ -79,23 +97,26 @@ goodsOffers goodsOffers_struct_generation(int id, int ton, int lifespan) {
     return newOffers;
 }
 goodsRequests goodsRequest_struct_generation(int id, int ton, pid_t affiliated) {
-
     /*Creazione di Request*/
-
 }
 
-goodsList goodsOffers_generator(int offersValue, int *goodsSet) {
+void goodsOffers_generator(config *shm_cfg, int *goodsSetOffers, int *lifespanArray, int offersValue, int offersLength) {
 
-    goodsOffers nGx = goodsOffers_struct_generation(id, ton, lifespan);
-    /*Return della testa della lista di goods*/
-
-
+    int assignment_goods = offersValue / offersLength;
+    int add_surplus = (int)(random()%offersLength);
+    int surplus = offersValue % offersLength;
+    int i = 0;
+    while(i >= offersLength){
+        if(i == add_surplus) {
+            add(myOffers, goodsOffers_struct_generation(goodsSetOffers[i], (assignment_goods+surplus), lifespanArray[goodsSetOffers[i]]) );
+        }
+        add(myOffers, goodsOffers_struct_generation(goodsSetOffers[i], assignment_goods, lifespanArray[goodsSetOffers[i]]) );
+        i++;
+    }
 }
 
 
-void goodsRequest_generator(int requestValue, int *goodsSet) {
+void goodsRequest_generator(config *shm_cfg, int *goodsSetRequests, int *lifespanArray, int requestValue, int requestsLength) {
 
-    goodsRequests nGx = goodsRequest_struct_generation(id , ton, getpid());
     /*Nessun return, la goods viene pusciata in MQ*/
-
 }
