@@ -10,7 +10,7 @@
 void nave_sig_handler(int);
 
 int actual_capacity;
-coord actual_coordinate;
+coord actual_coordinates;
 
 void print_time(struct timespec *ts) {
     printf("SECONDS:            %ld\n", ts->tv_sec);
@@ -21,8 +21,8 @@ void move(config *cfg, coord destination) {
     struct timespec ts, rem;
     struct timespec start, end;
 
-    double dx = destination.x - actual_coordinate.x;
-    double dy = destination.y - actual_coordinate.y;
+    double dx = destination.x - actual_coordinates.x;
+    double dy = destination.y - actual_coordinates.y;
 
     /*distance / SO_SPEED*/
     double navigation_time = sqrt(dx * dx + dy * dy) / cfg->SO_SPEED;
@@ -57,9 +57,9 @@ void move(config *cfg, coord destination) {
                 exit(EXIT_FAILURE);
         }
     }
-    printf("Moved form [%lf, %lf] to [%lf, %lf].\n\n", actual_coordinate.x, actual_coordinate.y, destination.x, destination.y);
+    printf("Moved form [%lf, %lf] to [%lf, %lf].\n\n", actual_coordinates.x, actual_coordinates.y, destination.x, destination.y);
     fflush(stdout);
-    actual_coordinate = destination;
+    actual_coordinates = destination;
 }
 
 int main(void) {
@@ -83,14 +83,14 @@ int main(void) {
         exit(EXIT_FAILURE);
     }
 
-    actual_coordinate.x = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
-    actual_coordinate.y = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+    actual_coordinates.x = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+    actual_coordinates.y = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
 
     /*printf("[%d] Generated ship.\n", getpid());*/
 
     actual_capacity = 0;
-    actual_coordinate.x = 0;
-    actual_coordinate.y = 0;
+    actual_coordinates.x = 0;
+    actual_coordinates.y = 0;
     sa.sa_handler = nave_sig_handler;
     sa.sa_flags = SA_RESTART;
 

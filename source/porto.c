@@ -19,22 +19,21 @@ int sem_id;
 
 /*L'handler riceve il segnale di creazione delle merci e invoca la funzione designata --> "start_of_goods_generation"*/
 
-goodsList start_of_goods_generation(config *shm_cfg);  /*IMPORTANTE la lista non mi ritorna nel main ma nell'handler() ??LISTAGLOBALE?? --> SI*/
+goodsList start_of_goods_generation(void);  /*IMPORTANTE la lista non mi ritorna nel main ma nell'handler() ??LISTAGLOBALE?? --> SI*/
 
 goodsOffers goodsOffers_struct_generation(int id, int ton, int lifespan);
 goodsRequests goodsRequest_struct_generation(int id, int ton, pid_t affiliated);
-void goodsOffers_generator(config *shm_cfg, int *goodsSetOffers, int *lifespanArray, int offersValue, int offersLength);
-void goodsRequest_generator(config *shm_cfg, int *goodsSetRequests, int *lifespanArray, int requestValue, int requestsLength);
+void goodsOffers_generator(int *goodsSetOffers, int *lifespanArray, int offersValue, int offersLength);
+void goodsRequest_generator(int *goodsSetRequests, int *lifespanArray, int requestValue, int requestsLength);
 
 goodsList myOffers;
-coord actual_coordinate;
+coord actual_coordinates;
 
 void add(goodsList myOffers, goodsOffers); /*qua solo per il test*/
 
 /*L'handler riceve il segnale di creazione delle merci e invoca la funzione designata*/
 
 int main(int argc, char *argv[]) {
-    coord actual_coordinate;
     int shm_id;
     int n_docks;
     struct sigaction sa;
@@ -56,10 +55,10 @@ int main(int argc, char *argv[]) {
     }
 
     /* position from command line */
-    actual_coordinate.x = strtod(argv[0], NULL);
-    actual_coordinate.y = strtod(argv[1], NULL);
+    actual_coordinates.x = strtod(argv[0], NULL);
+    actual_coordinates.y = strtod(argv[1], NULL);
 
-    printf("[%d] coord.x: %lf\tcoord.y: %lf\n", getpid(), actual_coordinate.x, actual_coordinate.y);
+    printf("[%d] coord.x: %lf\tcoord.y: %lf\n", getpid(), actual_coordinates.x, actual_coordinates.y);
 
     if((shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), 0600)) < 0) {
         perror("Error during porto->shmget()");
@@ -75,7 +74,7 @@ int main(int argc, char *argv[]) {
     sem_id = initialize_semaphore(key, n_docks);
     /* n_ docks dovranno essere gestite come risorsa condivisa protetta da un semaforo */
 
-    start_of_goods_generation(shm_cfg);
+    start_of_goods_generation();
 
     while (1) {
         /* Codice del porto da eseguire */
@@ -84,7 +83,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-goodsList start_of_goods_generation(config *shm_cfg) {
+goodsList start_of_goods_generation(void) {
     int maxFillValue = (int)((shm_cfg->SO_FILL / shm_cfg->SO_DAYS) / shm_cfg->SO_PORTI); /*100*/
     /* NB: parte di codice in cui capisco cosa chiedo e cosa sto già offrendo */
     int *goodsSetOffers = calloc(shm_cfg->SO_MERCI, sizeof(int));
@@ -113,8 +112,8 @@ goodsList start_of_goods_generation(config *shm_cfg) {
     goodsSetOffers = realloc(goodsSetOffers, offersLength);
     goodsSetRequests = realloc(goodsSetRequests, requestsLength);
 
-    goodsOffers_generator(shm_cfg, goodsSetOffers, lifespanArray, maxFillValue, offersLength);
-    goodsRequest_generator(shm_cfg, goodsSetRequests, lifespanArray, maxFillValue, requestsLength);
+    goodsOffers_generator(goodsSetOffers, lifespanArray, maxFillValue, offersLength);
+    goodsRequest_generator(goodsSetRequests, lifespanArray, maxFillValue, requestsLength);
 }
 
 goodsOffers goodsOffers_struct_generation(int id, int ton, int lifespan) {
@@ -128,7 +127,7 @@ goodsRequests goodsRequest_struct_generation(int id, int ton, pid_t affiliated) 
     /*Creazione di Request*/
 }
 
-void goodsOffers_generator(config *shm_cfg, int *goodsSetOffers, int *lifespanArray, int offersValue, int offersLength) {
+void goodsOffers_generator(int *goodsSetOffers, int *lifespanArray, int offersValue, int offersLength) {
 
     int assignment_goods = offersValue / offersLength;
     int add_surplus = (int)(random()%offersLength);
@@ -144,7 +143,7 @@ void goodsOffers_generator(config *shm_cfg, int *goodsSetOffers, int *lifespanAr
 }
 
 
-void goodsRequest_generator(config *shm_cfg, int *goodsSetRequests, int *lifespanArray, int requestValue, int requestsLength) {
+void goodsRequest_generator(int *goodsSetRequests, int *lifespanArray, int requestValue, int requestsLength) {
 
     /*Nessun return, la goods viene pusciata in MQ*/
 }
