@@ -12,26 +12,23 @@ Funzione/i per la creazione di tratte()
 Funzione/i per la comunicazione con le queue()
 Banchina: gestita come una risorsa condivisa protetta da un semaforo (n_docks)*/
 
+/*L'handler riceve il segnale di creazione delle merci e invoca la funzione designata --> "start_of_goods_generation"*/
 void porto_sig_handler(int);
 
-config *shm_cfg;
-int sem_id;
-
-/*L'handler riceve il segnale di creazione delle merci e invoca la funzione designata --> "start_of_goods_generation"*/
-
-goodsList start_of_goods_generation(void);  /*IMPORTANTE la lista non mi ritorna nel main ma nell'handler() ??LISTAGLOBALE?? --> SI*/
-
+/* COMMENTO PROVVISIORIO
+goodsList start_of_goods_generation(void);
 goodsOffers goodsOffers_struct_generation(int id, int ton, int lifespan);
 goodsRequests goodsRequest_struct_generation(int id, int ton, pid_t affiliated);
 void goodsOffers_generator(int *goodsSetOffers, int *lifespanArray, int offersValue, int offersLength);
 void goodsRequest_generator(int *goodsSetRequests, int *lifespanArray, int requestValue, int requestsLength);
+void add(goodsList myOffers, goodsOffers); <--- solo per test
+*/
 
 goodsList myOffers;
+config *shm_cfg;
+
+int sem_id;
 coord actual_coordinates;
-
-void add(goodsList myOffers, goodsOffers); /*qua solo per il test*/
-
-/*L'handler riceve il segnale di creazione delle merci e invoca la funzione designata*/
 
 int main(int argc, char *argv[]) {
     int shm_id;
@@ -49,7 +46,6 @@ int main(int argc, char *argv[]) {
     srandom(getpid());
 
     if(argc != 2) {
-        /* random position */
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
         exit(EXIT_FAILURE);
     }
@@ -58,7 +54,7 @@ int main(int argc, char *argv[]) {
     actual_coordinates.x = strtod(argv[0], NULL);
     actual_coordinates.y = strtod(argv[1], NULL);
 
-    printf("[%d] coord.x: %lf\tcoord.y: %lf\n", getpid(), actual_coordinates.x, actual_coordinates.y);
+    /* printf("[%d] coord.x: %lf\tcoord.y: %lf\n", getpid(), actual_coordinates.x, actual_coordinates.y); */
 
     if((shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), 0600)) < 0) {
         perror("Error during porto->shmget()");
@@ -74,7 +70,7 @@ int main(int argc, char *argv[]) {
     sem_id = initialize_semaphore(key, n_docks);
     /* n_ docks dovranno essere gestite come risorsa condivisa protetta da un semaforo */
 
-    start_of_goods_generation();
+    /*start_of_goods_generation();*/
 
     while (1) {
         /* Codice del porto da eseguire */
@@ -83,19 +79,20 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
+/* COMMENTO PROVVISORIO WIP
 goodsList start_of_goods_generation(void) {
-    int maxFillValue = (int)((shm_cfg->SO_FILL / shm_cfg->SO_DAYS) / shm_cfg->SO_PORTI); /*100*/
-    /* NB: parte di codice in cui capisco cosa chiedo e cosa sto già offrendo */
+    int maxFillValue = (int)((shm_cfg->SO_FILL / shm_cfg->SO_DAYS) / shm_cfg->SO_PORTI); 100
+    < NB: parte di codice in cui capisco cosa chiedo e cosa sto già offrendo >
     int *goodsSetOffers = calloc(shm_cfg->SO_MERCI, sizeof(int));
     int *goodsSetRequests = calloc(shm_cfg->SO_MERCI, sizeof(int));
-    int lifespanArray[shm_cfg->SO_MERCI]; /*non serve*/
+    int lifespanArray[shm_cfg->SO_MERCI]; <---- non serve
     int offersLength = 0;
     int requestsLength = 0;
     int rng;
     int i = 0;
 
     while(i >= shm_cfg->SO_MERCI) {
-        switch(rng = (int)(random()%3)) {    /*con: 0==Nulla , 1==offerta , 2==Richiesta*/
+        switch(rng = (int)(random()%3)) {    con: 0==Nulla , 1==offerta , 2==Richiesta
             case 0:
                 break;
             case 1:
@@ -123,8 +120,9 @@ goodsOffers goodsOffers_struct_generation(int id, int ton, int lifespan) {
     newOffers.lifespan = lifespan;
     return newOffers;
 }
+
 goodsRequests goodsRequest_struct_generation(int id, int ton, pid_t affiliated) {
-    /*Creazione di Request*/
+    ..Creazione di Request...
 }
 
 void goodsOffers_generator(int *goodsSetOffers, int *lifespanArray, int offersValue, int offersLength) {
@@ -145,8 +143,8 @@ void goodsOffers_generator(int *goodsSetOffers, int *lifespanArray, int offersVa
 
 void goodsRequest_generator(int *goodsSetRequests, int *lifespanArray, int requestValue, int requestsLength) {
 
-    /*Nessun return, la goods viene pusciata in MQ*/
-}
+    ..Nessun return, la goods viene pusciata in MQ..
+} */
 
 void porto_sig_handler(int signum) {
     switch (signum) {

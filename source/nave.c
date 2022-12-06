@@ -8,59 +8,11 @@
 /*una nave in mare cerca sempre una coda di attracco libera (BUSY WAITING!!)*/
 
 void nave_sig_handler(int);
+void print_time(struct timespec *ts);
+void move(config *cfg, coord destination);
 
 int actual_capacity;
 coord actual_coordinates;
-
-void print_time(struct timespec *ts) {
-    printf("SECONDS:            %ld\n", ts->tv_sec);
-    printf("NANOSECONDS:        %ld\n", ts->tv_nsec);
-}
-
-void move(config *cfg, coord destination) {
-    struct timespec ts, rem;
-    struct timespec start, end;
-
-    double dx = destination.x - actual_coordinates.x;
-    double dy = destination.y - actual_coordinates.y;
-
-    /*distance / SO_SPEED*/
-    double navigation_time = sqrt(dx * dx + dy * dy) / cfg->SO_SPEED;
-
-    printf("Navigation time: %f\n", navigation_time);
-
-
-
-    ts.tv_sec = (long) navigation_time;
-    ts.tv_nsec = (navigation_time - ts.tv_sec) * 1000000000;
-
-    while (nanosleep(&ts, &rem) && errno != EINVAL) {
-        switch (errno) {
-            case EFAULT:
-                perror("nave.c: Problem with copying information from user space.");
-                exit(EXIT_FAILURE);
-            case EINTR:
-
-                perror("nave.c");
-                /* TODO: aggiungere funzionalità */
-                /*
-                 *  clock_gettime(CLOCK_REALTIME, &start);
-                    clock_gettime(CLOCK_REALTIME, &end);
-                    timespec_sub(&end, &end, &start);
-                    timespec_sub(&rem, &rem, &end);
-                 * */
-                ts = rem;
-                print_time(&ts);
-                continue;
-            default:
-                perror("Generic error in nave.c");
-                exit(EXIT_FAILURE);
-        }
-    }
-    printf("Moved form [%lf, %lf] to [%lf, %lf].\n\n", actual_coordinates.x, actual_coordinates.y, destination.x, destination.y);
-    fflush(stdout);
-    actual_coordinates = destination;
-}
 
 int main(void) {
     config *shm_cfg;
@@ -107,12 +59,62 @@ int main(void) {
 
 }
 
+void move(config *cfg, coord destination) {
+    struct timespec ts, rem;
+    /* struct timespec start, end; */
+
+    double dx = destination.x - actual_coordinates.x;
+    double dy = destination.y - actual_coordinates.y;
+
+    /*distance / SO_SPEED*/
+    double navigation_time = sqrt(dx * dx + dy * dy) / cfg->SO_SPEED;
+
+    printf("Navigation time: %f\n", navigation_time);
+
+
+
+    ts.tv_sec = (long) navigation_time;
+    ts.tv_nsec = (navigation_time - ts.tv_sec) * 1000000000;
+
+    while (nanosleep(&ts, &rem) && errno != EINVAL) {
+        switch (errno) {
+            case EFAULT:
+                perror("nave.c: Problem with copying information from user space.");
+                exit(EXIT_FAILURE);
+            case EINTR:
+
+                perror("nave.c");
+                /* TODO: aggiungere funzionalità */
+                /*
+                 *  clock_gettime(CLOCK_REALTIME, &start);
+                    clock_gettime(CLOCK_REALTIME, &end);
+                    timespec_sub(&end, &end, &start);
+                    timespec_sub(&rem, &rem, &end);
+                 * */
+                ts = rem;
+                print_time(&ts);
+                continue;
+            default:
+                perror("Generic error in nave.c");
+                exit(EXIT_FAILURE);
+        }
+    }
+    printf("Moved from [%lf, %lf] to [%lf, %lf].\n\n", actual_coordinates.x, actual_coordinates.y, destination.x, destination.y);
+    fflush(stdout);
+    actual_coordinates = destination;
+}
+
+void print_time(struct timespec *ts) {
+    printf("SECONDS:            %ld\n", ts->tv_sec);
+    printf("NANOSECONDS:        %ld\n", ts->tv_nsec);
+}
+
 void nave_sig_handler(int signum) {
     switch (signum) {
         case SIGALRM:
             printf("NAVE\n");
             break;
         default:
-            printf("SIUM\n");
+            break;
     }
 }
