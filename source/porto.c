@@ -14,15 +14,21 @@ Banchina: gestita come una risorsa condivisa protetta da un semaforo (n_docks)*/
 
 void porto_sig_handler(int);
 
-config *shm_cfg;
+config  *shm_cfg;
+coord   *shm_ports_coords;
+int     shm_id_config;
+int     shm_id_ports_coords;
+int     mq_id_request;
+int     sem_id_generation;
+int     id;
 
 /* ? porto_goodsOffers_generator(); */
 
 int main(int argc, char *argv[]) {
-    coord actual_coordinate;
-    int shm_id;
-    long n_docks;
+    int     i;
+    long    n_docks;
     struct sigaction sa;
+    struct sembuf sem;
 
     sa.sa_handler = porto_sig_handler;
 
@@ -31,37 +37,42 @@ int main(int argc, char *argv[]) {
 
     srandom(getpid());
 
-    if(argc != 2) {
-        /* random position */
+    if(argc != 5) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
-        exit(EXIT_FAILURE);
-    }
-    /* position from command line */
-    actual_coordinate.x = strtod(argv[0], NULL);
-    actual_coordinate.y = strtod(argv[1], NULL);
-
-    printf("[%d] coord.x: %lf\tcoord.y: %lf\n", getpid(), actual_coordinate.x, actual_coordinate.y);
-
-    if((shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), 0600)) < 0) {
-        perror("Error during porto->shmget()");
-        exit(EXIT_FAILURE);
+        kill(getppid(), SIGINT);
     }
 
-    if((shm_cfg = shmat(shm_id, NULL, SHM_RDONLY)) == (void*) -1) {
-        perror("Error during porto->shmat()");
-        exit(EXIT_FAILURE);
+    shm_id_config = string_to_int(argv[0]);
+    shm_id_ports_coords = string_to_int(argv[1]);
+    mq_id_request = string_to_int(argv[2]);
+    sem_id_generation = string_to_int(argv[3]);
+    id = string_to_int(argv[4]);
+
+    if((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1) {
+        perror("[PORTO] Error while trying to attach to configuration shared memory");
+        kill(getppid(), SIGINT);
     }
+
+    if((shm_ports_coords = shmat(shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1) {
+        perror("[PORTO] Error while trying to attach to ports coordinates shared memory");
+        kill(getppid(), SIGINT);
+    }
+
+    printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);
 
     n_docks = random() % (shm_cfg->SO_BANCHINE) + 1;
     printf("Il porto: %d, ha: %ld banchine\n", getpid(), n_docks);
     /* n_ docks dovranno essere gestite come risorsa condivisa protetta da un semaforo */
 
 
+    if(sem_cmd(sem_id_generation, 0, -1, 0) < 0) {
+        perror("[PORTO] Error while trying to release sem_id_generation");
+        kill(getppid(), SIGINT);
+    }
+
     while (1) {
         /* Codice del porto da eseguire */
     }
-
-    return 0;
 }
 
 void porto_sig_handler(int signum) {
@@ -69,7 +80,7 @@ void porto_sig_handler(int signum) {
         case SIGINT:
             exit(EXIT_FAILURE);
         case SIGALRM:
-            printf("PORTO\n");
+            /*printf("PORTO\n");*/
             break;
     }
 }

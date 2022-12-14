@@ -1,15 +1,9 @@
 #ifndef PROGETTOSO_COMMON_IPCS_H
 #define PROGETTOSO_COMMON_IPCS_H
 
-#include <sys/ipc.h>
-#include <sys/sem.h>
-#include <sys/shm.h>
-#include "../headers/master.h"
+#include "master.h"
 
-#define KEY_CONFIG      ftok(PATH_CONFIG, 0x01)
-#define KEY_MQ_REQUESTS ftok(PATH_CONFIG, 0x02)
-#define KEY_MQ_PATHS    ftok(PATH_CONFIG, 0x03)
-#define KEY_GOODS_TON   ftok(PATH_CONFIG, 0x04)
-
+int sem_cmd(int s_id, unsigned short sem_num, short sem_op, short sem_flg);
+int sem_timed_cmd(int s_id, unsigned short sem_num, short sem_op, short sem_flg, struct timespec *tv);
 
 #endif /*PROGETTOSO_COMMON_IPCS_H*/

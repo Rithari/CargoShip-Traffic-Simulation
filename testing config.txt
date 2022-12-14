@@ -1,0 +1,17 @@
+# file di configurazione n.1
+SO_NAVI:        2
+SO_PORTI:       4
+SO_MERCI:       1
+SO_SIZE:        1
+SO_MIN_VITA:    50
+SO_MAX_VITA:    50
+SO_LATO:        10
+SO_SPEED:       5
+SO_CAPACITY:    10
+SO_BANCHINE:    2
+SO_FILL:        5
+SO_LOADSPEED:   2
+SO_DAYS:        10
+STORM_DURATION: 6 # hours
+SWELL_DURATION: 24 # hours
+ML_INTENSITY:   1 # hours

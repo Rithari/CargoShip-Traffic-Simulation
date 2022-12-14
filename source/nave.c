@@ -9,15 +9,17 @@
 
 void nave_sig_handler(int);
 
-int actual_capacity;
-coord actual_coordinate;
+config  *shm_cfg;
+coord   *shm_ports_coords;
+int     shm_id_config;
+int     shm_id_ports_coords;
+int     mq_id_request;
+int     sem_id_generation;
 
-void print_time(struct timespec *ts) {
-    printf("SECONDS:            %ld\n", ts->tv_sec);
-    printf("NANOSECONDS:        %ld\n", ts->tv_nsec);
-}
+coord   actual_coordinate;
+int     actual_capacity;
 
-void move(config *cfg, coord destination) {
+void move(coord destination) {
     struct timespec ts, rem;
     struct timespec start, end;
 
@@ -25,23 +27,14 @@ void move(config *cfg, coord destination) {
     double dy = destination.y - actual_coordinate.y;
 
     /*distance / SO_SPEED*/
-    double navigation_time = sqrt(dx * dx + dy * dy) / cfg->SO_SPEED;
-
-    printf("Navigation time: %f\n", navigation_time);
-
-
+    double navigation_time = sqrt(dx * dx + dy * dy) / shm_cfg->SO_SPEED;
 
     ts.tv_sec = (long) navigation_time;
-    ts.tv_nsec = (navigation_time - ts.tv_sec) * 1000000000;
+    ts.tv_nsec = (long) ((navigation_time - ts.tv_sec) * 1000000000);
 
-    while (nanosleep(&ts, &rem) && errno != EINVAL) {
+    while (nanosleep(&ts, &rem)) {
         switch (errno) {
-            case EFAULT:
-                perror("nave.c: Problem with copying information from user space.");
-                exit(EXIT_FAILURE);
             case EINTR:
-
-                perror("nave.c");
                 /* TODO: aggiungere funzionalità */
                 /*
                  *  clock_gettime(CLOCK_REALTIME, &start);
@@ -50,59 +43,88 @@ void move(config *cfg, coord destination) {
                     timespec_sub(&rem, &rem, &end);
                  * */
                 ts = rem;
-                print_time(&ts);
+                printf("Moving form [%f, %f] to [%f, %f].\tInterrupt occurred, time left [s:  %ld\tns:    %ld]\n",
+                       actual_coordinate.x, actual_coordinate.y, destination.x, destination.y, ts.tv_sec, ts.tv_nsec);
                 continue;
             default:
                 perror("Generic error in nave.c");
-                exit(EXIT_FAILURE);
+                kill(getppid(), SIGINT);
         }
     }
-    printf("Moved form [%lf, %lf] to [%lf, %lf].\n\n", actual_coordinate.x, actual_coordinate.y, destination.x, destination.y);
+    printf("Moved form [%f, %f] to [%f, %f].\tNavigation time: %f\n",
+           actual_coordinate.x, actual_coordinate.y, destination.x, destination.y, navigation_time);
     fflush(stdout);
     actual_coordinate = destination;
 }
 
-int main(void) {
-    config *shm_cfg;
-    coord c;
+/* TODO: Attach to message queues */
+int main(int argc, char** argv) {
+    int old_id_destination_port;
+    int id_destination_port;
+    int i;
+    double rndx;
+    double rndy;
+
     struct sigaction sa;
-    int shm_id;
+
+    if(argc != 4) {
+        printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
+        kill(getppid(), SIGINT);
+    }
+
     srandom(getpid());
 
-    /* printf("KEY_CONFIG: %d\n", KEY_CONFIG); */
+    /* TODO: CONTROLLARE IL FALLIMENTO DI QUESTA SEZIONE DI CODICE UNA VOLTA FATTO IL REFACTORING */
+    shm_id_config = string_to_int(argv[0]);
+    shm_id_ports_coords = string_to_int(argv[1]);
+    mq_id_request = string_to_int(argv[2]);
+    sem_id_generation = string_to_int(argv[3]);
 
-    /* TODO: Attach to message queues */
 
-    if((shm_id = shmget(KEY_CONFIG, sizeof(*shm_cfg), 0600)) < 0) {
-        perror("Error during nave->shmget()");
-        exit(EXIT_FAILURE);
+    if((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1) {
+        perror("[NAVE] Error while trying to attach to configuration shared memory");
+        kill(getppid(), SIGINT);
     }
 
-    if((shm_cfg = shmat(shm_id, NULL, SHM_RDONLY)) == (void*) -1) {
-        perror("Error during nave->shmat()");
-        exit(EXIT_FAILURE);
+    if((shm_ports_coords = shmat(shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1) {
+        perror("[NAVE] Error while trying to attach to ports coordinates shared memory");
+        kill(getppid(), SIGINT);
     }
 
-    actual_coordinate.x = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
-    actual_coordinate.y = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+    rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+    rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
 
-    /*printf("[%d] Generated ship.\n", getpid());*/
+    for(i = 0; i < shm_cfg->SO_PORTI; i++) {
+        if(shm_ports_coords[i].x == rndx && shm_ports_coords[i].y == rndy) {
+            i = -1;
+            rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+            rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+        }
+    }
 
+    actual_coordinate.x = rndx;
+    actual_coordinate.y = rndy;
     actual_capacity = 0;
-    actual_coordinate.x = 0;
-    actual_coordinate.y = 0;
+    id_destination_port = -1;
+
     sa.sa_handler = nave_sig_handler;
     sa.sa_flags = SA_RESTART;
 
     sigaction(SIGALRM, &sa, NULL);
 
     /* TODO: The ship can't exit on its own, it has to be killed by the master or weather */
-    /* So make it wait for input */
+    if(sem_cmd(sem_id_generation, 0, -1, 0) < 0) {
+        perror("[NAVE] Error while trying to release sem_id_generation");
+        kill(getppid(), SIGINT);
+    }
 
     while (1) {
-        c.x = (double) random() / RAND_MAX *  shm_cfg->SO_LATO;
-        c.y = (double) random() / RAND_MAX *  shm_cfg->SO_LATO;
-        move(shm_cfg, c);
+        old_id_destination_port = id_destination_port;
+        do {
+            id_destination_port = (int) random() % shm_cfg->SO_PORTI;
+        } while (id_destination_port == old_id_destination_port);
+
+        move(shm_ports_coords[id_destination_port]);
     }
 
 }
@@ -110,9 +132,6 @@ int main(void) {
 void nave_sig_handler(int signum) {
     switch (signum) {
         case SIGALRM:
-            printf("NAVE\n");
             break;
-        default:
-            printf("SIUM\n");
     }
 }

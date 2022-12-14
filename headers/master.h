@@ -22,10 +22,6 @@
 #include <sys/msg.h>
 #include <sys/stat.h>
 
-#define PATH_CONFIG     "config1.txt"
-#define PATH_CONFIG_2   "config2.txt"
-#define PATH_CONFIG_3   "config3.txt"
-
 #define EXIT_DEATH      127
 
 #ifdef NDEBUG
@@ -44,6 +40,18 @@
 
 
 typedef struct {
+    int id;
+    int ton;
+    int lifespan;
+} goods;
+
+
+typedef struct {
+    double x;
+    double y;
+} coord;
+
+typedef struct {
     int     CURRENT_DAY;
     int     SO_NAVI;
     int     SO_PORTI;
@@ -57,35 +65,11 @@ typedef struct {
     int     SO_BANCHINE;
     int     SO_FILL;
     int     SO_LOADSPEED;
-    int     STEP;
     int     SO_DAYS;
-    int     TOPK;
     int     STORM_DURATION;
     int     SWELL_DURATION;
     int     ML_INTENSITY;
     unsigned int check;
 } config;
-
-typedef struct {
-    int id;
-    int ton;
-    int lifespan;
-} goods;
-
-
-typedef struct {
-    double x;
-    double y;
-} coord;
-
-void initialize_so_vars(config *cfg, char* path_cfg_file);
-void initialize_semaphores(int sem_id);
-int initialize_message_queue(int key);
-void create_ships(config *cfg);
-void create_ports(config *cfg);
-void create_weather(void);
-void detach_all(void);
-
-
 
 #endif /*PROGETTOSO_MASTER_H*/

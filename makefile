@@ -12,7 +12,7 @@ DIRDBG	= debug
 DIRRLS	= release
 
 # compiling flags
-CFLAGS	= -std=c89 -pedantic
+CFLAGS	= -std=c89 -Wpedantic
 DCFLAGS	= $(CFLAGS) -g -O0 -DDEBUG
 RCFLAGS = $(CFLAGS) -O2 -Wall -Wextra -DNDEBUG
 
@@ -34,11 +34,11 @@ $(DIRRLS)/%.out: $(DIRSRC)/%.c
 	$(CC) $(RCFLAGS)	$(addprefix $(DIRSRC)/, $(COMMON)) $<	-o	$@	$(LDFLAGS)
 
 drun: $(addprefix $(DIRDBG)/, $(TARGET))
-	./$(DIRDBG)/$(TARGET)
+	./$(DIRDBG)/$(TARGET) testing\ config.txt
 
 # Use make run to run the executable manually. CLion, when running all automatically runs the executable at the end.
 run: $(addprefix $(DIRRLS)/, $(TARGET))
-	./$(DIRRLS)/$(TARGET)
+	./$(DIRRLS)/$(TARGET) testing\ config.txt
 
 prep:
 	@mkdir -p $(DIRDBG) $(DIRRLS)
