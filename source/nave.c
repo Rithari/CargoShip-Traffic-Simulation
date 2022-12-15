@@ -35,8 +35,6 @@ void move(coord destination) {
     while (nanosleep(&ts, &rem)) {
         switch (errno) {
             case EINTR:
-
-                perror("nave.c");
                 /* TODO: aggiungere funzionalità */
                 /*
                  *  clock_gettime(CLOCK_REALTIME, &start);
@@ -107,7 +105,7 @@ int main(int argc, char** argv) {
     actual_coordinate.x = rndx;
     actual_coordinate.y = rndy;
     actual_capacity = 0;
-    id_destination_port = -1;
+    id_destination_port = -1; /* ship in sea */
 
     sa.sa_handler = nave_sig_handler;
     sa.sa_flags = SA_RESTART;
@@ -133,10 +131,12 @@ int main(int argc, char** argv) {
 
 void nave_sig_handler(int signum) {
     int old_errno = errno;
+
     switch (signum) {
         case SIGALRM:
             break;
     }
+
     errno = old_errno;
 }
 
@@ -150,8 +150,9 @@ void nave_sig_handler(int signum) {
  * the function simply selects a different port and tries again. If the port's semaphore is available,
  * the function decrements the semaphore value to acquire a lock on the dock and returns the index of the port.
 */
+/*
 int pick_rand_port() {
-    // Keep trying to pick a random port and acquire a lock on its dock until we succeed
+    /* Keep trying to pick a random port and acquire a lock on its dock until we succeed
     int port_index = -1;
     int port_semaphore_id;
     int i = 0;
@@ -161,7 +162,7 @@ int pick_rand_port() {
         // Select a random port from the coordinates array
         port_index = i;
         i = (i + 1) % shm_cfg->SO_PORTI;
-        port_semaphore_id = shm_ports_coords[port_index].semaphore_id;
+        /*port_semaphore_id = shm_ports_coords[port_index].semaphore_id;
 
         // Try to acquire a lock on the port's semaphore
         // Decrement the port's semaphore value to acquire a lock on the dock
@@ -186,4 +187,4 @@ int pick_rand_port() {
             return port_index;
         }
     }
-}
+}*/
