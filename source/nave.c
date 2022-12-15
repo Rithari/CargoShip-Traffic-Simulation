@@ -21,7 +21,7 @@ int     actual_capacity;
 
 void move(coord destination) {
     struct timespec ts, rem;
-    struct timespec start, end;
+    /* struct timespec start, end; */
 
     double dx = destination.x - actual_coordinate.x;
     double dy = destination.y - actual_coordinate.y;
@@ -35,6 +35,8 @@ void move(coord destination) {
     while (nanosleep(&ts, &rem)) {
         switch (errno) {
             case EINTR:
+
+                perror("nave.c");
                 /* TODO: aggiungere funzionalità */
                 /*
                  *  clock_gettime(CLOCK_REALTIME, &start);
@@ -130,8 +132,58 @@ int main(int argc, char** argv) {
 }
 
 void nave_sig_handler(int signum) {
+    int old_errno = errno;
     switch (signum) {
         case SIGALRM:
             break;
+    }
+    errno = old_errno;
+}
+
+/*
+ * This function uses a while loop to keep trying to pick a
+ * random port and acquire a lock on its dock until it succeeds.
+ * It first selects a random port from the coordinates array and gets
+ * the semaphore ID associated with that port. It then tries to acquire a
+ * lock on the port's semaphore by checking its value and decrementing it
+ * if it is greater than 0. If the port's semaphore is not available (its value is 0),
+ * the function simply selects a different port and tries again. If the port's semaphore is available,
+ * the function decrements the semaphore value to acquire a lock on the dock and returns the index of the port.
+*/
+int pick_rand_port() {
+    // Keep trying to pick a random port and acquire a lock on its dock until we succeed
+    int port_index = -1;
+    int port_semaphore_id;
+    int i = 0;
+    struct sembuf semaphore_operation;
+
+    while (port_index == -1) {
+        // Select a random port from the coordinates array
+        port_index = i;
+        i = (i + 1) % shm_cfg->SO_PORTI;
+        port_semaphore_id = shm_ports_coords[port_index].semaphore_id;
+
+        // Try to acquire a lock on the port's semaphore
+        // Decrement the port's semaphore value to acquire a lock on the dock
+        semaphore_operation.sem_num = 0;
+        semaphore_operation.sem_op = -1;
+        semaphore_operation.sem_flg = IPC_NOWAIT;
+        if (semop(port_semaphore_id, &semaphore_operation, 1) == -1 ) {
+            // The port's semaphore is not available (its value is 0)
+            switch(errno) {
+                case EAGAIN:
+                    port_index = -1;
+                    // The port's semaphore is not available (its value is 0)
+                    // Select a different port and try again
+                    continue;
+                default:
+                    // Generic error
+                    perror("Error in pick_rand_port()");
+                    exit(EXIT_FAILURE);
+            }
+
+            // Return the index of the port we selected
+            return port_index;
+        }
     }
 }
