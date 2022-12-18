@@ -126,14 +126,14 @@ int main(int argc, char** argv) {
         /*TODO: implement a better way to handle this boolean flag*/
         not_error = 1;
 
-        while (not_error && semtimedop(sem_id_docks, sops, 2, &timeout)) {
-            /* The port's semaphore is not available (its value is 0) */
+       /* while (not_error && semtimedop(sem_id_docks, sops, 2, &timeout)) {
+            The port's semaphore is not available (its value is 0) */
             /*for (i = 0; i < shm_cfg->SO_PORTI; i++) {
                 printf("Sem no [%d]: %d\n", i, semctl(sem_id_docks, i, GETVAL));
-            }*/
+            }
             switch(errno) {
                 case EAGAIN:
-                    /* BRO MA SEI UN MEME */
+                    BRO MA SEI UN MEME
                     while (sem_cmd(sem_id_docks, old_id_destination_port, 1, 0));
                     move(shm_cfg->SO_PORTI);
                     id_destination_port = pick_rand_port_on_sea();
@@ -141,15 +141,15 @@ int main(int argc, char** argv) {
                     not_error = 0;
                     break;
                 case EINTR:
-                    /* Interrupt occurred, retry */
+                    Interrupt occurred, retry
                     continue;
                 default:
-                    /* Generic error */
+                     Generic error
                     perror("[NAVE] Error in pick_rand_port()");
                     kill(getppid(), SIGINT);
                     break;
             }
-        }
+        } */
         /* printf("[%d] Semaphore [%d] unlocked!\n", getpid(), old_id_destination_port); */
         move(id_destination_port);
     }

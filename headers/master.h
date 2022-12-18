@@ -1,7 +1,7 @@
 #ifndef PROGETTOSO_MASTER_H
 #define PROGETTOSO_MASTER_H
 
-#define _POSIX_C_SOURCE 199309L
+
 #define _GNU_SOURCE
 
 #include <sys/types.h>
