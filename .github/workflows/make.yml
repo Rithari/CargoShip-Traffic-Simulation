@@ -51,6 +51,7 @@ jobs:
       if: ${{ env.RUN_MEMORY_CHECK == 'true' }}
       run: |
         valgrind --leak-check=yes --log-file=valgrind.rpt /home/runner/work/progettoso/progettoso/${{env.BUILD_TYPE}}/master.out "testing config.txt"
+        cat valgrind.rpt
 
    # - name: Test
    #   working-directory: ${{github.workspace}}/build
