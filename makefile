@@ -34,11 +34,11 @@ $(DIRRLS)/%.out: $(DIRSRC)/%.c
 	$(CC) $(RCFLAGS)	$(addprefix $(DIRSRC)/, $(COMMON)) $<	-o	$@	$(LDFLAGS)
 
 drun: $(addprefix $(DIRDBG)/, $(TARGET))
-	./$(DIRDBG)/$(TARGET) testing\ config.txt
+	./$(DIRDBG)/$(TARGET)
 
 # Use make run to run the executable manually. CLion, when running all automatically runs the executable at the end.
 run: $(addprefix $(DIRRLS)/, $(TARGET))
-	./$(DIRRLS)/$(TARGET) testing\ config.txt
+	./$(DIRRLS)/$(TARGET)
 
 prep:
 	@mkdir -p $(DIRDBG) $(DIRRLS)
