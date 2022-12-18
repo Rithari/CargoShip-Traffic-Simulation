@@ -16,6 +16,7 @@
 #include <time.h>
 #include <errno.h>
 #include <string.h>
+#include <limits.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
@@ -35,8 +36,6 @@
 #define PATH_MASTER "debug/master.out"
 #define PATH_METEO  "debug/meteo.out"
 #endif
-
-/*TODO: pensare ad un quadtree?*/
 
 
 typedef struct {
@@ -66,6 +65,7 @@ typedef struct {
     int     SO_FILL;
     int     SO_LOADSPEED;
     int     SO_DAYS;
+    int     SO_DAY_LENGTH;
     int     STORM_DURATION;
     int     SWELL_DURATION;
     int     ML_INTENSITY;

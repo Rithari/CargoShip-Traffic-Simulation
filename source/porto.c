@@ -33,15 +33,16 @@ void add(goodsList myOffers, goodsOffers); <--- solo per test
 
 /* goodsList myOffers; */
 config *shm_cfg;
+int sem_id_dock;
 
 /* ? porto_goodsOffers_generator(); */
 
 int main(int argc, char *argv[]) {
     int     i;
-    long    n_docks;
     struct sigaction sa;
     struct sembuf sem;
 
+    bzero(&sa, sizeof(sa));
     sa.sa_handler = porto_sig_handler;
 
     sigaction(SIGALRM, &sa, NULL);
@@ -50,7 +51,7 @@ int main(int argc, char *argv[]) {
 
     srandom(getpid());
 
-    if(argc != 5) {
+    if(argc != 6) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
         kill(getppid(), SIGINT);
     }
@@ -59,7 +60,8 @@ int main(int argc, char *argv[]) {
     shm_id_ports_coords = string_to_int(argv[1]);
     mq_id_request = string_to_int(argv[2]);
     sem_id_generation = string_to_int(argv[3]);
-    id = string_to_int(argv[4]);
+    sem_id_dock = string_to_int(argv[4]);
+    id = string_to_int(argv[5]);
 
     if((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1) {
         perror("[PORTO] Error while trying to attach to configuration shared memory");
@@ -72,10 +74,6 @@ int main(int argc, char *argv[]) {
     }
 
     printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);
-
-    /* n_docks = (int) random() % shm_cfg->SO_BANCHINE + 1;
-    sem_id = initialize_semaphore(key, n_docks); */
-
 
     if(sem_cmd(sem_id_generation, 0, -1, 0) < 0) {
         perror("[PORTO] Error while trying to release sem_id_generation");

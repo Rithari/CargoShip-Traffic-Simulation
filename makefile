@@ -4,6 +4,7 @@ LDFLAGS	= -lm
 COMMON 	= common_ipcs.c utils.c
 TARGET 	= master.out nave.out porto.out meteo.out
 SOURCE 	= master.c nave.c porto.c meteo.c
+EXE		= master.out
 
 # directories
 DIRSRC 	= source
@@ -15,6 +16,9 @@ DIRRLS	= release
 CFLAGS	= -std=c89 -Wpedantic
 DCFLAGS	= $(CFLAGS) -g -O0 -DDEBUG
 RCFLAGS = $(CFLAGS) -O2 -Wall -Wextra -DNDEBUG
+
+# compiling args
+ARGS 	?= testing config.txt
 
 # $< is the first prerequisite
 # $@ is the target
@@ -34,11 +38,11 @@ $(DIRRLS)/%.out: $(DIRSRC)/%.c
 	$(CC) $(RCFLAGS)	$(addprefix $(DIRSRC)/, $(COMMON)) $<	-o	$@	$(LDFLAGS)
 
 drun: $(addprefix $(DIRDBG)/, $(TARGET))
-	./$(DIRDBG)/$(TARGET) testing\ config.txt
+	./$(DIRDBG)/$(EXE) "$(ARGS)"
 
 # Use make run to run the executable manually. CLion, when running all automatically runs the executable at the end.
 run: $(addprefix $(DIRRLS)/, $(TARGET))
-	./$(DIRRLS)/$(TARGET) testing\ config.txt
+	./$(DIRRLS)/$(EXE) "$(ARGS)"
 
 prep:
 	@mkdir -p $(DIRDBG) $(DIRRLS)
