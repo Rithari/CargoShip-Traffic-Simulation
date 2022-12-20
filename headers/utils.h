@@ -3,6 +3,7 @@
 
 #include "master.h"
 
+/* TODO: check relevance */
 void timespec_sub(struct timespec*, struct timespec*, struct timespec*);
 void print_config(config *cfg);
 
