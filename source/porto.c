@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     struct sigaction sa;
     struct sembuf sem;
 
-    bzero(&sa, sizeof(sa));
+    memset(&sa, 0, sizeof(sa));
     sa.sa_handler = porto_sig_handler;
 
     sigaction(SIGALRM, &sa, NULL);
@@ -51,17 +51,19 @@ int main(int argc, char *argv[]) {
 
     srandom(getpid());
 
-    if(argc != 6) {
+    if(argc != 7) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
         kill(getppid(), SIGINT);
     }
 
-    shm_id_config = string_to_int(argv[0]);
-    shm_id_ports_coords = string_to_int(argv[1]);
-    mq_id_request = string_to_int(argv[2]);
-    sem_id_generation = string_to_int(argv[3]);
-    sem_id_dock = string_to_int(argv[4]);
-    id = string_to_int(argv[5]);
+    shm_id_config = string_to_int(argv[1]);
+    shm_id_ports_coords = string_to_int(argv[2]);
+    mq_id_request = string_to_int(argv[3]);
+    sem_id_generation = string_to_int(argv[4]);
+    sem_id_dock = string_to_int(argv[5]);
+    id = string_to_int(argv[6]);
+    printf("ID_CONFIG: %d\n", shm_id_config);
+    printf("ID_PORTS_COORD: %d\n", shm_id_ports_coords);
 
     if((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1) {
         perror("[PORTO] Error while trying to attach to configuration shared memory");
