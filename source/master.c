@@ -249,11 +249,12 @@ void initialize_ports_coords(void) {
     shm_ports_coords[2].y = shm_cfg->SO_LATO;
     shm_ports_coords[3].x = 0;
     shm_ports_coords[3].y = shm_cfg->SO_LATO;
-    /*TODO: implmentare il baricentro invece del sempice centro
+    /*TODO: implementare il baricentro invece del semplice centro
      * ATTENZIONE A POSSIBILI OVERFLOW CON LE SOMME*/
     shm_ports_coords[shm_cfg->SO_PORTI].x = shm_cfg->SO_LATO / 2;
     shm_ports_coords[shm_cfg->SO_PORTI].y = shm_cfg->SO_LATO / 2;
 
+    /* TODO: Explain why this starts at 4 */
     for(i = 4; i < shm_cfg->SO_PORTI; i++) {
         double rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
         double rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;

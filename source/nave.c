@@ -126,6 +126,7 @@ int main(int argc, char** argv) {
         /*TODO: implement a better way to handle this boolean flag*/
         not_error = 1;
 
+        /* TODO */
        /* while (not_error && semtimedop(sem_id_docks, sops, 2, &timeout)) {
             The port's semaphore is not available (its value is 0) */
             /*for (i = 0; i < shm_cfg->SO_PORTI; i++) {

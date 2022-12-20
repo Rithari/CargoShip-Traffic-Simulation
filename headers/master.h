@@ -23,7 +23,6 @@
 #include <sys/msg.h>
 #include <sys/stat.h>
 
-#define EXIT_DEATH      127
 
 #ifdef NDEBUG
 #define PATH_NAVE   "release/nave.out"
