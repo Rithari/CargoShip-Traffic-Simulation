@@ -1,76 +1,52 @@
-#
-# Compiler flags
-#
-CC     = gcc
-CFLAGS = -Wall -Werror -Wextra -std=c89
-EXE = master.out
+# basic rules
+CC 		= gcc
+LDFLAGS	= -lm
+COMMON 	= common_ipcs.c utils.c
+TARGET 	= master.out nave.out porto.out meteo.out
+SOURCE 	= master.c nave.c porto.c meteo.c
+EXE		= master.out
 
-#
-# Project files
-#
-SRCS = master.c nave.c porto.c meteo.c
-OBJS = $(SRCS:.c=.out)
+# directories
+DIRSRC 	= source
+DIRHDR	= headers
+DIRDBG	= debug
+DIRRLS	= release
 
-#
-# Debug build settings
-#
-DBGDIR = debug
-DBGEXE = $(DBGDIR)/$(EXE)
-DBGOBJS = $(addprefix $(DBGDIR)/, $(OBJS))
-DBGCFLAGS = -g -O0 -DDEBUG -D DEBUG
+# compiling flags
+CFLAGS	= -std=c89 -Wpedantic
+DCFLAGS	= $(CFLAGS) -g -O0 -DDEBUG
+RCFLAGS = $(CFLAGS) -O2 -Wall -Wextra -DNDEBUG
 
-#
-# Release build settings
-#
-RELDIR = release
-RELEXE = $(RELDIR)/$(EXE)
-RELOBJS = $(addprefix $(RELDIR)/, $(OBJS))
-RELCFLAGS = -O2 -DNDEBUG -D RELEASE
+# compiling args
+ARGS 	?= testing config.txt
 
-.PHONY: relrun dbgrun default clean debug prep release remake
+# $< is the first prerequisite
+# $@ is the target
+# $^ is all the prerequisites
 
-# Default build
-default: clean prep release
+# build all the prerequisites for compile the project
+all: clean prep debug release
 
-# Use these to build the debug and release versions manually (if you want)
-# CLion's start (play) button is configured to run the executable automatically
-run:
-	./$(RELEXE)
+debug: $(addprefix $(DIRDBG)/, $(TARGET))
 
-drun:
-	./$(DBGEXE)
+$(DIRDBG)/%.out: $(DIRSRC)/%.c
+	$(CC) $(DCFLAGS)	$(addprefix $(DIRSRC)/, $(COMMON))	$<	-o	$@	$(LDFLAGS)
 
-#
-# Debug rules
-#
-debug: prep $(DBGEXE)
+release: $(addprefix $(DIRRLS)/, $(TARGET))
 
-$(DBGEXE):
-	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/master.out master.c
-	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/nave.out nave.c
-	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/porto.out porto.c
-	$(CC) $(CFLAGS) $(DBGCFLAGS) -o $(DBGDIR)/meteo.out meteo.c
+$(DIRRLS)/%.out: $(DIRSRC)/%.c
+	$(CC) $(RCFLAGS)	$(addprefix $(DIRSRC)/, $(COMMON)) $<	-o	$@	$(LDFLAGS)
 
+drun: $(addprefix $(DIRDBG)/, $(TARGET))
+	./$(DIRDBG)/$(EXE) "$(ARGS)"
 
-#
-# Release rules
-#
-release: prep $(RELEXE)
+# Use make run to run the executable manually. CLion, when running all automatically runs the executable at the end.
+run: $(addprefix $(DIRRLS)/, $(TARGET))
+	./$(DIRRLS)/$(EXE) "$(ARGS)"
 
-$(RELEXE):
-	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/master.out master.c
-	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/nave.out nave.c
-	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/porto.out porto.c
-	$(CC) $(CFLAGS) $(RELCFLAGS) -o $(RELDIR)/meteo.out meteo.c
-
-#
-# Other rules
-#
 prep:
-	@mkdir -p $(DBGDIR) $(RELDIR)
+	@mkdir -p $(DIRDBG) $(DIRRLS)
 
-remake: clean default
-
+# remove all files and directories in the debug and release folders
 clean:
-	echo "Cleaning..."
-	rm -f -r $(RELDIR) $(DBGDIR)
+	rm -rf $(DIRDBG)/* $(DIRRLS)/*
