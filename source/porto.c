@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = porto_sig_handler;
     sa.sa_flags = SA_RESTART;
+    sigaction(SIGCONT, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGALRM, &sa, NULL);
     sa.sa_flags |= SA_NODEFER;
@@ -57,55 +58,29 @@ int main(int argc, char *argv[]) {
         kill(getppid(), SIGINT);
     }
 
-
-    /* Refactor */
     shm_id_config = string_to_int(argv[1]);
-    if(errno) {
-        perror("[PORTO] Error while trying to convert shm_id_config");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert shm_id_config")
     shm_id_ports_coords = string_to_int(argv[2]);
-    if(errno) {
-        perror("[PORTO] Error while trying to convert shm_id_ports_coords");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert shm_id_ports_coords")
     mq_id_request = string_to_int(argv[3]);
-    if(errno) {
-        perror("[PORTO] Error while trying to convert mq_id_request");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert mq_id_request")
     sem_id_generation = string_to_int(argv[4]);
-    if(errno) {
-        perror("[PORTO] Error while trying to convert sem_id_generation");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert sem_id_generation")
     sem_id_dock = string_to_int(argv[5]);
-    if(errno) {
-        perror("[PORTO] Error while trying to convert sem_id_dock");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert sem_id_dock")
     id = string_to_int(argv[6]);
-    if(errno) {
-        perror("[PORTO] Error while trying to convert id");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert id")
 
-    if((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1) {
-        perror("[PORTO] Error while trying to attach to configuration shared memory");
-        kill(getppid(), SIGINT);
-    }
 
-    if((shm_ports_coords = shmat(shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1) {
-        perror("[PORTO] Error while trying to attach to ports coordinates shared memory");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1, getppid(),
+                "[PORTO] Error while trying to attach to configuration shared memory")
+    CHECK_ERROR((shm_ports_coords = shmat(shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1, getppid(),
+                "[PORTO] Error while trying to attach to ports coordinates shared memory")
 
     printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);
 
-    if(sem_cmd(sem_id_generation, 0, -1, 0) < 0) {
-        perror("[PORTO] Error while trying to release sem_id_generation");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR(sem_cmd(sem_id_generation, 0, -1, 0) < 0, getppid(),
+                "[PORTO] Error while trying to release sem_id_generation")
 
     /*start_of_goods_generation();*/
 
@@ -186,12 +161,14 @@ void porto_sig_handler(int signum) {
     struct timespec swell_duration, rem;
 
     switch (signum) {
+        case SIGCONT:
+            break;
         case SIGINT:
             /* semctl(sem_id, 0, IPC_RMID); */
             exit(EXIT_FAILURE);
         case SIGALRM:
             /*TODO: dump stato attuale*/
-            printf("[PORTO] DUMP PID: [%d]\n", getpid());
+            printf("[PORTO] DUMP PID: [%d] SIGALRM\n", getpid());
             break;
         case SIGUSR1:
             /* swell occurred */

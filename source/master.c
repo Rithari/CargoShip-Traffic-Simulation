@@ -8,9 +8,6 @@
 void initialize_so_vars(char* path_cfg_file);
 void initialize_ports_coords(void);
 
-/* this methods shouldn't be here */
-void initialize_semaphores(int sem_id);
-
 void create_ships(void);
 void create_ports(void);
 void create_weather(void);
@@ -25,8 +22,10 @@ pid_t   *shm_pid_array;
 pid_t   pid_weather;
 config  *shm_cfg;
 coord   *shm_ports_coords;
+goods   *shm_goods_template;
 
 int     shm_id_config;
+int     shm_id_goods_template;
 int     shm_id_ports_coords;
 int     shm_id_pid_array;
 int     mq_id_request;
@@ -57,13 +56,24 @@ int main(int argc, char **argv) {
     initialize_so_vars(argv[1]);
 
     /* create goods shm*/
+    CHECK_ERROR((shm_id_goods_template = shmget(IPC_PRIVATE,
+                                              sizeof(goods) * shm_cfg->SO_MERCI, 0600)) < 0, getpid(),
+                "[MASTER] Error while creating shared memory for goods template generation")
 
+    CHECK_ERROR((shm_goods_template = shmat(shm_id_goods_template, NULL, 0)) == (void *) -1, getpid(),
+                "[MASTER] Error while trying to attach to ports coordinates shared memory")
 
+    for (i = 0; i < shm_cfg->SO_MERCI; i++) {
+        shm_goods_template[i].id = i;
+        shm_goods_template[i].ton = (int) random() % shm_cfg->SO_SIZE + 1;
+        shm_goods_template[i].lifespan = (int) random() % (shm_cfg->SO_MAX_VITA - shm_cfg->SO_MIN_VITA + 1)
+                                         + shm_cfg->SO_MIN_VITA;
+    }
 
     /* create and attach ports coordinate shared memory segment */
     CHECK_ERROR((shm_id_ports_coords = shmget(IPC_PRIVATE,
-                                              sizeof(*shm_ports_coords) * shm_cfg->SO_PORTI, 0600)) < 0, getpid(),
-                "[MASTER] Error while creating shared memory for ports coordinates")
+                                              sizeof(*shm_ports_coords) * shm_cfg->SO_PORTI, 0600)) < 0,
+                getpid(), "[MASTER] Error while creating shared memory for ports coordinates")
 
     CHECK_ERROR((shm_ports_coords = shmat(shm_id_ports_coords, NULL, 0)) == (void *) -1, getpid(),
                 "[MASTER] Error while trying to attach to ports coordinates shared memory")
@@ -71,9 +81,9 @@ int main(int argc, char **argv) {
     initialize_ports_coords();
 
     /* Array of pids for the children */
-    CHECK_ERROR((shm_id_pid_array = shmget(IPC_PRIVATE,
-                                              sizeof(pid_t) * (shm_cfg->SO_PORTI + shm_cfg->SO_NAVI), 0600)) < 0, getpid(),
-                "[MASTER] Error while creating shared memory for pid array")
+    CHECK_ERROR((shm_id_pid_array =
+            shmget(IPC_PRIVATE, sizeof(pid_t) * (shm_cfg->SO_PORTI + shm_cfg->SO_NAVI), 0600)) < 0,
+                getpid(), "[MASTER] Error while creating shared memory for pid array")
 
     CHECK_ERROR((shm_pid_array = shmat(shm_id_pid_array, NULL, 0)) == (void *) -1, getpid(),
                 "[MASTER] Error while trying to attach to pid array shared memory")
@@ -88,10 +98,11 @@ int main(int argc, char **argv) {
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = master_sig_handler;
     sa.sa_flags = SA_RESTART;
+    sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGCHLD, &sa, NULL);
     sigaction(SIGALRM, &sa, NULL);
-    sigaction(SIGTERM, &sa, NULL);
+    sa.sa_flags |= SA_NODEFER;
     sigaction(SIGUSR1, &sa, NULL);
 
 
@@ -116,13 +127,13 @@ int main(int argc, char **argv) {
      * credo sia meglio implementare ad esempio una SIGCONT*/
     /*TODO: magari implementare setpgid, getpgid, setpgrp, getpgrp*/
 
-    /*for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
+    for (i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
         if(shm_pid_array[i] >= 0) {
             kill(shm_pid_array[i], SIGCONT);
         }
-    }*/
+    }
 
-    alarm(1);
+    alarm(shm_cfg->SO_DAY_LENGTH);
 
     while(waitpid(-1, NULL, 0) > 0) {
         switch (errno) {
@@ -142,20 +153,19 @@ int main(int argc, char **argv) {
 }
 
 void clear_all(void) {
-    pid_t pid;
-    pid = getpid();
-
-    CHECK_ERROR(shmctl(shm_id_config, IPC_RMID, NULL), pid,
+    CHECK_ERROR(shmctl(shm_id_config, IPC_RMID, NULL), getpid(),
                 "[MASTER] Error while removing config shared memory in clear_all");
-    CHECK_ERROR(shmctl(shm_id_ports_coords, IPC_RMID, NULL), pid,
+    CHECK_ERROR(shmctl(shm_id_goods_template, IPC_RMID, NULL), getpid(),
+                "[MASTER] Error while removing goods template shared memory in clear_all");
+    CHECK_ERROR(shmctl(shm_id_ports_coords, IPC_RMID, NULL), getpid(),
                 "[MASTER] Error while removing ports coordinates shared memory in clear_all");
-    CHECK_ERROR(shmctl(shm_id_pid_array, IPC_RMID, NULL), pid,
+    CHECK_ERROR(shmctl(shm_id_pid_array, IPC_RMID, NULL), getpid(),
                 "[MASTER] Error while removing pid array shared memory in clear_all");
-    CHECK_ERROR(msgctl(mq_id_request, IPC_RMID, NULL), pid,
+    CHECK_ERROR(msgctl(mq_id_request, IPC_RMID, NULL), getpid(),
                 "[MASTER] Error while removing message queue in clear_all");
-    CHECK_ERROR(semctl(sem_id_generation, 0, IPC_RMID, 0), pid,
+    CHECK_ERROR(semctl(sem_id_generation, 0, IPC_RMID, 0), getpid(),
                 "[MASTER] Error while removing semaphore for generation order control in clear_all");
-    CHECK_ERROR(semctl(sem_id_docks, 0, IPC_RMID, 0), pid,
+    CHECK_ERROR(semctl(sem_id_docks, 0, IPC_RMID, 0), getpid(),
                 "[MASTER] Error while removing semaphore for docks control in clear_all");
 }
 
@@ -381,13 +391,14 @@ void master_sig_handler(int signum) {
 
             /* Check SO_DAYS against the current day. If they're the same kill everything */
             if(shm_cfg->CURRENT_DAY == shm_cfg->SO_DAYS) {
-                printf("Reached SO_DAYS, killing all processes.\n");
+                printf("Day [%d]/[%d]. Reached SO_DAYS\n", shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
                 for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
                     if(shm_pid_array[i] >= 0) {
-                        kill(shm_pid_array[i], SIGINT);
+                        kill(shm_pid_array[i], SIGTERM);
                     }
                 }
-                kill(pid_weather, SIGINT);
+                kill(pid_weather, SIGTERM);
+                /* TODO: dump dello stato finale */
             } else {
                 printf("Day [%d]/[%d].\n", shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
                 for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
@@ -396,19 +407,19 @@ void master_sig_handler(int signum) {
                     }
                 }
                 kill(pid_weather, SIGALRM);
+                alarm(shm_cfg->SO_DAY_LENGTH);
             }
-            alarm(shm_cfg->SO_DAY_LENGTH);
             break;
         case SIGCHLD:
             break;
         case SIGUSR1:
             printf("ALL SHIPS ARE DEAD :C\n");
             for(i = 0; i < shm_cfg->SO_PORTI; i++) {
-                if(shm_pid_array[i] >= 0) {
+                if(shm_pid_array[i] >= 0)
                     kill(shm_pid_array[i], SIGTERM);
-                }
             }
-            break;
+            clear_all();
+            exit(EXIT_SUCCESS);
         default:
             printf("Signal: %s\n", strsignal(signum));
             break;

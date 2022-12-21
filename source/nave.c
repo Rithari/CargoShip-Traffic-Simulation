@@ -7,6 +7,8 @@
 /*nave deve ricordarsi l'ultimo porto di partenza per evitare che ci ritorni quando viene messa in mare */
 /*una nave in mare cerca sempre una coda di attracco libera (BUSY WAITING!!)*/
 
+/*TODO: GUI!*/
+
 void move(int);
 int pick_rand_port_on_sea(void);
 void nave_sig_handler(int);
@@ -44,41 +46,20 @@ int main(int argc, char** argv) {
     /* TODO: Refactor and comment this section of code same for line 61 in porto.c */
 
     shm_id_config = string_to_int(argv[1]);
-    if(errno) {
-        perror("[NAVE] Error while trying to convert shm_id_config");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert shm_id_config")
     shm_id_ports_coords = string_to_int(argv[2]);
-    if(errno) {
-        perror("[NAVE] Error while trying to convert shm_id_ports_coords");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert shm_id_ports_coords")
     mq_id_request = string_to_int(argv[3]);
-    if(errno) {
-        perror("[NAVE] Error while trying to convert mq_id_request");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert mq_id_request")
     sem_id_generation = string_to_int(argv[4]);
-    if(errno) {
-        perror("[NAVE] Error while trying to convert sem_id_generation");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert sem_id_generation")
     sem_id_docks = string_to_int(argv[5]);
-    if(errno) {
-        perror("[NAVE] Error while trying to convert sem_id_docks");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert sem_id_docks")
 
-
-    if((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1) {
-        perror("[NAVE] Error while trying to attach to configuration shared memory");
-        kill(getppid(), SIGINT);
-    }
-
-    if((shm_ports_coords = shmat(shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1) {
-        perror("[NAVE] Error while trying to attach to ports coordinates shared memory");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1, getppid(),
+            "[NAVE] Error while trying to attach to configuration shared memory")
+    CHECK_ERROR((shm_ports_coords = shmat(shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1, getppid(),
+                "[NAVE] Error while trying to attach to ports coordinates shared memory")
 
     old_id_destination_port = -1;
 
@@ -101,15 +82,14 @@ int main(int argc, char** argv) {
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = nave_sig_handler;
     sa.sa_flags = SA_RESTART;
+    sigaction(SIGCONT, &sa, NULL);
     sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
     sa.sa_flags |= SA_NODEFER;
     sigaction(SIGUSR1, &sa, NULL);
 
-    if(sem_cmd(sem_id_generation, 0, -1, 0) < 0) {
-        perror("[NAVE] Error while trying to release sem_id_generation");
-        kill(getppid(), SIGINT);
-    }
+    CHECK_ERROR(sem_cmd(sem_id_generation, 0, -1, 0) < 0, getppid(),
+                "[NAVE] Error while trying to release sem_id_generation")
 
     pause();
 
@@ -134,14 +114,7 @@ int main(int argc, char** argv) {
         sops.sem_flg = 0;
 
         while (semop(sem_id_docks, &sops, 1)) {
-            switch (errno) {
-                case EINTR:
-                    continue;
-                default:
-                    perror("[NAVE] Error in pick_rand_port()");
-                    kill(getppid(), SIGINT);
-                    break;
-            }
+            CHECK_ERROR(errno != EINTR, getppid(), "[NAVE] Error while freeing semaphore")
         }
 
         sops.sem_num = id_destination_port;
@@ -150,15 +123,10 @@ int main(int argc, char** argv) {
 
         move(id_destination_port);
 
+
+        /*TODO: errore mentre una nave muore!!*/
         while (semop(sem_id_docks, &sops, 1)) {
-            switch (errno) {
-                case EINTR:
-                    continue;
-                default:
-                    perror("[NAVE] Error in pick_rand_port()");
-                    kill(getppid(), SIGINT);
-                    break;
-            }
+            CHECK_ERROR(errno != EINTR, getppid(), "[NAVE] Error while locking semaphore")
         }
     }
 }
@@ -168,14 +136,16 @@ void nave_sig_handler(int signum) {
     struct timespec storm_duration, rem;
 
     switch (signum) {
+        case SIGCONT:
+            break;
         case SIGALRM:
             /*printf("Allarme!\n"); */
             /*TODO: dump stato attuale*/
+            printf("[NAVE] DUMP PID: [%d] SIGALRM\n", getpid());
             break;
         case SIGTERM:
-            /* malestorm killed the ship :C */
-            /* mascherare altri segnali */
-            /*TODO: dump stato attuale*/
+            /* malestorm killed the ship :C or program end*/
+            /* mascherare altri segnali ?*/
             if(id_destination_port >= 0) {
                 CHECK_ERROR(sem_cmd(sem_id_docks, id_destination_port, 1, 0), getppid(),
                             "[NAVE] Unable to free the \"id_destination_port\" dock")
@@ -183,7 +153,7 @@ void nave_sig_handler(int signum) {
             exit(EXIT_SUCCESS);
         case SIGUSR1:
             /* storm occurred */
-            printf("[PORTO] SWELL: %d\n", getpid());
+            printf("[NAVE] SWELL: %d\n", getpid());
 
             storm_duration = calculate_timeout(shm_cfg->SO_STORM_DURATION, shm_cfg->SO_DAY_LENGTH);
 
@@ -193,7 +163,7 @@ void nave_sig_handler(int signum) {
                         storm_duration = rem;
                         continue;
                     default:
-                        perror("[PORTO] Generic error while sleeping");
+                        perror("[NAVE] Generic error while sleeping");
                         kill(getppid(), SIGINT);
                 }
             }
@@ -218,7 +188,6 @@ void move(int id_destination) {
 
     ts.tv_sec = (long) navigation_time;
     ts.tv_nsec = (long) ((navigation_time - ts.tv_sec) * 1000000000);
-    printf("I'm moving");
     while (nanosleep(&ts, &rem)) {
         switch (errno) {
             case EINTR:

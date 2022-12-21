@@ -20,10 +20,7 @@ int string_to_int(char *s) {
     char *endptr;
     int val = (int) strtol(s, &endptr, 10);
 
-    if (errno == ERANGE) {
-        perror("Integer conversion from parameter resulted in overflow or underflow in string_to_int function");
-    }
-    if (endptr == s || *endptr != '\0') {
+    if (endptr == s) {
         errno = EINVAL;
     }
     return val;

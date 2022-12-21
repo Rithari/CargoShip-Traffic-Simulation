@@ -64,9 +64,8 @@ int main(int argc, char** argv) {
         /*while (sem_cmd(sem_id_pid_mutex, index_pid_to_term, -1, 0)); */
         pid_ship_to_term = shm_pid_array[index_pid_to_term];
         shm_pid_array[index_pid_to_term] = shm_pid_array[available_ships + shm_cfg->SO_PORTI - 1];
-        shm_pid_array[available_ships + shm_cfg->SO_PORTI - 1] = -1;
         available_ships--;
-        kill(pid_ship_to_term, SIGTERM);
+        if(pid_ship_to_term >= 0) kill(pid_ship_to_term, SIGTERM);
     }
     kill(getppid(), SIGUSR1);
     return 0;
@@ -78,6 +77,8 @@ void meteo_sig_handler(int signum) {
     switch (signum) {
         case SIGALRM:
             kill(shm_pid_array[random() % shm_cfg->SO_PORTI], SIGUSR1);
+            /*TODO: in questo momento tutte le navi possono essere fermate, non solo*/
+            kill(shm_pid_array[random() % shm_cfg->SO_NAVI + shm_cfg->SO_PORTI], SIGUSR1);
             break;
         default:
             break;
