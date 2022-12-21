@@ -4,6 +4,13 @@
 #include "master.h"
 
 /* TODO: check relevance */
+#define CHECK_ERROR(x, pid, str) if(x) { \
+                            printf("ERROR IN LINE %d\n", __LINE__); \
+                            perror(str);    \
+                            kill(pid, SIGINT);  \
+                        }
+struct timespec calculate_timeout(int hours, int day_length);
+/* TODO: maybe useless function */
 void timespec_sub(struct timespec*, struct timespec*, struct timespec*);
 void print_config(config *cfg);
 

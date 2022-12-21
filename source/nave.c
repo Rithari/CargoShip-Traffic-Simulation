@@ -33,13 +33,11 @@ int main(int argc, char** argv) {
     int i;
     double rndx;
     double rndy;
-    bool not_error;
 
     struct sigaction sa;
-    struct timespec timeout;
-    struct sembuf sops[2];
+    struct sembuf sops;
 
-    if(argc != 5) {
+    if(argc != 6) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
         kill(getppid(), SIGINT);
     }
@@ -47,11 +45,11 @@ int main(int argc, char** argv) {
     srandom(getpid());
 
     /* TODO: CONTROLLARE IL FALLIMENTO DI QUESTA SEZIONE DI CODICE UNA VOLTA FATTO IL REFACTORING */
-    shm_id_config = string_to_int(argv[0]);
-    shm_id_ports_coords = string_to_int(argv[1]);
-    mq_id_request = string_to_int(argv[2]);
-    sem_id_generation = string_to_int(argv[3]);
-    sem_id_docks = string_to_int(argv[4]);
+    shm_id_config = string_to_int(argv[1]);
+    shm_id_ports_coords = string_to_int(argv[2]);
+    mq_id_request = string_to_int(argv[3]);
+    sem_id_generation = string_to_int(argv[4]);
+    sem_id_docks = string_to_int(argv[5]);
 
 
     if((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1) {
@@ -64,7 +62,7 @@ int main(int argc, char** argv) {
         kill(getppid(), SIGINT);
     }
 
-    old_id_destination_port = shm_cfg->SO_PORTI;
+    old_id_destination_port = -1;
 
     rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
     rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
@@ -82,21 +80,18 @@ int main(int argc, char** argv) {
     actual_capacity = 0;
     id_destination_port = -1; /* ship in sea */
 
-    bzero(&sa, sizeof(sa));
+    memset(&sa, 0, sizeof(sa));
     sa.sa_handler = nave_sig_handler;
-
+    sa.sa_flags = SA_RESTART;
     sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
+    sa.sa_flags |= SA_NODEFER;
+    sigaction(SIGUSR1, &sa, NULL);
 
-    /* TODO: The ship can't exit on its own, it has to be killed by the master or weather */
     if(sem_cmd(sem_id_generation, 0, -1, 0) < 0) {
         perror("[NAVE] Error while trying to release sem_id_generation");
         kill(getppid(), SIGINT);
     }
-
-    /*TODO: timeout based on SO_DAY_LENGTH instead of hard coded*/
-    timeout.tv_sec = 1;
-    timeout.tv_nsec = 0;
 
     pause();
 
@@ -104,9 +99,6 @@ int main(int argc, char** argv) {
     printf("[%d] Choose port no: [%d] from [%d]\n", getpid(), id_destination_port, old_id_destination_port);
     move(id_destination_port);
 
-
-    /*TODO: per adesso le navi sono molto inefficienti,
-     * è possibile migliorare implementando alcune idee che abbiamo già discusso*/
     while (1) {
         old_id_destination_port = id_destination_port;
 
@@ -118,64 +110,79 @@ int main(int argc, char** argv) {
 
         /* Per adesso mi limito a scegliere un porto casuale e richedere l'accesso alla banchina */
         printf("[%d] Choose port no: [%d] from [%d]\n", getpid(), id_destination_port, old_id_destination_port);
-        /* Possibilità di deadlock alta a caso*/
 
-        sops[0].sem_num = id_destination_port;
-        sops[0].sem_op = -1;
-        sops[0].sem_flg = 0;
-        sops[1].sem_num = old_id_destination_port;
-        sops[1].sem_op =  1;
-        sops[1].sem_flg = 0;
+        sops.sem_num = old_id_destination_port;
+        sops.sem_op =  1;
+        sops.sem_flg = 0;
 
-
-        not_error = true;
-        /* TODO */
-       /* while (not_error && semtimedop(sem_id_docks, sops, 2, &timeout)) {
-            The port's semaphore is not available (its value is 0) */
-            /*for (i = 0; i < shm_cfg->SO_PORTI; i++) {
-                printf("Sem no [%d]: %d\n", i, semctl(sem_id_docks, i, GETVAL));
-            }
-            switch(errno) {
-                case EAGAIN:
-                    BRO MA SEI UN MEME
-                    while (sem_cmd(sem_id_docks, old_id_destination_port, 1, 0));
-                    move(shm_cfg->SO_PORTI);
-                    id_destination_port = pick_rand_port_on_sea();
-                    printf("Picked port no: [%d] from [%d]\n", id_destination_port, shm_cfg->SO_PORTI);
-                    not_error = false;
-                    break;
+        while (semop(sem_id_docks, &sops, 1)) {
+            switch (errno) {
                 case EINTR:
-                    Interrupt occurred, retry
                     continue;
                 default:
-                     Generic error
                     perror("[NAVE] Error in pick_rand_port()");
                     kill(getppid(), SIGINT);
                     break;
             }
-        } */
-        /* printf("[%d] Semaphore [%d] unlocked!\n", getpid(), old_id_destination_port); */
+        }
+
+        sops.sem_num = id_destination_port;
+        sops.sem_op = -1;
+        sops.sem_flg = 0;
+
         move(id_destination_port);
+
+        while (semop(sem_id_docks, &sops, 1)) {
+            switch (errno) {
+                case EINTR:
+                    continue;
+                default:
+                    perror("[NAVE] Error in pick_rand_port()");
+                    kill(getppid(), SIGINT);
+                    break;
+            }
+        }
     }
 }
 
 void nave_sig_handler(int signum) {
     int old_errno = errno;
+    struct timespec storm_duration, rem;
 
     switch (signum) {
         case SIGALRM:
             /*printf("Allarme!\n"); */
+            /*TODO: dump stato attuale*/
             break;
         case SIGTERM:
             /* malestorm killed the ship :C */
             /* mascherare altri segnali */
+            /*TODO: dump stato attuale*/
             if(id_destination_port >= 0) {
-                if (sem_cmd(sem_id_docks, id_destination_port, 1, 0) < 0) {
-                    perror("[NAVE] Unable to free the \"id_destination_port\" dock");
-                    kill(getppid(), SIGINT);
-                }
+                CHECK_ERROR(sem_cmd(sem_id_docks, id_destination_port, 1, 0), getppid(),
+                            "[NAVE] Unable to free the \"id_destination_port\" dock")
             }
             exit(EXIT_SUCCESS);
+        case SIGUSR1:
+            /* storm occurred */
+            printf("[PORTO] SWELL: %d\n", getpid());
+
+            storm_duration = calculate_timeout(shm_cfg->SO_STORM_DURATION, shm_cfg->SO_DAY_LENGTH);
+
+            while (nanosleep(&storm_duration, &rem)) {
+                switch (errno) {
+                    case EINTR:
+                        storm_duration = rem;
+                        continue;
+                    default:
+                        perror("[PORTO] Generic error while sleeping");
+                        kill(getppid(), SIGINT);
+                }
+            }
+            break;
+        default:
+            printf("[NAVE] Signal: %s\n", strsignal(signum));
+            break;
     }
 
     errno = old_errno;
@@ -197,7 +204,7 @@ void move(int id_destination) {
     while (nanosleep(&ts, &rem)) {
         switch (errno) {
             case EINTR:
-                /* TODO: aggiungere funzionalità */
+                /* TODO: aggiungere funzionalità (forse non necessario)*/
                 /*
                  *  clock_gettime(CLOCK_REALTIME, &start);
                     clock_gettime(CLOCK_REALTIME, &end);
