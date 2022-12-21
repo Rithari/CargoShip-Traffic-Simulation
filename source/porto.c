@@ -44,10 +44,11 @@ int main(int argc, char *argv[]) {
 
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = porto_sig_handler;
-
-    sigaction(SIGALRM, &sa, NULL);
-    sigaction(SIGTERM, &sa, NULL);
+    sa.sa_flags = SA_RESTART;
     sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGALRM, &sa, NULL);
+    sa.sa_flags |= SA_NODEFER;
+    sigaction(SIGUSR1, &sa, NULL);
 
     srandom(getpid());
 
@@ -56,14 +57,14 @@ int main(int argc, char *argv[]) {
         kill(getppid(), SIGINT);
     }
 
+    /* TODO: CONTROLLARE IL FALLIMENTO DI QUESTA SEZIONE DI CODICE UNA VOLTA FATTO IL REFACTORING */
+
     shm_id_config = string_to_int(argv[1]);
     shm_id_ports_coords = string_to_int(argv[2]);
     mq_id_request = string_to_int(argv[3]);
     sem_id_generation = string_to_int(argv[4]);
     sem_id_dock = string_to_int(argv[5]);
     id = string_to_int(argv[6]);
-    printf("ID_CONFIG: %d\n", shm_id_config);
-    printf("ID_PORTS_COORD: %d\n", shm_id_ports_coords);
 
     if((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1) {
         perror("[PORTO] Error while trying to attach to configuration shared memory");
@@ -158,16 +159,35 @@ void goodsRequest_generator(int *goodsSetRequests, int *lifespanArray, int reque
 
 void porto_sig_handler(int signum) {
     int old_errno = errno;
+    struct timespec swell_duration, rem;
 
     switch (signum) {
-        case SIGTERM:
         case SIGINT:
             /* semctl(sem_id, 0, IPC_RMID); */
             exit(EXIT_FAILURE);
         case SIGALRM:
-            /*printf("PORTO\n");*/
+            /*TODO: dump stato attuale*/
+            printf("[PORTO] DUMP PID: [%d]\n", getpid());
+            break;
+        case SIGUSR1:
+            /* swell occurred */
+            printf("[PORTO] SWELL: %d\n", getpid());
+
+            swell_duration = calculate_timeout(shm_cfg->SO_SWELL_DURATION, shm_cfg->SO_DAY_LENGTH);
+
+            while (nanosleep(&swell_duration, &rem)) {
+                switch (errno) {
+                    case EINTR:
+                        swell_duration = rem;
+                        continue;
+                    default:
+                        perror("[PORTO] Generic error while sleeping");
+                        kill(getppid(), SIGINT);
+                }
+            }
             break;
         default:
+            printf("[PORTO] Signal: %s\n", strsignal(signum));
             break;
     }
 

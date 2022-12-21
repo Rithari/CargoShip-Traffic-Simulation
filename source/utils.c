@@ -17,12 +17,27 @@ char* int_to_string(int number) {
 }
 
 int string_to_int(char *s) {
-    int val = (int) strtol(s, NULL, 10);
+    char *endptr;
+    int val = (int) strtol(s, &endptr, 10);
+
     if(errno) {
-        perror("Error during integer conversion from parameter in string_to_int function!");
-        exit(EXIT_FAILURE);
+        perror("Error during integer conversion from parameter in string_to_int function");
+        /*exit(EXIT_FAILURE);*/
+    }
+    if(endptr == s) {
+        errno = EINVAL;
+        perror("No valid number was given");
     }
     return val;
+}
+
+struct timespec calculate_timeout(int hours, int day_length) {
+    struct timespec timeout;
+
+    timeout.tv_sec = hours / 24 * day_length;
+    timeout.tv_nsec = (long) (((hours % 24) / 24.0) * 1000000000);
+
+    return timeout;
 }
 
 void timespec_sub(struct timespec* res, struct timespec *minuend, struct timespec *subtrahend) {
@@ -47,9 +62,9 @@ void print_config(config *cfg) {
     printf("SO_FILL:        %d\n", cfg->SO_FILL);
     printf("SO_LOADSPEED:   %d\n", cfg->SO_LOADSPEED);
     printf("SO_DAYS:        %d\n", cfg->SO_DAYS);
-    printf("STORM_DURATION: %d\n", cfg->STORM_DURATION);
-    printf("SWELL_DURATION: %d\n", cfg->SWELL_DURATION);
-    printf("ML_INTENSITY:   %d\n", cfg->ML_INTENSITY);
+    printf("STORM_DURATION: %d\n", cfg->SO_STORM_DURATION);
+    printf("SWELL_DURATION: %d\n", cfg->SO_SWELL_DURATION);
+    printf("ML_INTENSITY:   %d\n", cfg->SO_MAELSTROM);
 #ifdef DEBUG
     printf("--------- DEBUG  ---------\n");
     printf("CHECK:          %d\n", cfg->check);

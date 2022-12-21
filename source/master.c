@@ -4,13 +4,6 @@
 #include "../headers/linked_list.h"
 
 #define BUFFER_SIZE 128
-
-/*TODO: capire se è effettivamente utile la macro, se si implememtarla negli altri file*/
-#define CHECK_ERROR(x, str) if(x) {         \
-                            perror(str);    \
-                            raise(SIGINT);  \
-                        }
-
 /* initialize @*cfg with parameters wrote on @*path_cfg_file*/
 void initialize_so_vars(char* path_cfg_file);
 void initialize_ports_coords(void);
@@ -41,10 +34,10 @@ int     mq_id_ships;
 int     mq_id_ports;
 int     sem_id_generation;
 int     sem_id_docks;
-/* TODO: implementare durata del giorno per l'alarm (opzionale) */
 
 
 int main(int argc, char **argv) {
+    int i;
     struct sigaction sa;
 
     if(argc != 2) {
@@ -58,34 +51,34 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    CHECK_ERROR((shm_cfg = shmat(shm_id_config, NULL, 0)) == (void *) -1,
+    CHECK_ERROR((shm_cfg = shmat(shm_id_config, NULL, 0)) == (void *) -1, getpid(),
                 "[MASTER] Error while trying to attach to configuration shared memory")
 
     initialize_so_vars(argv[1]);
 
     /* create and attach ports coordinate shared memory segment */
     CHECK_ERROR((shm_id_ports_coords = shmget(IPC_PRIVATE,
-                                              sizeof(*shm_ports_coords) * shm_cfg->SO_PORTI, 0600)) < 0,
+                                              sizeof(*shm_ports_coords) * shm_cfg->SO_PORTI, 0600)) < 0, getpid(),
                 "[MASTER] Error while creating shared memory for ports coordinates")
 
-    CHECK_ERROR((shm_ports_coords = shmat(shm_id_ports_coords, NULL, 0)) == (void *) -1,
+    CHECK_ERROR((shm_ports_coords = shmat(shm_id_ports_coords, NULL, 0)) == (void *) -1, getpid(),
                 "[MASTER] Error while trying to attach to ports coordinates shared memory")
 
     initialize_ports_coords();
 
     /* Array of pids for the children */
     CHECK_ERROR((shm_id_pid_array = shmget(IPC_PRIVATE,
-                                              sizeof(pid_t) * (shm_cfg->SO_PORTI + shm_cfg->SO_NAVI), 0600)) < 0,
+                                              sizeof(pid_t) * (shm_cfg->SO_PORTI + shm_cfg->SO_NAVI), 0600)) < 0, getpid(),
                 "[MASTER] Error while creating shared memory for pid array")
 
-    CHECK_ERROR((shm_pid_array = shmat(shm_id_pid_array, NULL, 0)) == (void *) -1,
+    CHECK_ERROR((shm_pid_array = shmat(shm_id_pid_array, NULL, 0)) == (void *) -1, getpid(),
                 "[MASTER] Error while trying to attach to pid array shared memory")
 
-    CHECK_ERROR((mq_id_request = msgget(IPC_PRIVATE, 0600)) < 0,
+    CHECK_ERROR((mq_id_request = msgget(IPC_PRIVATE, 0600)) < 0, getpid(),
                 "[MASTER] Error while creating message queue for requests")
-    CHECK_ERROR((sem_id_generation = semget(IPC_PRIVATE, 1, 0600)) < 0,
+    CHECK_ERROR((sem_id_generation = semget(IPC_PRIVATE, 1, 0600)) < 0, getpid(),
                 "[MASTER] Error while creating semaphore for generation order control")
-    CHECK_ERROR((sem_id_docks = semget(IPC_PRIVATE, shm_cfg->SO_PORTI, 0600)) < 0,
+    CHECK_ERROR((sem_id_docks = semget(IPC_PRIVATE, shm_cfg->SO_PORTI, 0600)) < 0, getpid(),
                 "[MASTER] Error while creating semaphore for docks control")
 
     memset(&sa, 0, sizeof(sa));
@@ -95,25 +88,35 @@ int main(int argc, char **argv) {
     sigaction(SIGCHLD, &sa, NULL);
     sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGUSR1, &sa, NULL);
 
     /* TODO: with this method u can "only" generate MAX_SHORT ports... Maybe it's a problem maybe not */
-    CHECK_ERROR(semctl(sem_id_generation, 0, SETVAL, shm_cfg->SO_PORTI) < 0,
+    CHECK_ERROR(semctl(sem_id_generation, 0, SETVAL, shm_cfg->SO_PORTI) < 0, getpid(),
                 "[MASTER] Error while setting the semaphore for ports generation control")
     create_ports();
     printf("Waiting for ports generation...\n");
-    CHECK_ERROR(sem_cmd(sem_id_generation, 0, 0, 0),
+    CHECK_ERROR(sem_cmd(sem_id_generation, 0, 0, 0), getpid(),
                 "[MASTER] Error while waiting for ports generation")
 
 
-    CHECK_ERROR(semctl(sem_id_generation, 0, SETVAL, shm_cfg->SO_NAVI) < 0,
+    CHECK_ERROR(semctl(sem_id_generation, 0, SETVAL, shm_cfg->SO_NAVI) < 0, getpid(),
                 "[MASTER] Error while setting the semaphore for ships generation control")
     create_ships();
     printf("Waiting for ships generation...\n");
-    CHECK_ERROR(sem_cmd(sem_id_generation, 0, 0, 0),
+    CHECK_ERROR(sem_cmd(sem_id_generation, 0, 0, 0), getpid(),
                 "[MASTER] Error while waiting for ships generation")
 
+    create_weather();
     /*TODO: utilizzo SIGALRM per sincronizzare tutti i processi per iniziare il primo giorno,
      * credo sia meglio implementare ad esempio una SIGCONT*/
+    /*TODO: magari implementare setpgid, getpgid, setpgrp, getpgrp*/
+
+    /*for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
+        if(shm_pid_array[i] >= 0) {
+            kill(shm_pid_array[i], SIGCONT);
+        }
+    }*/
+
     alarm(1);
 
     while(waitpid(-1, NULL, 0) > 0) {
@@ -193,11 +196,11 @@ void initialize_so_vars(char* path_cfg_file) {
             shm_cfg->check |= 1 << 12;
         } else if (sscanf(buffer, "SO_DAY_LENGTH: %d", &shm_cfg->SO_DAY_LENGTH) == 1) {
             shm_cfg->check |= 1 << 13;
-        } else if (sscanf(buffer, "STORM_DURATION: %d", &shm_cfg->STORM_DURATION) == 1) {
+        } else if (sscanf(buffer, "SO_STORM_DURATION: %d", &shm_cfg->SO_STORM_DURATION) == 1) {
             shm_cfg->check |= 1 << 14;
-        } else if (sscanf(buffer, "SWELL_DURATION: %d", &shm_cfg->SWELL_DURATION) == 1) {
+        } else if (sscanf(buffer, "SO_SWELL_DURATION: %d", &shm_cfg->SO_SWELL_DURATION) == 1) {
             shm_cfg->check |= 1 << 15;
-        } else if (sscanf(buffer, "ML_INTENSITY: %d", &shm_cfg->ML_INTENSITY) == 1) {
+        } else if (sscanf(buffer, "SO_MAELSTROM: %d", &shm_cfg->SO_MAELSTROM) == 1) {
             shm_cfg->check |= 1 << 16;
         }
     }
@@ -207,14 +210,14 @@ void initialize_so_vars(char* path_cfg_file) {
 
     errno = EINVAL;
 
-    CHECK_ERROR(shm_cfg->check != 0x1FFFF, "Missing config")
-    CHECK_ERROR(shm_cfg->SO_NAVI < 1, "SO_NAVI is less than 1")
-    CHECK_ERROR(shm_cfg->SO_PORTI < 4, "SO_PORTI is less than 4")
-    CHECK_ERROR(shm_cfg->SO_PORTI > SHRT_MAX,
+    CHECK_ERROR(shm_cfg->check != 0x1FFFF, getpid(), "Missing config")
+    CHECK_ERROR(shm_cfg->SO_NAVI < 1, getpid(), "SO_NAVI is less than 1")
+    CHECK_ERROR(shm_cfg->SO_PORTI < 4, getpid(), "SO_PORTI is less than 4")
+    CHECK_ERROR(shm_cfg->SO_PORTI > SHRT_MAX, getpid(),
                 "SO_PORTI is greater than SHRT_MAX, so we cannot use semaphores for ensure correct generation order.")
-    CHECK_ERROR(shm_cfg->SO_MIN_VITA > shm_cfg->SO_MAX_VITA, "SO_MIN_VITA is greater than SO_MAX_VITA")
-    CHECK_ERROR(shm_cfg->SO_SPEED <= 0, "SO_SPEED is less or equal than 0")
-    CHECK_ERROR(shm_cfg->SO_BANCHINE > SHRT_MAX,
+    CHECK_ERROR(shm_cfg->SO_MIN_VITA > shm_cfg->SO_MAX_VITA, getpid(), "SO_MIN_VITA is greater than SO_MAX_VITA")
+    CHECK_ERROR(shm_cfg->SO_SPEED <= 0, getpid(), "SO_SPEED is less or equal than 0")
+    CHECK_ERROR(shm_cfg->SO_BANCHINE > SHRT_MAX, getpid(),
                 "SO_BANCHINE is greater than SHRT_MAX, so we cannot use semaphores for ensure correct docks management.")
     errno = 0;
 }
@@ -266,10 +269,10 @@ void create_ports(void) {
                 raise(SIGINT);
             case 0:
                 args[6] = int_to_string(i);
-                CHECK_ERROR(semctl(sem_id_docks, i, SETVAL, random() % shm_cfg->SO_BANCHINE + 1),
+                CHECK_ERROR(semctl(sem_id_docks, i, SETVAL, random() % shm_cfg->SO_BANCHINE + 1), getpid(),
                             "[PORTO] Error while generating dock semaphore")
                 execv(PATH_PORTO, args);
-                perror("execv has failed trying to run port");
+                perror("[PORTO] execv has failed trying to run port");
                 kill(getppid(), SIGINT);
             default:
                 shm_pid_array[i] = pid_process;
@@ -298,11 +301,11 @@ void create_ships(void) {
     for(i = 0; i < shm_cfg->SO_NAVI; i++) {
         switch(pid_process = fork()) {
             case -1:
-                perror("Error during: create_ships->fork()");
+                perror("[MASTER] Error during: create_ships->fork()");
                 raise(SIGINT);
             case 0:
                 execv(PATH_NAVE, args);
-                perror("execv has failed trying to run the ship");
+                perror("[NAVE] execv has failed trying to run the ship");
                 kill(getppid(), SIGINT);
             default:
                 shm_pid_array[i + shm_cfg->SO_PORTI] = pid_process;
@@ -315,18 +318,47 @@ void create_ships(void) {
     }
 }
 
+void create_weather(void) {
+    int i;
+    char *args[4];
+
+    args[0] = PATH_METEO;
+    args[1] = int_to_string(shm_id_config);
+    args[2] = int_to_string(shm_id_pid_array);
+    args[3] = NULL;
+
+    switch(pid_weather = fork()) {
+        case -1:
+            perror("Error during: create_weather->fork()");
+            raise(SIGINT);
+        case 0:
+            execv(PATH_METEO, args);
+            perror("[METEO] execv has failed trying to run the weather process");
+            kill(getppid(), SIGINT);
+        default:
+            break;
+    }
+
+    for (i = 1; i < 3; i++) {
+        free(args[i]);
+    }
+}
+
 void master_sig_handler(int signum) {
     int old_errno = errno;
     int i;
 
-    /*TODO: sono un meme, durante lo sviluppo pensavo che SIGCHLD ed il suo contenuto non servisse più ma mi sbagliavo*/
+    /*TODO: migliore implementazione di tutti i segnali. Schematizzazione necessaria*/
     switch(signum) {
         case SIGTERM:
         case SIGINT:
             printf("Error has occurred... killing all processes.\n");
             for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
-                kill(shm_pid_array[i], SIGINT);
+                if(shm_pid_array[i] >= 0) {
+                    kill(shm_pid_array[i], SIGINT);
+                }
             }
+            kill(pid_weather, SIGINT);
             clear_all();
             exit(EXIT_FAILURE);
         /* Still needs to deal with statistics first */
@@ -335,20 +367,34 @@ void master_sig_handler(int signum) {
             shm_cfg->CURRENT_DAY++;
 
             /* Check SO_DAYS against the current day. If they're the same kill everything */
-            if(shm_cfg->CURRENT_DAY > shm_cfg->SO_DAYS) {
+            if(shm_cfg->CURRENT_DAY == shm_cfg->SO_DAYS) {
                 printf("Reached SO_DAYS, killing all processes.\n");
                 for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
-                    kill(shm_pid_array[i], SIGINT);
+                    if(shm_pid_array[i] >= 0) {
+                        kill(shm_pid_array[i], SIGINT);
+                    }
                 }
+                kill(pid_weather, SIGINT);
             } else {
                 printf("Day [%d]/[%d].\n", shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
                 for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
-                    kill(shm_pid_array[i], SIGALRM);
+                    if(shm_pid_array[i] >= 0) {
+                        kill(shm_pid_array[i], SIGALRM);
+                    }
                 }
+                kill(pid_weather, SIGALRM);
             }
             alarm(shm_cfg->SO_DAY_LENGTH);
             break;
         case SIGCHLD:
+            break;
+        case SIGUSR1:
+            printf("ALL SHIPS ARE DEAD :C\n");
+            for(i = 0; i < shm_cfg->SO_PORTI; i++) {
+                if(shm_pid_array[i] >= 0) {
+                    kill(shm_pid_array[i], SIGTERM);
+                }
+            }
             break;
         default:
             printf("Signal: %s\n", strsignal(signum));

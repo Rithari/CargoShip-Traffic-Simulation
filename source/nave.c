@@ -29,10 +29,8 @@ int main(int argc, char** argv) {
     int i;
     double rndx;
     double rndy;
-    int not_error = 1;
 
     struct sigaction sa;
-    struct timespec timeout;
     struct sembuf sops;
 
     if(argc != 6) {
@@ -80,19 +78,16 @@ int main(int argc, char** argv) {
 
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = nave_sig_handler;
-
+    sa.sa_flags = SA_RESTART;
     sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
+    sa.sa_flags |= SA_NODEFER;
+    sigaction(SIGUSR1, &sa, NULL);
 
-    /* TODO: The ship can't exit on its own, it has to be killed by the master or weather */
     if(sem_cmd(sem_id_generation, 0, -1, 0) < 0) {
         perror("[NAVE] Error while trying to release sem_id_generation");
         kill(getppid(), SIGINT);
     }
-
-    /*TODO: timeout based on SO_DAY_LENGTH instead of hard coded*/
-    timeout.tv_sec = 1;
-    timeout.tv_nsec = 0;
 
     pause();
 
@@ -100,9 +95,6 @@ int main(int argc, char** argv) {
     printf("[%d] Choose port no: [%d] from [%d]\n", getpid(), id_destination_port, old_id_destination_port);
     move(id_destination_port);
 
-
-    /*TODO: per adesso le navi sono molto inefficienti,
-     * è possibile migliorare implementando alcune idee che abbiamo già discusso*/
     while (1) {
         old_id_destination_port = id_destination_port;
 
@@ -151,21 +143,42 @@ int main(int argc, char** argv) {
 
 void nave_sig_handler(int signum) {
     int old_errno = errno;
+    struct timespec storm_duration, rem;
 
     switch (signum) {
         case SIGALRM:
             /*printf("Allarme!\n"); */
+            /*TODO: dump stato attuale*/
             break;
         case SIGTERM:
             /* malestorm killed the ship :C */
             /* mascherare altri segnali */
+            /*TODO: dump stato attuale*/
             if(id_destination_port >= 0) {
-                if (sem_cmd(sem_id_docks, id_destination_port, 1, 0) < 0) {
-                    perror("[NAVE] Unable to free the \"id_destination_port\" dock");
-                    kill(getppid(), SIGINT);
-                }
+                CHECK_ERROR(sem_cmd(sem_id_docks, id_destination_port, 1, 0), getppid(),
+                            "[NAVE] Unable to free the \"id_destination_port\" dock")
             }
             exit(EXIT_SUCCESS);
+        case SIGUSR1:
+            /* storm occurred */
+            printf("[PORTO] SWELL: %d\n", getpid());
+
+            storm_duration = calculate_timeout(shm_cfg->SO_STORM_DURATION, shm_cfg->SO_DAY_LENGTH);
+
+            while (nanosleep(&storm_duration, &rem)) {
+                switch (errno) {
+                    case EINTR:
+                        storm_duration = rem;
+                        continue;
+                    default:
+                        perror("[PORTO] Generic error while sleeping");
+                        kill(getppid(), SIGINT);
+                }
+            }
+            break;
+        default:
+            printf("[NAVE] Signal: %s\n", strsignal(signum));
+            break;
     }
 
     errno = old_errno;
@@ -187,7 +200,7 @@ void move(int id_destination) {
     while (nanosleep(&ts, &rem)) {
         switch (errno) {
             case EINTR:
-                /* TODO: aggiungere funzionalità */
+                /* TODO: aggiungere funzionalità (forse non necessario)*/
                 /*
                  *  clock_gettime(CLOCK_REALTIME, &start);
                     clock_gettime(CLOCK_REALTIME, &end);
