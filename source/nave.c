@@ -24,12 +24,16 @@ int     actual_capacity;
 int     old_id_destination_port;
 int     id_destination_port;
 
+enum {false, true};
+typedef int bool;
+
+
 /* TODO: Attach to message queues */
 int main(int argc, char** argv) {
     int i;
     double rndx;
     double rndy;
-    int not_error = 1;
+    bool not_error;
 
     struct sigaction sa;
     struct timespec timeout;
@@ -123,9 +127,8 @@ int main(int argc, char** argv) {
         sops[1].sem_op =  1;
         sops[1].sem_flg = 0;
 
-        /*TODO: implement a better way to handle this boolean flag*/
-        not_error = 1;
 
+        not_error = true;
         /* TODO */
        /* while (not_error && semtimedop(sem_id_docks, sops, 2, &timeout)) {
             The port's semaphore is not available (its value is 0) */
@@ -139,7 +142,7 @@ int main(int argc, char** argv) {
                     move(shm_cfg->SO_PORTI);
                     id_destination_port = pick_rand_port_on_sea();
                     printf("Picked port no: [%d] from [%d]\n", id_destination_port, shm_cfg->SO_PORTI);
-                    not_error = 0;
+                    not_error = false;
                     break;
                 case EINTR:
                     Interrupt occurred, retry

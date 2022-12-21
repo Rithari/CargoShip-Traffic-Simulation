@@ -92,14 +92,13 @@ int main(int argc, char **argv) {
     sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
 
-    /* TODO: with this method u can "only" generate MAX_SHORT ports... Maybe it's a problem maybe not */
     CHECK_ERROR(semctl(sem_id_generation, 0, SETVAL, shm_cfg->SO_PORTI) < 0,
                 "[MASTER] Error while setting the semaphore for ports generation control")
+    /* You're only able to generate MAX_SHORT ports here */
     create_ports();
     printf("Waiting for ports generation...\n");
     CHECK_ERROR(sem_cmd(sem_id_generation, 0, 0, 0),
                 "[MASTER] Error while waiting for ports generation")
-
 
     CHECK_ERROR(semctl(sem_id_generation, 0, SETVAL, shm_cfg->SO_NAVI) < 0,
                 "[MASTER] Error while setting the semaphore for ships generation control")
@@ -254,7 +253,7 @@ void initialize_ports_coords(void) {
     shm_ports_coords[shm_cfg->SO_PORTI].x = shm_cfg->SO_LATO / 2;
     shm_ports_coords[shm_cfg->SO_PORTI].y = shm_cfg->SO_LATO / 2;
 
-    /* TODO: Explain why this starts at 4 */
+    /* Loop starts at 4 due to the first 4 ports needing to be hardcoded at the map's corners */
     for(i = 4; i < shm_cfg->SO_PORTI; i++) {
         double rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
         double rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
