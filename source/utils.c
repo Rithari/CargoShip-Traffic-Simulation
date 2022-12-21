@@ -20,13 +20,8 @@ int string_to_int(char *s) {
     char *endptr;
     int val = (int) strtol(s, &endptr, 10);
 
-    if(errno) {
-        perror("Error during integer conversion from parameter in string_to_int function");
-        /*exit(EXIT_FAILURE);*/
-    }
     if(endptr == s) {
         errno = EINVAL;
-        perror("No valid number was given");
     }
     return val;
 }

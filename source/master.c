@@ -56,6 +56,10 @@ int main(int argc, char **argv) {
 
     initialize_so_vars(argv[1]);
 
+    /* create goods shm*/
+
+
+
     /* create and attach ports coordinate shared memory segment */
     CHECK_ERROR((shm_id_ports_coords = shmget(IPC_PRIVATE,
                                               sizeof(*shm_ports_coords) * shm_cfg->SO_PORTI, 0600)) < 0, getpid(),
@@ -363,7 +367,6 @@ void master_sig_handler(int signum) {
             exit(EXIT_FAILURE);
         /* Still needs to deal with statistics first */
         case SIGALRM:
-            /* Remota possibilità di concorrenza in shm_cfg->CURRENT_DAY? */
             shm_cfg->CURRENT_DAY++;
 
             /* Check SO_DAYS against the current day. If they're the same kill everything */

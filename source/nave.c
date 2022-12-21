@@ -223,27 +223,25 @@ void move(int id_destination) {
 
 int pick_rand_port_on_sea(void) {
     /* Keep trying to pick a random port and acquire a lock on its dock until we succeed */
-    /*TODO: evitare che si possa scegliere il porto di provenienza*/
-    int port_index = (int) random() % shm_cfg->SO_PORTI;
+    int port_index;
+
+    do {
+        port_index = (int) random() % shm_cfg->SO_PORTI;
+    } while (port_index == old_id_destination_port);
+
 
     /* Select a random port from the coordinates array */
     /* Try to acquire a lock on the port's semaphore */
     /* Decrement the port's semaphore value to acquire a lock on the dock */
     while (sem_cmd(sem_id_docks, port_index, -1, 0)) {
         /* The port's semaphore is not available (its value is 0) */
-        switch(errno) {
-            case EINTR:
-            case EAGAIN:
-                /* Select a different port and try again */
-                /*TODO: evitare che si possa scegliere il porto di provenienza*/
-                port_index = (port_index + 1) % shm_cfg->SO_PORTI;
-                continue;
-            default:
-                /* Generic error */
-                perror("[NAVE] Error in pick_rand_port()");
-                kill(getppid(), SIGINT);
-                break;
+        if(errno != EINTR) {
+            perror("[NAVE] Error in pick_rand_port()");
+            kill(getppid(), SIGINT);
         }
+        port_index = (port_index + 1) % shm_cfg->SO_PORTI == old_id_destination_port
+                     ? (port_index + 2) % shm_cfg->SO_PORTI :
+                     (port_index + 1) % shm_cfg->SO_PORTI;
     }
 
     /* Return the index of the port we selected */
