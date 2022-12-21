@@ -44,18 +44,34 @@ int main(int argc, char** argv) {
 
     srandom(getpid());
 
-    /* Refactor and comment this section of code */
+    /* TODO: Refactor and comment this section of code
+     * garbage error checking */
 
-    CHECK_ERROR((shm_id_config = string_to_int(argv[1])), getpid(),
-                "[NAVE] Error while trying to convert shm_id_config");
-    CHECK_ERROR((shm_id_ports_coords = string_to_int(argv[2])), getpid(),
-                "[NAVE] Error while trying to convert shm_id_ports_coords");
-    CHECK_ERROR((mq_id_request = string_to_int(argv[3])), getpid(),
-                "[NAVE] Error while trying to convert mq_id_request");
-    CHECK_ERROR((sem_id_generation = string_to_int(argv[4])), getpid(),
-                "[NAVE] Error while trying to convert sem_id_generation");
-    CHECK_ERROR((sem_id_docks = string_to_int(argv[5])), getpid(),
-                "[NAVE] Error while trying to convert sem_id_docks");
+    shm_id_config = string_to_int(argv[1]);
+    if(errno) {
+        perror("[NAVE] Error while trying to convert shm_id_config");
+        kill(getppid(), SIGINT);
+    }
+    shm_id_ports_coords = string_to_int(argv[2]);
+    if(errno) {
+        perror("[NAVE] Error while trying to convert shm_id_ports_coords");
+        kill(getppid(), SIGINT);
+    }
+    mq_id_request = string_to_int(argv[3]);
+    if(errno) {
+        perror("[NAVE] Error while trying to convert mq_id_request");
+        kill(getppid(), SIGINT);
+    }
+    sem_id_generation = string_to_int(argv[4]);
+    if(errno) {
+        perror("[NAVE] Error while trying to convert sem_id_generation");
+        kill(getppid(), SIGINT);
+    }
+    sem_id_docks = string_to_int(argv[5]);
+    if(errno) {
+        perror("[NAVE] Error while trying to convert sem_id_docks");
+        kill(getppid(), SIGINT);
+    }
 
 
     if((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1) {
