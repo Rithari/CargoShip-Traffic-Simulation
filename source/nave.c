@@ -24,9 +24,6 @@ int     actual_capacity;
 int     old_id_destination_port;
 int     id_destination_port;
 
-enum {false, true};
-typedef int bool;
-
 
 /* TODO: Attach to message queues */
 int main(int argc, char** argv) {
@@ -118,7 +115,7 @@ int main(int argc, char** argv) {
     pause();
 
     id_destination_port = pick_rand_port_on_sea();
-    printf("[%d] Choose port no: [%d] from [%d]\n", getpid(), id_destination_port, old_id_destination_port);
+    printf("[%d] Chose port no: [%d] from [%d]\n", getpid(), id_destination_port, old_id_destination_port);
     move(id_destination_port);
 
     while (1) {
