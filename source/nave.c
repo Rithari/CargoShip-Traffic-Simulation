@@ -44,12 +44,18 @@ int main(int argc, char** argv) {
 
     srandom(getpid());
 
-    /* TODO: CONTROLLARE IL FALLIMENTO DI QUESTA SEZIONE DI CODICE UNA VOLTA FATTO IL REFACTORING */
-    shm_id_config = string_to_int(argv[1]);
-    shm_id_ports_coords = string_to_int(argv[2]);
-    mq_id_request = string_to_int(argv[3]);
-    sem_id_generation = string_to_int(argv[4]);
-    sem_id_docks = string_to_int(argv[5]);
+    /* Refactor and comment this section of code */
+
+    CHECK_ERROR((shm_id_config = string_to_int(argv[1])), getpid(),
+                "[NAVE] Error while trying to convert shm_id_config");
+    CHECK_ERROR((shm_id_ports_coords = string_to_int(argv[2])), getpid(),
+                "[NAVE] Error while trying to convert shm_id_ports_coords");
+    CHECK_ERROR((mq_id_request = string_to_int(argv[3])), getpid(),
+                "[NAVE] Error while trying to convert mq_id_request");
+    CHECK_ERROR((sem_id_generation = string_to_int(argv[4])), getpid(),
+                "[NAVE] Error while trying to convert sem_id_generation");
+    CHECK_ERROR((sem_id_docks = string_to_int(argv[5])), getpid(),
+                "[NAVE] Error while trying to convert sem_id_docks");
 
 
     if((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1) {

@@ -20,16 +20,16 @@ int string_to_int(char *s) {
     char *endptr;
     int val = (int) strtol(s, &endptr, 10);
 
-    if(errno) {
-        perror("Error during integer conversion from parameter in string_to_int function");
-        /*exit(EXIT_FAILURE);*/
+    if (errno == ERANGE) {
+        perror("Integer conversion from parameter resulted in overflow or underflow in string_to_int function");
     }
-    if(endptr == s) {
+    if (endptr == s || *endptr != '\0') {
         errno = EINVAL;
         perror("No valid number was given");
     }
     return val;
 }
+
 
 struct timespec calculate_timeout(int hours, int day_length) {
     struct timespec timeout;
