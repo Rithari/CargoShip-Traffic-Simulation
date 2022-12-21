@@ -94,9 +94,10 @@ int main(int argc, char **argv) {
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGUSR1, &sa, NULL);
 
-    /* TODO: with this method u can "only" generate MAX_SHORT ports... Maybe it's a problem maybe not */
+
     CHECK_ERROR(semctl(sem_id_generation, 0, SETVAL, shm_cfg->SO_PORTI) < 0, getpid(),
                 "[MASTER] Error while setting the semaphore for ports generation control")
+    /* You're only able to generate MAX_SHORT ports here */
     create_ports();
     printf("Waiting for ports generation...\n");
     CHECK_ERROR(sem_cmd(sem_id_generation, 0, 0, 0), getpid(),
@@ -141,13 +142,21 @@ int main(int argc, char **argv) {
 }
 
 void clear_all(void) {
-    /*TODO: gestire i fail delle shmctl ?*/
-    shmctl(shm_id_config, IPC_RMID, NULL);
-    shmctl(shm_id_ports_coords, IPC_RMID, NULL);
-    shmctl(shm_id_pid_array, IPC_RMID, NULL);
-    msgctl(mq_id_request, IPC_RMID, NULL);
-    semctl(sem_id_generation, 0, IPC_RMID, NULL);
-    semctl(sem_id_docks, 0, IPC_RMID, NULL);
+    pid_t pid;
+    pid = getpid();
+
+    CHECK_ERROR(shmctl(shm_id_config, IPC_RMID, NULL), pid,
+                "[MASTER] Error while removing config shared memory in clear_all");
+    CHECK_ERROR(shmctl(shm_id_ports_coords, IPC_RMID, NULL), pid,
+                "[MASTER] Error while removing ports coordinates shared memory in clear_all");
+    CHECK_ERROR(shmctl(shm_id_pid_array, IPC_RMID, NULL), pid,
+                "[MASTER] Error while removing pid array shared memory in clear_all");
+    CHECK_ERROR(msgctl(mq_id_request, IPC_RMID, NULL), pid,
+                "[MASTER] Error while removing message queue in clear_all");
+    CHECK_ERROR(semctl(sem_id_generation, 0, IPC_RMID, 0), pid,
+                "[MASTER] Error while removing semaphore for generation order control in clear_all");
+    CHECK_ERROR(semctl(sem_id_docks, 0, IPC_RMID, 0), pid,
+                "[MASTER] Error while removing semaphore for docks control in clear_all");
 }
 
 void initialize_so_vars(char* path_cfg_file) {
@@ -238,6 +247,7 @@ void initialize_ports_coords(void) {
     shm_ports_coords[3].x = 0;
     shm_ports_coords[3].y = shm_cfg->SO_LATO;
 
+    /* Loop starts at 4 due to the first 4 ports needing to be hardcoded at the map's corners */
     for(i = 4; i < shm_cfg->SO_PORTI; i++) {
         double rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
         double rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;

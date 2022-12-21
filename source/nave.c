@@ -24,6 +24,7 @@ int     actual_capacity;
 int     old_id_destination_port;
 int     id_destination_port;
 
+
 /* TODO: Attach to message queues */
 int main(int argc, char** argv) {
     int i;
@@ -40,12 +41,33 @@ int main(int argc, char** argv) {
 
     srandom(getpid());
 
-    /* TODO: CONTROLLARE IL FALLIMENTO DI QUESTA SEZIONE DI CODICE UNA VOLTA FATTO IL REFACTORING */
+    /* TODO: Refactor and comment this section of code same for line 61 in porto.c */
+
     shm_id_config = string_to_int(argv[1]);
+    if(errno) {
+        perror("[NAVE] Error while trying to convert shm_id_config");
+        kill(getppid(), SIGINT);
+    }
     shm_id_ports_coords = string_to_int(argv[2]);
+    if(errno) {
+        perror("[NAVE] Error while trying to convert shm_id_ports_coords");
+        kill(getppid(), SIGINT);
+    }
     mq_id_request = string_to_int(argv[3]);
+    if(errno) {
+        perror("[NAVE] Error while trying to convert mq_id_request");
+        kill(getppid(), SIGINT);
+    }
     sem_id_generation = string_to_int(argv[4]);
+    if(errno) {
+        perror("[NAVE] Error while trying to convert sem_id_generation");
+        kill(getppid(), SIGINT);
+    }
     sem_id_docks = string_to_int(argv[5]);
+    if(errno) {
+        perror("[NAVE] Error while trying to convert sem_id_docks");
+        kill(getppid(), SIGINT);
+    }
 
 
     if((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1) {
@@ -92,7 +114,7 @@ int main(int argc, char** argv) {
     pause();
 
     id_destination_port = pick_rand_port_on_sea();
-    printf("[%d] Choose port no: [%d] from [%d]\n", getpid(), id_destination_port, old_id_destination_port);
+    printf("[%d] Chose port no: [%d] from [%d]\n", getpid(), id_destination_port, old_id_destination_port);
     move(id_destination_port);
 
     while (1) {
@@ -104,7 +126,7 @@ int main(int argc, char** argv) {
             id_destination_port = (int) random() % shm_cfg->SO_PORTI;
         } while (id_destination_port == old_id_destination_port);
 
-        /* Per adesso mi limito a scegliere un porto casuale e richedere l'accesso alla banchina */
+        /* Per adesso mi limito a scegliere un porto casuale e richiedere l'accesso alla banchina */
         printf("[%d] Choose port no: [%d] from [%d]\n", getpid(), id_destination_port, old_id_destination_port);
 
         sops.sem_num = old_id_destination_port;

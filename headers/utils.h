@@ -3,6 +3,7 @@
 
 #include "master.h"
 
+/* TODO: check relevance */
 #define CHECK_ERROR(x, pid, str) if(x) { \
                             printf("ERROR IN LINE %d\n", __LINE__); \
                             perror(str);    \

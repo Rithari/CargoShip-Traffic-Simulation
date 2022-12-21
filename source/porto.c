@@ -57,14 +57,38 @@ int main(int argc, char *argv[]) {
         kill(getppid(), SIGINT);
     }
 
-    /* TODO: CONTROLLARE IL FALLIMENTO DI QUESTA SEZIONE DI CODICE UNA VOLTA FATTO IL REFACTORING */
 
+    /* Refactor */
     shm_id_config = string_to_int(argv[1]);
+    if(errno) {
+        perror("[PORTO] Error while trying to convert shm_id_config");
+        kill(getppid(), SIGINT);
+    }
     shm_id_ports_coords = string_to_int(argv[2]);
+    if(errno) {
+        perror("[PORTO] Error while trying to convert shm_id_ports_coords");
+        kill(getppid(), SIGINT);
+    }
     mq_id_request = string_to_int(argv[3]);
+    if(errno) {
+        perror("[PORTO] Error while trying to convert mq_id_request");
+        kill(getppid(), SIGINT);
+    }
     sem_id_generation = string_to_int(argv[4]);
+    if(errno) {
+        perror("[PORTO] Error while trying to convert sem_id_generation");
+        kill(getppid(), SIGINT);
+    }
     sem_id_dock = string_to_int(argv[5]);
+    if(errno) {
+        perror("[PORTO] Error while trying to convert sem_id_dock");
+        kill(getppid(), SIGINT);
+    }
     id = string_to_int(argv[6]);
+    if(errno) {
+        perror("[PORTO] Error while trying to convert id");
+        kill(getppid(), SIGINT);
+    }
 
     if((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1) {
         perror("[PORTO] Error while trying to attach to configuration shared memory");
