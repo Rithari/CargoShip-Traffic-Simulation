@@ -16,7 +16,7 @@ coord   *shm_ports_coords;
 int     shm_id_config;
 int     shm_id_ports_coords;
 int     mq_id_request;
-int     sem_id_generation;
+int     sem_id_gen_precedence;
 int     sem_id_docks;
 
 coord   actual_coordinate;
@@ -42,7 +42,6 @@ int main(int argc, char** argv) {
     srandom(getpid());
 
     /* TODO: Refactor and comment this section of code same for line 61 in porto.c */
-
     shm_id_config = string_to_int(argv[1]);
     if(errno) {
         perror("[NAVE] Error while trying to convert shm_id_config");
@@ -58,9 +57,9 @@ int main(int argc, char** argv) {
         perror("[NAVE] Error while trying to convert mq_id_request");
         kill(getppid(), SIGINT);
     }
-    sem_id_generation = string_to_int(argv[4]);
+    sem_id_gen_precedence = string_to_int(argv[4]);
     if(errno) {
-        perror("[NAVE] Error while trying to convert sem_id_generation");
+        perror("[NAVE] Error while trying to convert sem_id_gen_precedence");
         kill(getppid(), SIGINT);
     }
     sem_id_docks = string_to_int(argv[5]);
@@ -68,7 +67,6 @@ int main(int argc, char** argv) {
         perror("[NAVE] Error while trying to convert sem_id_docks");
         kill(getppid(), SIGINT);
     }
-
 
     if((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1) {
         perror("[NAVE] Error while trying to attach to configuration shared memory");
@@ -85,6 +83,7 @@ int main(int argc, char** argv) {
     rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
     rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
 
+    /* Avoid placing the ship at the same coordinates of a port */
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
         if(shm_ports_coords[i].x == rndx && shm_ports_coords[i].y == rndy) {
             i = -1;
@@ -106,11 +105,13 @@ int main(int argc, char** argv) {
     sa.sa_flags |= SA_NODEFER;
     sigaction(SIGUSR1, &sa, NULL);
 
-    if(sem_cmd(sem_id_generation, 0, -1, 0) < 0) {
-        perror("[NAVE] Error while trying to release sem_id_generation");
+    if(sem_cmd(sem_id_gen_precedence, 0, -1, 0) < 0) {
+        perror("[NAVE] Error while trying to release sem_id_gen_precedence");
         kill(getppid(), SIGINT);
     }
 
+
+    /* Wait until everyone is ready (master will send SIGCONT) */
     pause();
 
     id_destination_port = pick_rand_port_on_sea();
@@ -120,6 +121,7 @@ int main(int argc, char** argv) {
     while (1) {
         old_id_destination_port = id_destination_port;
 
+        /* TODO: Pick a destination port based on the best request the ship can fulfill */
         /* scelta della tratta, stablita la tratta procedo a chiedere la banchina */
         /* nella versione definitiva sarà il porto a definire la tratta */
         do {

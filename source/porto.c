@@ -20,7 +20,7 @@ coord   *shm_ports_coords;
 int     shm_id_config;
 int     shm_id_ports_coords;
 int     mq_id_request;
-int     sem_id_generation;
+int     sem_id_gen_precedence;
 int     id;
 /* COMMENTO PROVVISIORIO
 goodsList start_of_goods_generation(void);
@@ -74,9 +74,9 @@ int main(int argc, char *argv[]) {
         perror("[PORTO] Error while trying to convert mq_id_request");
         kill(getppid(), SIGINT);
     }
-    sem_id_generation = string_to_int(argv[4]);
+    sem_id_gen_precedence = string_to_int(argv[4]);
     if(errno) {
-        perror("[PORTO] Error while trying to convert sem_id_generation");
+        perror("[PORTO] Error while trying to convert sem_id_gen_precedence");
         kill(getppid(), SIGINT);
     }
     sem_id_dock = string_to_int(argv[5]);
@@ -102,8 +102,8 @@ int main(int argc, char *argv[]) {
 
     printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);
 
-    if(sem_cmd(sem_id_generation, 0, -1, 0) < 0) {
-        perror("[PORTO] Error while trying to release sem_id_generation");
+    if(sem_cmd(sem_id_gen_precedence, 0, -1, 0) < 0) {
+        perror("[PORTO] Error while trying to release sem_id_gen_precedence");
         kill(getppid(), SIGINT);
     }
 

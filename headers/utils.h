@@ -9,6 +9,8 @@
                             perror(str);    \
                             kill(pid, SIGINT);  \
                         }
+/* The below function is used to calculate the hours of the config
+ * into minutes and seconds for the nanosleep */
 struct timespec calculate_timeout(int hours, int day_length);
 /* TODO: maybe useless function */
 void timespec_sub(struct timespec*, struct timespec*, struct timespec*);
