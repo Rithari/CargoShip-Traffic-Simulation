@@ -41,8 +41,7 @@ int main(int argc, char** argv) {
 
     srandom(getpid());
 
-    /* TODO: Refactor and comment this section of code
-     * garbage error checking */
+    /* TODO: Refactor and comment this section of code same for line 61 in porto.c */
 
     shm_id_config = string_to_int(argv[1]);
     if(errno) {
