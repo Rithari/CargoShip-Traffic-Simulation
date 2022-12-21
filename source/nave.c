@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
             id_destination_port = (int) random() % shm_cfg->SO_PORTI;
         } while (id_destination_port == old_id_destination_port);
 
-        /* Per adesso mi limito a scegliere un porto casuale e richedere l'accesso alla banchina */
+        /* Per adesso mi limito a scegliere un porto casuale e richiedere l'accesso alla banchina */
         printf("[%d] Choose port no: [%d] from [%d]\n", getpid(), id_destination_port, old_id_destination_port);
 
         sops.sem_num = old_id_destination_port;
