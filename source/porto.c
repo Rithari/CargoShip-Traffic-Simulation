@@ -95,6 +95,27 @@ int main(int argc, char *argv[]) {
     }
 }
 
+
+/* COME STRUTTURARE LA FUNZIONE DELLA GENERAZIONE DELLE MERCI
+*  0) La funzione di generazione delle merci e' chiaramente suddivisa nella parte delle offerte e delle richieste.
+ * 1) Usiamo una linked list per le offerte, per ogni porto. (Ogni porto ha la sua, e, le richieste vanno in MQ)
+ * 2) La linked list è composta da un nodo che contiene la struct di tipo goods delle offerte e un puntatore al nodo successivo
+ * 3) La struct delle offerte contiene:
+ *     - id della merce
+ *     - tons (quantita')
+ *     - lifespan (durata)
+ * 4) La linked list viene ordinata in base al lifespan, dal piu corto al piu lungo.
+ *      Ogni giorno, il porto controlla se il lifespan e' scaduto, se si, elimina la merce dalla lista finche' non trova una merce con lifespan > 0
+ *      Se il lifespan non e' scaduto, decrementa il lifespan di 1.
+ * 5) La funzione come prima cosa prende SO_FILL, SO_DAYS e SO_PORTI e suddivide le quantita' massima per ogni porto, ogni giorno.
+ * 6) Per ogni porto (ovvero quello che chiama la funzione) genera un numero compreso nel limite sovra citato, e lo suddivide in offerte e richieste.
+ * 7) Per ogni offerta e richiesta genera un id, un tons e un lifespan. Lifespan per la richiesta e' -1, per l'offerta e' random.
+ * 8) Per ogni offerta generata, la inserisce nella linked list, in base al lifespan.
+ * 9) Per ogni richiesta generata, la inserisce nella MQ.
+ *10) Passiamo i puntatori alla linked list alla funzione di generazione delle offerte.
+ * La linked list ovviamente e' una variabile globale.
+ */
+
 /* COMMENTO PROVVISORIO WIP
 goodsList start_of_goods_generation(void) {
     int maxFillValue = (int)((shm_cfg->SO_FILL / shm_cfg->SO_DAYS) / shm_cfg->SO_PORTI); 100

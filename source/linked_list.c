@@ -27,9 +27,9 @@ void ll_print(struct node *head) {
     struct node *cur = head;
 
     while(cur->next) {
-        printf("[%d, %d, %d] -> ", cur->element->id, cur->element->ton, cur->element->lifespan);
+        printf("[%d, %d, %d] -> ", cur->element->id, cur->element->tons, cur->element->lifespan);
         cur = cur->next;
     }
 
-    printf("[%d, %d, %d] -> ", cur->element->id, cur->element->ton, cur->element->lifespan);
+    printf("[%d, %d, %d] -> ", cur->element->id, cur->element->tons, cur->element->lifespan);
 }
