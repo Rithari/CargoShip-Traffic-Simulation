@@ -19,6 +19,7 @@ config  *shm_cfg;
 coord   *shm_ports_coords;
 int     shm_id_config;
 int     shm_id_ports_coords;
+int     shm_id_goods_template;
 int     mq_id_request;
 int     sem_id_gen_precedence;
 int     id;
@@ -33,6 +34,7 @@ void add(goodsList myOffers, goodsOffers); <--- solo per test
 
 /* goodsList myOffers; */
 config *shm_cfg;
+goods *shm_goods_template;
 int sem_id_dock;
 
 /* ? porto_goodsOffers_generator(); */
@@ -53,7 +55,7 @@ int main(int argc, char *argv[]) {
 
     srandom(getpid());
 
-    if(argc != 7) {
+    if(argc != 8) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
         kill(getppid(), SIGINT);
     }
@@ -62,13 +64,15 @@ int main(int argc, char *argv[]) {
     CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert shm_id_config")
     shm_id_ports_coords = string_to_int(argv[2]);
     CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert shm_id_ports_coords")
-    mq_id_request = string_to_int(argv[3]);
+    shm_id_goods_template = string_to_int(argv[3]);
+    CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert shm_id_ports_coords")
+    mq_id_request = string_to_int(argv[4]);
     CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert mq_id_request")
-    sem_id_gen_precedence = string_to_int(argv[4]);
+    sem_id_gen_precedence = string_to_int(argv[5]);
     CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert sem_id_gen_precedence")
-    sem_id_dock = string_to_int(argv[5]);
+    sem_id_dock = string_to_int(argv[6]);
     CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert sem_id_dock")
-    id = string_to_int(argv[6]);
+    id = string_to_int(argv[7]);
     CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert id")
 
 
@@ -76,12 +80,13 @@ int main(int argc, char *argv[]) {
                 "[PORTO] Error while trying to attach to configuration shared memory")
     CHECK_ERROR((shm_ports_coords = shmat(shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1, getppid(),
                 "[PORTO] Error while trying to attach to ports coordinates shared memory")
-
-    printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);
-
+    CHECK_ERROR((shm_goods_template = shmat(shm_id_goods_template, NULL, SHM_RDONLY)) == (void*) -1, getppid(),
+                "[PORTO] Error while trying to attach to ports coordinates shared memory")
     CHECK_ERROR(sem_cmd(sem_id_gen_precedence, 0, -1, 0) < 0, getppid(),
                 "[PORTO] Error while trying to release sem_id_gen_precedence")
 
+
+    printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);
     /*start_of_goods_generation();*/
 
     while (1) {

@@ -283,29 +283,37 @@ void initialize_ports_coords(void) {
 void create_ports(void) {
     /* Pass the shared memory information through as arguments to the child processes */
     int i;
-    char *args[8];
+    char *args[9];
     pid_t pid_process;
 
+    /*TODO: asprintf generats memory leak (valgrind check). Suggest to revert changes and improve int_to_string function*/
     args[0] = PATH_PORTO;
-    args[1] = int_to_string(shm_id_config);
-    args[2] = int_to_string(shm_id_ports_coords);
-    args[3] = int_to_string(mq_id_request);
-    args[4] = int_to_string(sem_id_gen_precedence);
-    args[5] = int_to_string(sem_id_docks);
-    args[7] = NULL;
+    CHECK_ERROR(asprintf(&args[1], "%d", shm_id_config) < 0, getppid(),
+                "[MASTER] Error while converting shm_id_config into a string")
+    CHECK_ERROR(asprintf(&args[2], "%d", shm_id_ports_coords) < 0, getppid(),
+                "[MASTER] Error while converting shm_id_ports_coords into a string")
+    CHECK_ERROR(asprintf(&args[3], "%d", shm_id_goods_template) < 0, getppid(),
+                "[MASTER] Error while converting shm_id_goods_template into a string")
+    CHECK_ERROR(asprintf(&args[4], "%d", mq_id_request) < 0, getppid(),
+                "[MASTER] Error while converting mq_id_request into a string")
+    CHECK_ERROR(asprintf(&args[5], "%d", sem_id_gen_precedence) < 0, getppid(),
+                "[MASTER] Error while converting sem_id_gen_precedence into a string")
+    CHECK_ERROR(asprintf(&args[6], "%d", sem_id_docks) < 0, getppid(),
+                "[MASTER] Error while converting sem_id_docks into a string")
+    args[8] = NULL;
 
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
         switch(pid_process = fork()) {
             case -1:
                 perror("[MASTER] Error during: create_ports->fork()");
                 raise(SIGINT);
+                break;
             case 0:
-                args[6] = int_to_string(i);
+                CHECK_ERROR(asprintf(&args[7], "%d", i) < 0, getppid(),
+                            "[PORTO] Error while converting index into a string")
                 CHECK_ERROR(semctl(sem_id_docks, i, SETVAL, random() % shm_cfg->SO_BANCHINE + 1), getpid(),
                             "[PORTO] Error while generating dock semaphore")
-                execv(PATH_PORTO, args);
-                perror("[PORTO] execv has failed trying to run port");
-                kill(getppid(), SIGINT);
+                CHECK_ERROR(execv(PATH_PORTO, args), getppid(), "[PORTO] execv has failed trying to run port")
             default:
                 shm_pid_array[i] = pid_process;
                 break;
@@ -321,26 +329,32 @@ void create_ports(void) {
 void create_ships(void) {
     /* Pass the shared memory information through as arguments to the child processes */
     int i;
-    char *args[7];
+    char *args[8];
     pid_t pid_process;
 
     args[0] = PATH_NAVE;
-    args[1] = int_to_string(shm_id_config);
-    args[2] = int_to_string(shm_id_ports_coords);
-    args[3] = int_to_string(mq_id_request);
-    args[4] = int_to_string(sem_id_gen_precedence);
-    args[5] = int_to_string(sem_id_docks);
-    args[6] = NULL;
+    CHECK_ERROR(asprintf(&args[1], "%d", shm_id_config) < 0, getppid(),
+                "[MASTER] Error while converting shm_id_config into a string")
+    CHECK_ERROR(asprintf(&args[2], "%d", shm_id_ports_coords) < 0, getppid(),
+                "[MASTER] Error while converting shm_id_ports_coords into a string")
+    CHECK_ERROR(asprintf(&args[3], "%d", shm_id_goods_template) < 0, getppid(),
+                "[MASTER] Error while converting shm_id_goods_template into a string")
+    CHECK_ERROR(asprintf(&args[4], "%d", mq_id_request) < 0, getppid(),
+                "[MASTER] Error while converting mq_id_request into a string")
+    CHECK_ERROR(asprintf(&args[5], "%d", sem_id_gen_precedence) < 0, getppid(),
+                "[MASTER] Error while converting sem_id_gen_precedence into a string")
+    CHECK_ERROR(asprintf(&args[6], "%d", sem_id_docks) < 0, getppid(),
+                "[MASTER] Error while converting sem_id_docks into a string")
+    args[7] = NULL;
 
     for(i = 0; i < shm_cfg->SO_NAVI; i++) {
         switch(pid_process = fork()) {
             case -1:
                 perror("[MASTER] Error during: create_ships->fork()");
                 raise(SIGINT);
+                break;
             case 0:
-                execv(PATH_NAVE, args);
-                perror("[NAVE] execv has failed trying to run the ship");
-                kill(getppid(), SIGINT);
+                CHECK_ERROR(execv(PATH_NAVE, args), getppid(), "[NAVE] execv has failed trying to run the ship")
             default:
                 shm_pid_array[i + shm_cfg->SO_PORTI] = pid_process;
                 break;
@@ -359,14 +373,17 @@ void create_weather(void) {
     char *args[4];
 
     args[0] = PATH_METEO;
-    args[1] = int_to_string(shm_id_config);
-    args[2] = int_to_string(shm_id_pid_array);
+    CHECK_ERROR(asprintf(&args[1], "%d", shm_id_config) < 0, getppid(),
+                "[MASTER] Error while converting shm_id_config into a string")
+    CHECK_ERROR(asprintf(&args[2], "%d", shm_id_pid_array) < 0, getppid(),
+                "[MASTER] Error while converting shm_id_pid_array into a string")
     args[3] = NULL;
 
     switch(pid_weather = fork()) {
         case -1:
             perror("Error during: create_weather->fork()");
             raise(SIGINT);
+            break;
         case 0:
             execv(PATH_METEO, args);
             perror("[METEO] execv has failed trying to run the weather process");

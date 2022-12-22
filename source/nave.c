@@ -14,9 +14,12 @@ int pick_rand_port_on_sea(void);
 void nave_sig_handler(int);
 
 config  *shm_cfg;
+goods   *shm_goods_template;
 coord   *shm_ports_coords;
+
 int     shm_id_config;
 int     shm_id_ports_coords;
+int     shm_id_goods_template;
 int     mq_id_request;
 int     sem_id_gen_precedence;
 int     sem_id_docks;
@@ -36,7 +39,7 @@ int main(int argc, char** argv) {
     struct sigaction sa;
     struct sembuf sops;
 
-    if(argc != 6) {
+    if(argc != 7) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
         kill(getppid(), SIGINT);
     }
@@ -48,17 +51,21 @@ int main(int argc, char** argv) {
     CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert shm_id_config")
     shm_id_ports_coords = string_to_int(argv[2]);
     CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert shm_id_ports_coords")
-    mq_id_request = string_to_int(argv[3]);
+    shm_id_goods_template = string_to_int(argv[3]);
+    CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert shm_id_goods_template")
+    mq_id_request = string_to_int(argv[4]);
     CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert mq_id_request")
-    sem_id_gen_precedence = string_to_int(argv[4]);
+    sem_id_gen_precedence = string_to_int(argv[5]);
     CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert sem_id_precedence")
-    sem_id_docks = string_to_int(argv[5]);
+    sem_id_docks = string_to_int(argv[6]);
     CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert sem_id_docks")
 
     CHECK_ERROR((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1, getppid(),
-            "[NAVE] Error while trying to attach to configuration shared memory")
+                "[NAVE] Error while trying to attach to configuration shared memory")
     CHECK_ERROR((shm_ports_coords = shmat(shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1, getppid(),
                 "[NAVE] Error while trying to attach to ports coordinates shared memory")
+    CHECK_ERROR((shm_goods_template = shmat(shm_id_goods_template, NULL, SHM_RDONLY)) == (void*) -1, getppid(),
+                "[NAVE] Error while trying to attach to goods template shared memory")
 
     old_id_destination_port = -1;
 
