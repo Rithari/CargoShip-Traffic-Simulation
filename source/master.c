@@ -31,7 +31,7 @@ int     shm_id_pid_array;
 int     mq_id_request;
 int     mq_id_ships;
 int     mq_id_ports;
-int     sem_id_generation;
+int     sem_id_gen_precedence; /* semaphore used to manage the general precedence */
 int     sem_id_docks;
 
 
@@ -88,16 +88,18 @@ int main(int argc, char **argv) {
     CHECK_ERROR((shm_pid_array = shmat(shm_id_pid_array, NULL, 0)) == (void *) -1, getpid(),
                 "[MASTER] Error while trying to attach to pid array shared memory")
 
+    /* create and attach message queue for ships and ports */
     CHECK_ERROR((mq_id_request = msgget(IPC_PRIVATE, 0600)) < 0, getpid(),
                 "[MASTER] Error while creating message queue for requests")
-    CHECK_ERROR((sem_id_generation = semget(IPC_PRIVATE, 1, 0600)) < 0, getpid(),
+    CHECK_ERROR((sem_id_gen_precedence = semget(IPC_PRIVATE, 1, 0600)) < 0, getpid(),
                 "[MASTER] Error while creating semaphore for generation order control")
     CHECK_ERROR((sem_id_docks = semget(IPC_PRIVATE, shm_cfg->SO_PORTI, 0600)) < 0, getpid(),
                 "[MASTER] Error while creating semaphore for docks control")
 
-    memset(&sa, 0, sizeof(sa));
+    /* Initialize sigaction struct */
+    memset(&sa, 0, sizeof(sa)); /* bzero is deprecated so memset is used in its place */
     sa.sa_handler = master_sig_handler;
-    sa.sa_flags = SA_RESTART;
+    sa.sa_flags = SA_RESTART; /* Restart functions if interrupted by handler */
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGCHLD, &sa, NULL);
@@ -105,21 +107,21 @@ int main(int argc, char **argv) {
     sa.sa_flags |= SA_NODEFER;
     sigaction(SIGUSR1, &sa, NULL);
 
-
-    CHECK_ERROR(semctl(sem_id_generation, 0, SETVAL, shm_cfg->SO_PORTI) < 0, getpid(),
+    /* Initialize generation semaphore at the value of SO_PORTI */
+    CHECK_ERROR(semctl(sem_id_gen_precedence, 0, SETVAL, shm_cfg->SO_PORTI) < 0, getpid(),
                 "[MASTER] Error while setting the semaphore for ports generation control")
     /* You're only able to generate MAX_SHORT ports here */
     create_ports();
     printf("Waiting for ports generation...\n");
-    CHECK_ERROR(sem_cmd(sem_id_generation, 0, 0, 0), getpid(),
+    CHECK_ERROR(sem_cmd(sem_id_gen_precedence, 0, 0, 0), getpid(),
                 "[MASTER] Error while waiting for ports generation")
 
 
-    CHECK_ERROR(semctl(sem_id_generation, 0, SETVAL, shm_cfg->SO_NAVI) < 0, getpid(),
+    CHECK_ERROR(semctl(sem_id_gen_precedence, 0, SETVAL, shm_cfg->SO_NAVI) < 0, getpid(),
                 "[MASTER] Error while setting the semaphore for ships generation control")
     create_ships();
     printf("Waiting for ships generation...\n");
-    CHECK_ERROR(sem_cmd(sem_id_generation, 0, 0, 0), getpid(),
+    CHECK_ERROR(sem_cmd(sem_id_gen_precedence, 0, 0, 0), getpid(),
                 "[MASTER] Error while waiting for ships generation")
 
     create_weather();
@@ -163,7 +165,7 @@ void clear_all(void) {
                 "[MASTER] Error while removing pid array shared memory in clear_all");
     CHECK_ERROR(msgctl(mq_id_request, IPC_RMID, NULL), getpid(),
                 "[MASTER] Error while removing message queue in clear_all");
-    CHECK_ERROR(semctl(sem_id_generation, 0, IPC_RMID, 0), getpid(),
+    CHECK_ERROR(semctl(sem_id_gen_precedence, 0, IPC_RMID, 0), pid,
                 "[MASTER] Error while removing semaphore for generation order control in clear_all");
     CHECK_ERROR(semctl(sem_id_docks, 0, IPC_RMID, 0), getpid(),
                 "[MASTER] Error while removing semaphore for docks control in clear_all");
@@ -231,6 +233,7 @@ void initialize_so_vars(char* path_cfg_file) {
 
     shm_cfg->CURRENT_DAY = 0;
 
+    /* A "reverse" if statement */
     errno = EINVAL;
 
     CHECK_ERROR(shm_cfg->check != 0x1FFFF, getpid(), "Missing config")
@@ -248,6 +251,7 @@ void initialize_so_vars(char* path_cfg_file) {
 void initialize_ports_coords(void) {
     int i, j;
 
+    /* Hardcode first 4 port coordinates and start the loop at 4 for random coordinates */
     shm_ports_coords[0].x = 0;
     shm_ports_coords[0].y = 0;
     shm_ports_coords[1].x = shm_cfg->SO_LATO;
@@ -257,7 +261,6 @@ void initialize_ports_coords(void) {
     shm_ports_coords[3].x = 0;
     shm_ports_coords[3].y = shm_cfg->SO_LATO;
 
-    /* Loop starts at 4 due to the first 4 ports needing to be hardcoded at the map's corners */
     for(i = 4; i < shm_cfg->SO_PORTI; i++) {
         double rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
         double rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
@@ -274,15 +277,18 @@ void initialize_ports_coords(void) {
     }
 }
 
+/* TODO: error checking */
 void create_ports(void) {
+    /* Pass the shared memory information through as arguments to the child processes */
     int i;
     char *args[8];
     pid_t pid_process;
+
     args[0] = PATH_PORTO;
     args[1] = int_to_string(shm_id_config);
     args[2] = int_to_string(shm_id_ports_coords);
     args[3] = int_to_string(mq_id_request);
-    args[4] = int_to_string(sem_id_generation);
+    args[4] = int_to_string(sem_id_gen_precedence);
     args[5] = int_to_string(sem_id_docks);
     args[7] = NULL;
 
@@ -304,12 +310,14 @@ void create_ports(void) {
         }
     }
 
+    /* Clear up the memory allocated for the arguments */
     for(i = 1; i < 6; i++) {
         free(args[i]);
     }
 }
 
 void create_ships(void) {
+    /* Pass the shared memory information through as arguments to the child processes */
     int i;
     char *args[7];
     pid_t pid_process;
@@ -318,7 +326,7 @@ void create_ships(void) {
     args[1] = int_to_string(shm_id_config);
     args[2] = int_to_string(shm_id_ports_coords);
     args[3] = int_to_string(mq_id_request);
-    args[4] = int_to_string(sem_id_generation);
+    args[4] = int_to_string(sem_id_gen_precedence);
     args[5] = int_to_string(sem_id_docks);
     args[6] = NULL;
 
@@ -337,12 +345,14 @@ void create_ships(void) {
         }
     }
 
+    /* Clear up the memory allocated for the arguments */
     for(i = 1; i < 6; i++) {
         free(args[i]);
     }
 }
 
 void create_weather(void) {
+    /* Pass the shared memory information through as arguments to the child processes */
     int i;
     char *args[4];
 
@@ -363,6 +373,7 @@ void create_weather(void) {
             break;
     }
 
+    /* Clear up the memory allocated for the arguments */
     for (i = 1; i < 3; i++) {
         free(args[i]);
     }
