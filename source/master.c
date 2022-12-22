@@ -155,9 +155,9 @@ int main(int argc, char **argv) {
 }
 
 void clear_all(void) {
-
     pid_t pid;
     pid = getpid();
+
     CHECK_ERROR(shmctl(shm_id_config, IPC_RMID, NULL), pid,
                 "[MASTER] Error while removing config shared memory in clear_all");
     CHECK_ERROR(shmctl(shm_id_goods_template, IPC_RMID, NULL), pid,
