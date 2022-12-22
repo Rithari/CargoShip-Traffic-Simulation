@@ -60,7 +60,7 @@ void print_config(config *cfg) {
     printf("SO_DAYS:        %d\n", cfg->SO_DAYS);
     printf("STORM_DURATION: %d\n", cfg->SO_STORM_DURATION);
     printf("SWELL_DURATION: %d\n", cfg->SO_SWELL_DURATION);
-    printf("ML_INTENSITY:   %d\n", cfg->SO_MAELSTROM);
+    printf("ML_INTENSITY:   %d\n", cfg->SO_MAELSTORM);
 #ifdef DEBUG
     printf("--------- DEBUG  ---------\n");
     printf("CHECK:          %d\n", cfg->check);

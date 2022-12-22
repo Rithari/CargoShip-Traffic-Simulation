@@ -67,7 +67,7 @@ typedef struct {
     int     SO_DAY_LENGTH;
     int     SO_STORM_DURATION;
     int     SO_SWELL_DURATION;
-    int     SO_MAELSTROM;
+    int     SO_MAELSTORM;
     unsigned int check;
 } config;
 

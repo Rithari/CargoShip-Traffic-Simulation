@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
     pause();
 
     while (available_ships) {
-        maelstorm_duration = calculate_timeout(shm_cfg->SO_MAELSTROM, shm_cfg->SO_DAY_LENGTH);
+        maelstorm_duration = calculate_timeout(shm_cfg->SO_MAELSTORM, shm_cfg->SO_DAY_LENGTH);
         printf("[METEO] Maelstorm duration: %lds:%ldns\n", maelstorm_duration.tv_sec, maelstorm_duration.tv_nsec);
         while (nanosleep(&maelstorm_duration, &rem)) {
             switch (errno) {
