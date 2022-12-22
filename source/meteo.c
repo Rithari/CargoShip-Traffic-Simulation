@@ -77,7 +77,7 @@ void meteo_sig_handler(int signum) {
     switch (signum) {
         case SIGALRM:
             kill(shm_pid_array[random() % shm_cfg->SO_PORTI], SIGUSR1);
-            /*TODO: in questo momento tutte le navi possono essere fermate, non solo*/
+            /*TODO: in questo momento tutte le navi possono essere fermate, non solo quelle che navigano*/
             kill(shm_pid_array[random() % shm_cfg->SO_NAVI + shm_cfg->SO_PORTI], SIGUSR1);
             break;
         default:

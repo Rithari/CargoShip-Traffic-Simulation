@@ -236,7 +236,6 @@ void initialize_so_vars(char* path_cfg_file) {
 
     shm_cfg->CURRENT_DAY = 0;
 
-    /* A "reverse" if statement */
     errno = EINVAL;
 
     CHECK_ERROR(shm_cfg->check != 0x1FFFF, getpid(), "Missing config")
