@@ -2,6 +2,7 @@
 #include "../headers/utils.h"
 #include "../headers/common_ipcs.h"
 #include <math.h>
+#include <float.h>
 
 /*se una nave non ha banchine e code di attracco libere allora viene gettata in mare*/
 /*nave deve ricordarsi l'ultimo porto di partenza per evitare che ci ritorni quando viene messa in mare */
@@ -135,7 +136,6 @@ int main(int argc, char** argv) {
 
         move(id_destination_port);
 
-
         /*TODO: errore mentre una nave muore!!*/
         while (semop(sem_id_docks, &sops, 1)) {
             CHECK_ERROR(errno != EINTR, getppid(), "[NAVE] Error while locking semaphore")
@@ -221,22 +221,24 @@ void move(int id_destination) {
 int pick_rand_port_on_sea(void) {
     /* Keep trying to pick a random port and acquire a lock on its dock until we succeed */
     int port_index;
+    int i;
+    double distance = DBL_MAX;
 
-    /* TODO: choose if it's better random or nearest port */
-    do {
-        port_index = (int) random() % shm_cfg->SO_PORTI;
-    } while (port_index == old_id_destination_port);
-
+    for(i = 0; i < shm_cfg->SO_PORTI; i++) {
+        double dx = shm_ports_coords[i].x - actual_coordinate.x;
+        double dy = shm_ports_coords[i].y - actual_coordinate.y;
+        double d_tmp = dx * dx + dy * dy;
+        if(d_tmp < distance) {
+            port_index = i;
+            distance = d_tmp;
+        }
+    }
 
     /* Select a random port from the coordinates array */
     /* Try to acquire a lock on the port's semaphore */
     /* Decrement the port's semaphore value to acquire a lock on the dock */
     while (sem_cmd(sem_id_docks, port_index, -1, 0)) {
-        /* The port's semaphore is not available (its value is 0) */
         CHECK_ERROR(errno != EINTR, getppid(), "[NAVE] Error in pick_rand_port()")
-        port_index = (port_index + 1) % shm_cfg->SO_PORTI == old_id_destination_port
-                     ? (port_index + 2) % shm_cfg->SO_PORTI :
-                     (port_index + 1) % shm_cfg->SO_PORTI;
     }
 
     /* Return the index of the port we selected */

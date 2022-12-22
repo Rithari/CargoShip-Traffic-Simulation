@@ -91,6 +91,7 @@ int main(int argc, char *argv[]) {
 
     while (1) {
         /* Codice del porto da eseguire */
+        pause();
     }
 }
 
