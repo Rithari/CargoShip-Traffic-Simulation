@@ -3,8 +3,8 @@
 #include "../headers/common_ipcs.h"
 
 /*
-Richiesta di merci[]  | MQ di richieste universale tra processi: (dobbiamo sapere il tipo, la quantità e il porto di appartenenza)
-Int Lifespan -1 per le richieste perché non scadono e sono l’unico elemento che distingue le due MQ oltre ad essere due MQ diverse
+Richiesta di merci[] | MQ di richieste universale tra processi: (dobbiamo sapere il tipo, la quantità e il porto di appartenenza)
+Int Lifespan -1 per le richieste perché non scadono e sono l’unico elemento che distingue le due MQ oltre a essere due MQ diverse
 Array / struct di tratte disponibili (caricata dalla funzione apposita)
 
 Funzione per caricare le proprie domande e offerte nelle rispettive MQ
