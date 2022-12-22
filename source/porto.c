@@ -24,8 +24,8 @@ int     sem_id_gen_precedence;
 int     id;
 /* COMMENTO PROVVISIORIO
 goodsList start_of_goods_generation(void);
-goodsOffers goodsOffers_struct_generation(int id, int ton, int lifespan);
-goodsRequests goodsRequest_struct_generation(int id, int ton, pid_t affiliated);
+goodsOffers goodsOffers_struct_generation(int id, int tons, int lifespan);
+goodsRequests goodsRequest_struct_generation(int id, int tons, pid_t affiliated);
 void goodsOffers_generator(int *goodsSetOffers, int *lifespanArray, int offersValue, int offersLength);
 void goodsRequest_generator(int *goodsSetRequests, int *lifespanArray, int requestValue, int requestsLength);
 void add(goodsList myOffers, goodsOffers); <--- solo per test
@@ -123,15 +123,15 @@ goodsList start_of_goods_generation(void) {
     goodsRequest_generator(goodsSetRequests, lifespanArray, maxFillValue, requestsLength);
 }
 
-goodsOffers goodsOffers_struct_generation(int id, int ton, int lifespan) {
+goodsOffers goodsOffers_struct_generation(int id, int tons, int lifespan) {
     goodsOffers newOffers;
     newOffers.id = id;
-    newOffers.ton = ton;
+    newOffers.tons = tons;
     newOffers.lifespan = lifespan;
     return newOffers;
 }
 
-goodsRequests goodsRequest_struct_generation(int id, int ton, pid_t affiliated) {
+goodsRequests goodsRequest_struct_generation(int id, int tons, pid_t affiliated) {
     ..Creazione di Request...
 }
 
