@@ -39,7 +39,7 @@
 
 typedef struct {
     int id;
-    int ton;
+    int tons;
     int lifespan;
 } goods;
 

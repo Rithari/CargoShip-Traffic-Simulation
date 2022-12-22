@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
 
     for (i = 0; i < shm_cfg->SO_MERCI; i++) {
         shm_goods_template[i].id = i;
-        shm_goods_template[i].ton = (int) random() % shm_cfg->SO_SIZE + 1;
+        shm_goods_template[i].tons = (int) random() % shm_cfg->SO_SIZE + 1;
         shm_goods_template[i].lifespan = (int) random() % (shm_cfg->SO_MAX_VITA - shm_cfg->SO_MIN_VITA + 1)
                                          + shm_cfg->SO_MIN_VITA;
     }
@@ -155,22 +155,20 @@ int main(int argc, char **argv) {
 }
 
 void clear_all(void) {
-    pid_t pid;
-    pid = getpid();
 
-    CHECK_ERROR(shmctl(shm_id_config, IPC_RMID, NULL), pid,
+    CHECK_ERROR(shmctl(shm_id_config, IPC_RMID, NULL), getpid(),
                 "[MASTER] Error while removing config shared memory in clear_all")
-    CHECK_ERROR(shmctl(shm_id_goods_template, IPC_RMID, NULL), pid,
+    CHECK_ERROR(shmctl(shm_id_goods_template, IPC_RMID, NULL), getpid(),
                 "[MASTER] Error while removing goods template shared memory in clear_all")
-    CHECK_ERROR(shmctl(shm_id_ports_coords, IPC_RMID, NULL), pid,
+    CHECK_ERROR(shmctl(shm_id_ports_coords, IPC_RMID, NULL), getpid(),
                 "[MASTER] Error while removing ports coordinates shared memory in clear_all")
-    CHECK_ERROR(shmctl(shm_id_pid_array, IPC_RMID, NULL), pid,
+    CHECK_ERROR(shmctl(shm_id_pid_array, IPC_RMID, NULL), getpid(),
                 "[MASTER] Error while removing pid array shared memory in clear_all")
-    CHECK_ERROR(msgctl(mq_id_request, IPC_RMID, NULL), pid,
+    CHECK_ERROR(msgctl(mq_id_request, IPC_RMID, NULL), getpid(),
                 "[MASTER] Error while removing message queue in clear_all")
-    CHECK_ERROR(semctl(sem_id_gen_precedence, 0, IPC_RMID, 0), pid,
+    CHECK_ERROR(semctl(sem_id_gen_precedence, 0, IPC_RMID, 0), getpid(),
                 "[MASTER] Error while removing semaphore for generation order control in clear_all")
-    CHECK_ERROR(semctl(sem_id_docks, 0, IPC_RMID, 0), pid,
+    CHECK_ERROR(semctl(sem_id_docks, 0, IPC_RMID, 0), getpid(),
                 "[MASTER] Error while removing semaphore for docks control in clear_all")
 }
 
