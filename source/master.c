@@ -155,19 +155,22 @@ int main(int argc, char **argv) {
 }
 
 void clear_all(void) {
-    CHECK_ERROR(shmctl(shm_id_config, IPC_RMID, NULL), getpid(),
+
+    pid_t pid;
+    pid = getpid();
+    CHECK_ERROR(shmctl(shm_id_config, IPC_RMID, NULL), pid,
                 "[MASTER] Error while removing config shared memory in clear_all");
-    CHECK_ERROR(shmctl(shm_id_goods_template, IPC_RMID, NULL), getpid(),
+    CHECK_ERROR(shmctl(shm_id_goods_template, IPC_RMID, NULL), pid,
                 "[MASTER] Error while removing goods template shared memory in clear_all");
-    CHECK_ERROR(shmctl(shm_id_ports_coords, IPC_RMID, NULL), getpid(),
+    CHECK_ERROR(shmctl(shm_id_ports_coords, IPC_RMID, NULL), pid,
                 "[MASTER] Error while removing ports coordinates shared memory in clear_all");
-    CHECK_ERROR(shmctl(shm_id_pid_array, IPC_RMID, NULL), getpid(),
+    CHECK_ERROR(shmctl(shm_id_pid_array, IPC_RMID, NULL), pid,
                 "[MASTER] Error while removing pid array shared memory in clear_all");
-    CHECK_ERROR(msgctl(mq_id_request, IPC_RMID, NULL), getpid(),
+    CHECK_ERROR(msgctl(mq_id_request, IPC_RMID, NULL), pid,
                 "[MASTER] Error while removing message queue in clear_all");
     CHECK_ERROR(semctl(sem_id_gen_precedence, 0, IPC_RMID, 0), pid,
                 "[MASTER] Error while removing semaphore for generation order control in clear_all");
-    CHECK_ERROR(semctl(sem_id_docks, 0, IPC_RMID, 0), getpid(),
+    CHECK_ERROR(semctl(sem_id_docks, 0, IPC_RMID, 0), pid,
                 "[MASTER] Error while removing semaphore for docks control in clear_all");
 }
 
