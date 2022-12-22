@@ -228,7 +228,7 @@ void initialize_so_vars(char* path_cfg_file) {
             shm_cfg->check |= 1 << 14;
         } else if (sscanf(buffer, "SO_SWELL_DURATION: %d", &shm_cfg->SO_SWELL_DURATION) == 1) {
             shm_cfg->check |= 1 << 15;
-        } else if (sscanf(buffer, "SO_MAELSTROM: %d", &shm_cfg->SO_MAELSTROM) == 1) {
+        } else if (sscanf(buffer, "SO_MAELSTORM: %d", &shm_cfg->SO_MAELSTORM) == 1) {
             shm_cfg->check |= 1 << 16;
         }
     }
@@ -236,7 +236,6 @@ void initialize_so_vars(char* path_cfg_file) {
 
     shm_cfg->CURRENT_DAY = 0;
 
-    /* A "reverse" if statement */
     errno = EINVAL;
 
     CHECK_ERROR(shm_cfg->check != 0x1FFFF, getpid(), "Missing config")

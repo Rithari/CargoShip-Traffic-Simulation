@@ -6,7 +6,7 @@ SO_SIZE:        1
 SO_MIN_VITA:    50
 SO_MAX_VITA:    50
 SO_LATO:        10
-SO_SPEED:       50
+SO_SPEED:       15
 SO_CAPACITY:    10
 SO_BANCHINE:    1
 SO_FILL:        5
@@ -15,5 +15,5 @@ SO_DAYS:        10
 SO_DAY_LENGTH:  1 # seconds irl
 SO_STORM_DURATION: 6 # hours
 SO_SWELL_DURATION: 24 # hours
-SO_MAELSTROM:   24 # hours
+SO_MAELSTORM:   24 # hours
 2>&1 |;

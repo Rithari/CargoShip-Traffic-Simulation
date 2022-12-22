@@ -183,7 +183,6 @@ void nave_sig_handler(int signum) {
 
 void move(int id_destination) {
     struct timespec ts, rem;
-    /* struct timespec start, end; */
 
     double dx = shm_ports_coords[id_destination].x - actual_coordinate.x;
     double dy = shm_ports_coords[id_destination].y - actual_coordinate.y;
@@ -197,12 +196,6 @@ void move(int id_destination) {
         switch (errno) {
             case EINTR:
                 /* TODO: aggiungere funzionalità (forse non necessario)*/
-                /*
-                 *  clock_gettime(CLOCK_REALTIME, &start);
-                    clock_gettime(CLOCK_REALTIME, &end);
-                    timespec_sub(&end, &end, &start);
-                    timespec_sub(&rem, &rem, &end);
-                 * */
                 ts = rem;
                 printf("[%d] Interrupt occurred while travelling for port no: [%d], time left [s:  %ld\tns:    %ld]\n",
                        getpid(), id_destination, ts.tv_sec, ts.tv_nsec);
@@ -217,10 +210,12 @@ void move(int id_destination) {
     actual_coordinate = shm_ports_coords[id_destination];
 }
 
+/*TODO: useless function*/
 int pick_rand_port_on_sea(void) {
     /* Keep trying to pick a random port and acquire a lock on its dock until we succeed */
     int port_index;
 
+    /* TODO: choose if it's better random or nearest port */
     do {
         port_index = (int) random() % shm_cfg->SO_PORTI;
     } while (port_index == old_id_destination_port);
@@ -231,10 +226,7 @@ int pick_rand_port_on_sea(void) {
     /* Decrement the port's semaphore value to acquire a lock on the dock */
     while (sem_cmd(sem_id_docks, port_index, -1, 0)) {
         /* The port's semaphore is not available (its value is 0) */
-        if(errno != EINTR) {
-            perror("[NAVE] Error in pick_rand_port()");
-            kill(getppid(), SIGINT);
-        }
+        CHECK_ERROR(errno != EINTR, getppid(), "[NAVE] Error in pick_rand_port()")
         port_index = (port_index + 1) % shm_cfg->SO_PORTI == old_id_destination_port
                      ? (port_index + 2) % shm_cfg->SO_PORTI :
                      (port_index + 1) % shm_cfg->SO_PORTI;
