@@ -24,19 +24,28 @@ config  *shm_cfg;
 coord   *shm_ports_coords;
 goods   *shm_goods_template;
 
+dump_ports  *shm_dump_ports;
+dump_ships  *shm_dump_ships;
+dump_goods  *shm_dump_goods;
+
 int     shm_id_config;
 int     shm_id_goods_template;
 int     shm_id_ports_coords;
 int     shm_id_pid_array;
+int     shm_id_dump_ports;
+int     shm_id_dump_ships;
+int     shm_id_dump_goods;
 int     mq_id_request;
 int     mq_id_ships;
 int     mq_id_ports;
 int     sem_id_gen_precedence; /* semaphore used to manage the general precedence */
 int     sem_id_docks;
+int     sem_id_dump_mutex;
 
-
+/*TODO: add to config shared memory id for all ipcs utils. This will save time and will be more efficient.*/
 int main(int argc, char **argv) {
     int i;
+    int wstatus;
     struct sigaction sa;
 
     if(argc != 2) {
@@ -80,13 +89,37 @@ int main(int argc, char **argv) {
 
     initialize_ports_coords();
 
-    /* Array of pids for the children */
+    /* pid shm for the children */
     CHECK_ERROR((shm_id_pid_array =
             shmget(IPC_PRIVATE, sizeof(pid_t) * (shm_cfg->SO_PORTI + shm_cfg->SO_NAVI), 0600)) < 0,
                 getpid(), "[MASTER] Error while creating shared memory for pid array")
 
     CHECK_ERROR((shm_pid_array = shmat(shm_id_pid_array, NULL, 0)) == (void *) -1, getpid(),
                 "[MASTER] Error while trying to attach to pid array shared memory")
+
+    CHECK_ERROR((shm_id_dump_ports = shmget(IPC_PRIVATE, sizeof(dump_ports) * shm_cfg->SO_PORTI, 0600)) < 0,
+                getpid(), "[MASTER] Error while creating shared memory for log ports data")
+
+    CHECK_ERROR((shm_dump_ports = shmat(shm_id_dump_ports, NULL, 0)) == (void*) -1,
+                getpid(), "[MASTER] Error while trying to attach to log ports data shared memory")
+
+    memset(shm_dump_ports, 0, sizeof(dump_ports) * shm_cfg->SO_PORTI);
+
+    CHECK_ERROR((shm_id_dump_ships = shmget(IPC_PRIVATE, sizeof(dump_ships) * shm_cfg->SO_NAVI, 0600)) < 0,
+                getpid(), "[MASTER] Error while creating shared memory for log ships data")
+
+    CHECK_ERROR((shm_dump_ships = shmat(shm_id_dump_ships, NULL, 0)) == (void*) -1,
+                getpid(), "[MASTER] Error while trying to attach to log ships data shared memory")
+
+    memset(shm_dump_ships, 0, sizeof(dump_ships) * shm_cfg->SO_NAVI);
+
+    CHECK_ERROR((shm_id_dump_goods = shmget(IPC_PRIVATE, sizeof(dump_goods) * shm_cfg->SO_MERCI, 0600)) < 0,
+                getpid(), "[MASTER] Error while creating shared memory for log goods data")
+
+    CHECK_ERROR((shm_dump_goods = shmat(shm_id_dump_goods, NULL, 0)) == (void*) -1,
+                getpid(), "[MASTER] Error while trying to attach to log goods data shared memory")
+
+    memset(shm_dump_goods, 0, sizeof(dump_goods) * shm_cfg->SO_MERCI);
 
     /* create and attach message queue for ships and ports */
     CHECK_ERROR((mq_id_request = msgget(IPC_PRIVATE, 0600)) < 0, getpid(),
@@ -96,16 +129,13 @@ int main(int argc, char **argv) {
     CHECK_ERROR((sem_id_docks = semget(IPC_PRIVATE, shm_cfg->SO_PORTI, 0600)) < 0, getpid(),
                 "[MASTER] Error while creating semaphore for docks control")
 
-    /* Initialize sigaction struct */
-    memset(&sa, 0, sizeof(sa)); /* bzero is deprecated so memset is used in its place */
-    sa.sa_handler = master_sig_handler;
-    sa.sa_flags = SA_RESTART; /* Restart functions if interrupted by handler */
-    sigaction(SIGTERM, &sa, NULL);
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGCHLD, &sa, NULL);
-    sigaction(SIGALRM, &sa, NULL);
-    sa.sa_flags |= SA_NODEFER;
-    sigaction(SIGUSR1, &sa, NULL);
+    /*WIP*/
+    CHECK_ERROR((sem_id_dump_mutex = semget(IPC_PRIVATE, 7, 0600)) < 0, getpid(),
+                "[MASTER] Error while creating semaphore for dump control")
+    for(i = 0; i < 7; i++) {
+        CHECK_ERROR(semctl(sem_id_dump_mutex, i, SETVAL, 1) < 0, getpid(),
+                    "[MASTER] Error while setting the semaphore for ports dump control")
+    }
 
     /* Initialize generation semaphore at the value of SO_PORTI */
     CHECK_ERROR(semctl(sem_id_gen_precedence, 0, SETVAL, shm_cfg->SO_PORTI) < 0, getpid(),
@@ -125,6 +155,17 @@ int main(int argc, char **argv) {
                 "[MASTER] Error while waiting for ships generation")
 
     create_weather();
+
+    /* Initialize sigaction struct */
+    memset(&sa, 0, sizeof(sa)); /* bzero is deprecated so memset is used in its place */
+    sa.sa_handler = master_sig_handler;
+    sa.sa_flags = SA_RESTART; /* Restart functions if interrupted by handler */
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGCHLD, &sa, NULL);
+    sigaction(SIGALRM, &sa, NULL);
+    sigaction(SIGUSR1, &sa, NULL);
+
     /*TODO: utilizzo SIGALRM per sincronizzare tutti i processi per iniziare il primo giorno,
      * credo sia meglio implementare ad esempio una SIGCONT*/
     /*TODO: magari implementare setpgid, getpgid, setpgrp, getpgrp*/
@@ -137,7 +178,13 @@ int main(int argc, char **argv) {
 
     alarm(shm_cfg->SO_DAY_LENGTH);
 
-    while(waitpid(-1, NULL, 0) > 0) {
+    while(waitpid(-1, &wstatus, 0) > 0) {
+        if(WIFSIGNALED(wstatus)) {
+            printf("[MASTER] SIGNAL: %s\n", strsignal(WTERMSIG(wstatus)));
+            raise(SIGINT);
+        }
+
+
         switch (errno) {
             case EINTR:
                 printf("I'm in eintr.");
@@ -155,7 +202,6 @@ int main(int argc, char **argv) {
 }
 
 void clear_all(void) {
-
     CHECK_ERROR(shmctl(shm_id_config, IPC_RMID, NULL), getpid(),
                 "[MASTER] Error while removing config shared memory in clear_all")
     CHECK_ERROR(shmctl(shm_id_goods_template, IPC_RMID, NULL), getpid(),
@@ -164,12 +210,20 @@ void clear_all(void) {
                 "[MASTER] Error while removing ports coordinates shared memory in clear_all")
     CHECK_ERROR(shmctl(shm_id_pid_array, IPC_RMID, NULL), getpid(),
                 "[MASTER] Error while removing pid array shared memory in clear_all")
+    CHECK_ERROR(shmctl(shm_id_dump_ports, IPC_RMID, NULL), getpid(),
+                "[MASTER] Error while removing dump simulation shared memory in clear_all")
+    CHECK_ERROR(shmctl(shm_id_dump_ships, IPC_RMID, NULL), getpid(),
+                "[MASTER] Error while removing dump simulation shared memory in clear_all")
+    CHECK_ERROR(shmctl(shm_id_dump_goods, IPC_RMID, NULL), getpid(),
+                "[MASTER] Error while removing dump simulation shared memory in clear_all")
     CHECK_ERROR(msgctl(mq_id_request, IPC_RMID, NULL), getpid(),
                 "[MASTER] Error while removing message queue in clear_all")
     CHECK_ERROR(semctl(sem_id_gen_precedence, 0, IPC_RMID, 0), getpid(),
                 "[MASTER] Error while removing semaphore for generation order control in clear_all")
     CHECK_ERROR(semctl(sem_id_docks, 0, IPC_RMID, 0), getpid(),
                 "[MASTER] Error while removing semaphore for docks control in clear_all")
+    CHECK_ERROR(semctl(sem_id_dump_mutex, 0, IPC_RMID, 0), getpid(),
+                "[MASTER] Error while removing semaphore for dump control in clear_all")
 }
 
 void initialize_so_vars(char* path_cfg_file) {
@@ -281,35 +335,43 @@ void initialize_ports_coords(void) {
 void create_ports(void) {
     /* Pass the shared memory information through as arguments to the child processes */
     int i;
-    char *args[9];
+    char *args[12];
     pid_t pid_process;
 
     /*TODO: asprintf generats memory leak (valgrind check). Suggest to revert changes and improve int_to_string function*/
     args[0] = PATH_PORTO;
-    CHECK_ERROR(asprintf(&args[1], "%d", shm_id_config) < 0, getppid(),
+    CHECK_ERROR(asprintf(&args[1], "%d", shm_id_config) < 0, getpid(),
                 "[MASTER] Error while converting shm_id_config into a string")
-    CHECK_ERROR(asprintf(&args[2], "%d", shm_id_ports_coords) < 0, getppid(),
+    CHECK_ERROR(asprintf(&args[2], "%d", shm_id_ports_coords) < 0, getpid(),
                 "[MASTER] Error while converting shm_id_ports_coords into a string")
-    CHECK_ERROR(asprintf(&args[3], "%d", shm_id_goods_template) < 0, getppid(),
+    CHECK_ERROR(asprintf(&args[3], "%d", shm_id_goods_template) < 0, getpid(),
                 "[MASTER] Error while converting shm_id_goods_template into a string")
-    CHECK_ERROR(asprintf(&args[4], "%d", mq_id_request) < 0, getppid(),
+    CHECK_ERROR(asprintf(&args[4], "%d", shm_id_dump_ports) < 0, getpid(),
+                "[MASTER] Error while converting shm_id_dump_simulation into a string")
+    CHECK_ERROR(asprintf(&args[5], "%d", shm_id_dump_goods) < 0, getpid(),
+                "[MASTER] Error while converting shm_id_dump_simulation into a string")
+    CHECK_ERROR(asprintf(&args[6], "%d", mq_id_request) < 0, getpid(),
                 "[MASTER] Error while converting mq_id_request into a string")
-    CHECK_ERROR(asprintf(&args[5], "%d", sem_id_gen_precedence) < 0, getppid(),
+    CHECK_ERROR(asprintf(&args[7], "%d", sem_id_gen_precedence) < 0, getpid(),
                 "[MASTER] Error while converting sem_id_gen_precedence into a string")
-    CHECK_ERROR(asprintf(&args[6], "%d", sem_id_docks) < 0, getppid(),
+    CHECK_ERROR(asprintf(&args[8], "%d", sem_id_docks) < 0, getpid(),
                 "[MASTER] Error while converting sem_id_docks into a string")
-    args[8] = NULL;
+    CHECK_ERROR(asprintf(&args[9], "%d", sem_id_dump_mutex) < 0, getpid(),
+                "[MASTER] Error while converting sem_id_dump_mutex into a string")
+    args[11] = NULL;
 
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
+        int n_docks;
         switch(pid_process = fork()) {
             case -1:
                 perror("[MASTER] Error during: create_ports->fork()");
                 raise(SIGINT);
                 break;
             case 0:
-                CHECK_ERROR(asprintf(&args[7], "%d", i) < 0, getppid(),
+                CHECK_ERROR(asprintf(&args[10], "%d", i) < 0, getppid(),
                             "[PORTO] Error while converting index into a string")
-                CHECK_ERROR(semctl(sem_id_docks, i, SETVAL, random() % shm_cfg->SO_BANCHINE + 1), getpid(),
+                n_docks = (int) random() % shm_cfg->SO_BANCHINE + 1;
+                CHECK_ERROR(semctl(sem_id_docks, i, SETVAL, n_docks), getppid(),
                             "[PORTO] Error while generating dock semaphore")
                 CHECK_ERROR(execv(PATH_PORTO, args), getppid(), "[PORTO] execv has failed trying to run port")
             default:
@@ -319,7 +381,7 @@ void create_ports(void) {
     }
 
     /* Clear up the memory allocated for the arguments */
-    for(i = 1; i < 6; i++) {
+    for(i = 1; i < 10; i++) {
         free(args[i]);
     }
 }
@@ -327,23 +389,29 @@ void create_ports(void) {
 void create_ships(void) {
     /* Pass the shared memory information through as arguments to the child processes */
     int i;
-    char *args[8];
+    char *args[11];
     pid_t pid_process;
 
     args[0] = PATH_NAVE;
-    CHECK_ERROR(asprintf(&args[1], "%d", shm_id_config) < 0, getppid(),
+    CHECK_ERROR(asprintf(&args[1], "%d", shm_id_config) < 0, getpid(),
                 "[MASTER] Error while converting shm_id_config into a string")
-    CHECK_ERROR(asprintf(&args[2], "%d", shm_id_ports_coords) < 0, getppid(),
+    CHECK_ERROR(asprintf(&args[2], "%d", shm_id_ports_coords) < 0, getpid(),
                 "[MASTER] Error while converting shm_id_ports_coords into a string")
-    CHECK_ERROR(asprintf(&args[3], "%d", shm_id_goods_template) < 0, getppid(),
+    CHECK_ERROR(asprintf(&args[3], "%d", shm_id_goods_template) < 0, getpid(),
                 "[MASTER] Error while converting shm_id_goods_template into a string")
-    CHECK_ERROR(asprintf(&args[4], "%d", mq_id_request) < 0, getppid(),
+    CHECK_ERROR(asprintf(&args[4], "%d", shm_id_dump_ships) < 0, getpid(),
+                "[MASTER] Error while converting shm_id_dump_simulation into a string")
+    CHECK_ERROR(asprintf(&args[5], "%d", shm_id_dump_goods) < 0, getpid(),
+                "[MASTER] Error while converting shm_id_dump_simulation into a string")
+    CHECK_ERROR(asprintf(&args[6], "%d", mq_id_request) < 0, getpid(),
                 "[MASTER] Error while converting mq_id_request into a string")
-    CHECK_ERROR(asprintf(&args[5], "%d", sem_id_gen_precedence) < 0, getppid(),
+    CHECK_ERROR(asprintf(&args[7], "%d", sem_id_gen_precedence) < 0, getpid(),
                 "[MASTER] Error while converting sem_id_gen_precedence into a string")
-    CHECK_ERROR(asprintf(&args[6], "%d", sem_id_docks) < 0, getppid(),
+    CHECK_ERROR(asprintf(&args[8], "%d", sem_id_docks) < 0, getpid(),
                 "[MASTER] Error while converting sem_id_docks into a string")
-    args[7] = NULL;
+    CHECK_ERROR(asprintf(&args[9], "%d", sem_id_dump_mutex) < 0, getpid(),
+                "[MASTER] Error while converting sem_id_dump_mutex into a string")
+    args[10] = NULL;
 
     for(i = 0; i < shm_cfg->SO_NAVI; i++) {
         switch(pid_process = fork()) {
@@ -360,7 +428,7 @@ void create_ships(void) {
     }
 
     /* Clear up the memory allocated for the arguments */
-    for(i = 1; i < 6; i++) {
+    for(i = 1; i < 10; i++) {
         free(args[i]);
     }
 }
@@ -396,6 +464,26 @@ void create_weather(void) {
     }
 }
 
+void print_dump(void) {
+    /*int i;
+    printf("----------------------\n");
+    printf("---MERCI---\n");
+    for(i = 0; i < shm_cfg->SO_MERCI; i++) {
+        printf("ID: [%d]\tSTATE: [%d]\n", shm_dump_simulation->d_goods[i].id, shm_dump_simulation->d_goods[i].state);
+    }
+    printf("---PORTI---\n");
+    for(i = 0; i < shm_cfg->SO_PORTI; i++) {
+        printf("ID: [%d]\tON_SWELL: [%d]\n", shm_dump_simulation->d_ports[i].id, shm_dump_simulation->d_ports[i].on_swell);
+        printf("DOCK: [%ld/%ld]\n", shm_dump_simulation->d_ports[i].dock_available, shm_dump_simulation->d_ports[i].dock_total);
+        printf("GOODS: [%ld/%ld/%ld]\n", shm_dump_simulation->d_ports[i].good_available, shm_dump_simulation->d_ports[i].good_send, shm_dump_simulation->d_ports[i].good_received);
+        printf("------\n");
+    }
+    printf("---NAVI---\n");
+    printf("SHIPS: [%ld/%ld/%ld]\n", shm_dump_simulation->ships_with_cargo_en_route, shm_dump_simulation->ships_without_cargo_en_route, shm_dump_simulation->ships_being_loaded_unloaded);
+    printf("SHIPS SLOWED: [%d]\tSHIPS SUNK: [%d]\n", shm_dump_simulation->ships_slowed, shm_dump_simulation->ships_sunk);
+    printf("----------------------\n");*/
+}
+
 void master_sig_handler(int signum) {
     int old_errno = errno;
     int i;
@@ -416,10 +504,23 @@ void master_sig_handler(int signum) {
         /* Still needs to deal with statistics first */
         case SIGALRM:
             shm_cfg->CURRENT_DAY++;
+            CHECK_ERROR(semctl(sem_id_gen_precedence, 0, SETVAL, shm_cfg->SO_PORTI + shm_cfg->SO_NAVI) < 0,
+                        getpid(),
+                        "[MASTER] Error while setting the semaphore for ports generation control in SIGALRM")
+
+            printf("Day [%d]/[%d].\n", shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
+            for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
+                if(shm_pid_array[i] >= 0) {
+                    kill(shm_pid_array[i], SIGALRM);
+                }
+            }
+            kill(pid_weather, SIGALRM);
+
+            CHECK_ERROR(sem_cmd(sem_id_gen_precedence, 0, 0, 0), getpid(),
+                        "[MASTER] Error while waiting for ports generation")
 
             /* Check SO_DAYS against the current day. If they're the same kill everything */
             if(shm_cfg->CURRENT_DAY == shm_cfg->SO_DAYS) {
-                printf("Day [%d]/[%d]. Reached SO_DAYS\n", shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
                 for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
                     if(shm_pid_array[i] >= 0) {
                         kill(shm_pid_array[i], SIGTERM);
@@ -427,14 +528,9 @@ void master_sig_handler(int signum) {
                 }
                 kill(pid_weather, SIGTERM);
                 /* TODO: dump dello stato finale */
+                print_dump();
             } else {
-                printf("Day [%d]/[%d].\n", shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
-                for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
-                    if(shm_pid_array[i] >= 0) {
-                        kill(shm_pid_array[i], SIGALRM);
-                    }
-                }
-                kill(pid_weather, SIGALRM);
+                print_dump();
                 alarm(shm_cfg->SO_DAY_LENGTH);
             }
             break;

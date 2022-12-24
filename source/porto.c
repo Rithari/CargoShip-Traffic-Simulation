@@ -17,11 +17,19 @@ void porto_sig_handler(int);
 
 config  *shm_cfg;
 coord   *shm_ports_coords;
+goods   *shm_goods_template;
+dump_ports  *shm_dump_ports;
+dump_goods  *shm_dump_goods;
+
 int     shm_id_config;
 int     shm_id_ports_coords;
 int     shm_id_goods_template;
+int     shm_id_dump_ports;
+int     shm_id_dump_goods;
 int     mq_id_request;
 int     sem_id_gen_precedence;
+int     sem_id_dock;
+int     sem_id_dump_mutex;
 int     id;
 /* COMMENTO PROVVISIORIO
 goodsList start_of_goods_generation(void);
@@ -33,14 +41,13 @@ void add(goodsList myOffers, goodsOffers); <--- solo per test
 */
 
 /* goodsList myOffers; */
-config *shm_cfg;
-goods *shm_goods_template;
-int sem_id_dock;
 
 /* ? porto_goodsOffers_generator(); */
 
 int main(int argc, char *argv[]) {
     int     i;
+    int n_docks = 5;
+
     struct sigaction sa;
     struct sembuf sem;
 
@@ -55,38 +62,51 @@ int main(int argc, char *argv[]) {
 
     srandom(getpid());
 
-    if(argc != 8) {
+    if(argc != 11) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
         kill(getppid(), SIGINT);
     }
 
+    /*TODO: improve string to int function */
     shm_id_config = string_to_int(argv[1]);
     CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert shm_id_config")
     shm_id_ports_coords = string_to_int(argv[2]);
     CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert shm_id_ports_coords")
     shm_id_goods_template = string_to_int(argv[3]);
     CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert shm_id_ports_coords")
-    mq_id_request = string_to_int(argv[4]);
+    shm_id_dump_ports = string_to_int(argv[4]);
+    CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert shm_id_ports_coords")
+    shm_id_dump_goods = string_to_int(argv[5]);
+    CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert shm_id_dump_simulation")
+    mq_id_request = string_to_int(argv[6]);
     CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert mq_id_request")
-    sem_id_gen_precedence = string_to_int(argv[5]);
+    sem_id_gen_precedence = string_to_int(argv[7]);
     CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert sem_id_gen_precedence")
-    sem_id_dock = string_to_int(argv[6]);
+    sem_id_dock = string_to_int(argv[8]);
     CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert sem_id_dock")
-    id = string_to_int(argv[7]);
+    sem_id_dump_mutex = string_to_int(argv[9]);
+    CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert sem_id_dump_mutex")
+    id = string_to_int(argv[10]);
     CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert id")
 
 
     CHECK_ERROR((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1, getppid(),
                 "[PORTO] Error while trying to attach to configuration shared memory")
-    CHECK_ERROR((shm_ports_coords = shmat(shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1, getppid(),
-                "[PORTO] Error while trying to attach to ports coordinates shared memory")
-    CHECK_ERROR((shm_goods_template = shmat(shm_id_goods_template, NULL, SHM_RDONLY)) == (void*) -1, getppid(),
-                "[PORTO] Error while trying to attach to ports coordinates shared memory")
+    CHECK_ERROR((shm_ports_coords = shmat(shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1,
+                getppid(), "[PORTO] Error while trying to attach to ports coordinates shared memory")
+    CHECK_ERROR((shm_goods_template = shmat(shm_id_goods_template, NULL, SHM_RDONLY)) == (void*) -1,
+                getppid(), "[PORTO] Error while trying to attach to ports coordinates shared memory")
+    CHECK_ERROR((shm_dump_ports = shmat(shm_id_dump_ports, NULL, 0)) == (void*) -1,
+                getppid(), "[PORTO] Error while trying to attach to dump port shared memory")
+    CHECK_ERROR((shm_dump_goods = shmat(shm_id_dump_goods, NULL, 0)) == (void*) -1,
+                getppid(), "[PORTO] Error while trying to attach to dump goods shared memory")
     CHECK_ERROR(sem_cmd(sem_id_gen_precedence, 0, -1, 0) < 0, getppid(),
                 "[PORTO] Error while trying to release sem_id_gen_precedence")
 
+    fflush(stdout);
 
     printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);
+
     /*start_of_goods_generation();*/
 
     while (1) {
@@ -175,6 +195,8 @@ void porto_sig_handler(int signum) {
         case SIGALRM:
             /*TODO: dump stato attuale*/
             printf("[PORTO] DUMP PID: [%d] SIGALRM\n", getpid());
+            CHECK_ERROR(sem_cmd(sem_id_gen_precedence, 0, -1, 0) < 0, getppid(),
+                        "[PORTO] Error while trying to release sem_id_gen_precedence")
             break;
         case SIGUSR1:
             /* swell occurred */

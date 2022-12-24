@@ -10,11 +10,12 @@ pid_t   *shm_pid_array;
 int shm_id_config;
 int shm_id_pid_array;
 int sem_id_pid_mutex;
-int available_ships;
 
 int main(int argc, char** argv) {
+    int i;
     int index_pid_to_term;
-    pid_t pid_ship_to_term;
+    int available_ships;
+    int *index_pid_status;
 
     struct sigaction sa;
     struct timespec maelstorm_duration, rem;
@@ -36,6 +37,11 @@ int main(int argc, char** argv) {
                 "[METEO] Error while trying to attach to configuration shared memory")
 
     available_ships = shm_cfg->SO_NAVI;
+    index_pid_status = malloc(sizeof(shm_cfg->SO_NAVI) * shm_cfg->SO_NAVI);
+
+    for(i = 0; i < shm_cfg->SO_NAVI; i++) {
+        index_pid_status[i] = i;
+    }
 
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = meteo_sig_handler;
@@ -59,13 +65,12 @@ int main(int argc, char** argv) {
                     break;
             }
         }
-        index_pid_to_term = ((int) random() % available_ships) + shm_cfg->SO_PORTI;
-        printf("[METEO] index to kill: %d\n", (index_pid_to_term - shm_cfg->SO_PORTI));
-        /*while (sem_cmd(sem_id_pid_mutex, index_pid_to_term, -1, 0)); */
-        pid_ship_to_term = shm_pid_array[index_pid_to_term];
-        shm_pid_array[index_pid_to_term] = shm_pid_array[available_ships + shm_cfg->SO_PORTI - 1];
-        available_ships--;
-        if(pid_ship_to_term >= 0) kill(pid_ship_to_term, SIGTERM);
+        index_pid_to_term = (int) random() % available_ships;
+        printf("[METEO] index to kill: %d\n", index_pid_to_term);
+        /*while (sem_cmd(sem_id_pid_mutex, index_pid_status[index_pid_to_term], -1, 0)); */
+        kill(shm_pid_array[index_pid_status[index_pid_to_term] + shm_cfg->SO_PORTI], SIGTERM);
+        /*while (sem_cmd(sem_id_pid_mutex, index_pid_status[index_pid_to_term], 1, 0)); */
+        index_pid_status[index_pid_to_term] = index_pid_status[--available_ships];
     }
     kill(getppid(), SIGUSR1);
     return 0;

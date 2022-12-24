@@ -17,13 +17,18 @@ void nave_sig_handler(int);
 config  *shm_cfg;
 goods   *shm_goods_template;
 coord   *shm_ports_coords;
+dump_ships  *shm_dump_ships;
+dump_goods  *shm_dump_goods;
 
 int     shm_id_config;
 int     shm_id_ports_coords;
 int     shm_id_goods_template;
+int     shm_id_dump_ships;
+int     shm_id_dump_goods;
 int     mq_id_request;
 int     sem_id_gen_precedence;
 int     sem_id_docks;
+int     sem_id_dump_mutex;
 
 coord   actual_coordinate;
 int     actual_capacity;
@@ -40,7 +45,7 @@ int main(int argc, char** argv) {
     struct sigaction sa;
     struct sembuf sops;
 
-    if(argc != 7) {
+    if(argc != 10) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
         kill(getppid(), SIGINT);
     }
@@ -53,13 +58,19 @@ int main(int argc, char** argv) {
     shm_id_ports_coords = string_to_int(argv[2]);
     CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert shm_id_ports_coords")
     shm_id_goods_template = string_to_int(argv[3]);
-    CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert shm_id_goods_template")
-    mq_id_request = string_to_int(argv[4]);
+    CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert shm_id_goods_ships")
+    shm_id_dump_ships = string_to_int(argv[4]);
+    CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert shm_id_goods_goods")
+    shm_id_dump_goods = string_to_int(argv[5]);
+    CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert shm_id_dump_simulation")
+    mq_id_request = string_to_int(argv[6]);
     CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert mq_id_request")
-    sem_id_gen_precedence = string_to_int(argv[5]);
+    sem_id_gen_precedence = string_to_int(argv[7]);
     CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert sem_id_precedence")
-    sem_id_docks = string_to_int(argv[6]);
+    sem_id_docks = string_to_int(argv[8]);
     CHECK_ERROR(errno, getppid(), "[NAVE] Error while trying to convert sem_id_docks")
+    sem_id_dump_mutex = string_to_int(argv[9]);
+    CHECK_ERROR(errno, getppid(), "[PORTO] Error while trying to convert sem_id_dump_mutex")
 
     CHECK_ERROR((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1, getppid(),
                 "[NAVE] Error while trying to attach to configuration shared memory")
@@ -67,6 +78,10 @@ int main(int argc, char** argv) {
                 "[NAVE] Error while trying to attach to ports coordinates shared memory")
     CHECK_ERROR((shm_goods_template = shmat(shm_id_goods_template, NULL, SHM_RDONLY)) == (void*) -1, getppid(),
                 "[NAVE] Error while trying to attach to goods template shared memory")
+    CHECK_ERROR((shm_dump_ships = shmat(shm_id_dump_ships, NULL, 0)) == (void*) -1, getppid(),
+                "[NAVE] Error while trying to attach to dump ships shared memory")
+    CHECK_ERROR((shm_dump_goods = shmat(shm_id_dump_goods, NULL, 0)) == (void*) -1, getppid(),
+                "[NAVE] Error while trying to attach to dump goods shared memory")
 
     old_id_destination_port = -1;
 
@@ -96,11 +111,8 @@ int main(int argc, char** argv) {
     sa.sa_flags |= SA_NODEFER;
     sigaction(SIGUSR1, &sa, NULL);
 
-    if(sem_cmd(sem_id_gen_precedence, 0, -1, 0) < 0) {
-        perror("[NAVE] Error while trying to release sem_id_gen_precedence");
-        kill(getppid(), SIGINT);
-    }
-
+    CHECK_ERROR(sem_cmd(sem_id_gen_precedence, 0, -1, 0) < 0, getppid(),
+                "[NAVE] Error while trying to release sem_id_gen_precedence")
 
     /* Wait until everyone is ready (master will send SIGCONT) */
     pause();
@@ -154,6 +166,8 @@ void nave_sig_handler(int signum) {
             /*printf("Allarme!\n"); */
             /*TODO: dump stato attuale*/
             printf("[NAVE] DUMP PID: [%d] SIGALRM\n", getpid());
+            CHECK_ERROR(sem_cmd(sem_id_gen_precedence, 0, -1, 0) < 0, getppid(),
+                        "[NAVE] Error while trying to release sem_id_gen_precedence")
             break;
         case SIGTERM:
             /* malestorm killed the ship :C or program end*/

@@ -1,7 +1,6 @@
 #ifndef PROGETTOSO_MASTER_H
 #define PROGETTOSO_MASTER_H
 
-
 #define _GNU_SOURCE
 
 #include <sys/types.h>
@@ -38,16 +37,39 @@
 
 
 typedef struct {
-    int id;
-    int tons;
-    int lifespan;
+    int     id;
+    int     tons;
+    int     lifespan;
 } goods;
 
 
 typedef struct {
-    double x;
-    double y;
+    double  x;
+    double  y;
 } coord;
+
+typedef struct {
+    int     id;
+    int     state;
+} dump_goods;
+
+typedef struct {
+    int    id;
+    int    good_available;
+    int    good_send;
+    int    good_received;
+    int    dock_total;
+    int    dock_available;
+    int     on_swell;
+} dump_ports;
+
+typedef struct {
+    int     ships_with_cargo_en_route;
+    int     ships_without_cargo_en_route;
+    int     ships_being_loaded_unloaded;
+    int     ships_slowed;
+    int     ships_sunk;
+} dump_ships;
 
 typedef struct {
     int     CURRENT_DAY;
@@ -68,7 +90,7 @@ typedef struct {
     int     SO_STORM_DURATION;
     int     SO_SWELL_DURATION;
     int     SO_MAELSTORM;
-    unsigned int check;
+    unsigned int  check;
 } config;
 
 #endif /*PROGETTOSO_MASTER_H*/
