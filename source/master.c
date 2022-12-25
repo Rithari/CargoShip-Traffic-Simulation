@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
 
     /* deletes all the contents of shared memory arrays */
     memset(shm_dump_ports, 0, sizeof(dump_ports) * shm_cfg->SO_PORTI);
-    memset(shm_dump_ships, 0, sizeof(dump_ships) * shm_cfg->SO_NAVI);
+    memset(shm_dump_ships, 0, sizeof(dump_ships));
     memset(shm_dump_goods, 0, sizeof(dump_goods) * shm_cfg->SO_MERCI);
 
     /* creates the message queue for the request of the ports */
@@ -320,7 +320,7 @@ void create_ports(void) {
     args[3] = NULL;
 
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
-        int n_docks;
+        int n_docks = (int) random() % shm_cfg->SO_BANCHINE + 1;
         switch(pid_process = fork()) {
             case -1:
                 perror("[MASTER] Error during: create_ports->fork()");
@@ -329,7 +329,6 @@ void create_ports(void) {
             case 0:
                 CHECK_ERROR_CHILD(asprintf(&args[2], "%d", i) < 0,
                             "[PORTO] Error while converting index into a string")
-                n_docks = (int) random() % shm_cfg->SO_BANCHINE + 1;
                 shm_dump_ports[i].dock_total = n_docks;
                 CHECK_ERROR_CHILD(semctl(shm_cfg->sem_id_dock, i, SETVAL, n_docks),
                                    "[PORTO] Error while generating dock semaphore")
