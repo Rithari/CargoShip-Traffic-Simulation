@@ -61,9 +61,5 @@ void print_config(config *cfg) {
     printf("SO_STORM_DURATION: %d\n", cfg->SO_STORM_DURATION);
     printf("SO_SWELL_DURATION: %d\n", cfg->SO_SWELL_DURATION);
     printf("SO_MAELSTORM:   %d\n", cfg->SO_MAELSTORM);
-#ifdef DEBUG
-    printf("--------- DEBUG  ---------\n");
-    printf("CHECK:          %d\n", cfg->check);
-#endif
     printf("--------------------------\n");
 }

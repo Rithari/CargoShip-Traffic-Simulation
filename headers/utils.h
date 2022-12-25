@@ -3,12 +3,10 @@
 
 #include "master.h"
 
-/* TODO: improve usage because if statement is a bs */
-#define CHECK_ERROR(x, pid, str) if(x) { \
-                            printf("ERROR IN LINE %d\n", __LINE__); \
-                            perror(str);    \
-                            kill(pid, SIGINT);  \
-                        } else {} \
+#define CHECK_ERROR_CHILD(x, str)  if((x)) { \
+                                            perror(str); \
+                                            exit(EXIT_FAILURE); \
+                                        }
 /* The below function is used to calculate the hours of the config
  * into minutes and seconds for the nanosleep */
 struct timespec calculate_timeout(int hours, int day_length);

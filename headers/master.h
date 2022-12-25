@@ -90,7 +90,18 @@ typedef struct {
     int     SO_STORM_DURATION;
     int     SO_SWELL_DURATION;
     int     SO_MAELSTORM;
-    unsigned int  check;
+    int     shm_id_goods_template;
+    int     shm_id_ports_coords;
+    int     shm_id_pid_array;
+    int     shm_id_dump_ports;
+    int     shm_id_dump_ships;
+    int     shm_id_dump_goods;
+    int     mq_id_request;
+    int     mq_id_ships;
+    int     mq_id_ports;
+    int     sem_id_gen_precedence; /* semaphore used to manage the general precedence */
+    int     sem_id_dock;
+    int     sem_id_dump_mutex;
 } config;
 
 #endif /*PROGETTOSO_MASTER_H*/
