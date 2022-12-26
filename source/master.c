@@ -2,6 +2,8 @@
 #include "../headers/utils.h"
 #include "../headers/common_ipcs.h"
 #include "../headers/linked_list.h"
+#include <sys/resource.h>
+
 
 #define BUFFER_SIZE 128
 
@@ -155,8 +157,8 @@ int main(int argc, char **argv) {
     sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGUSR1, &sa, NULL);
 
-    print_config(shm_cfg);
-    getchar();
+    /*print_config(shm_cfg);
+    getchar();*/
 
     /*TODO: magari implementare setpgid, getpgid, setpgrp, getpgrp*/
     printf("INIZIO SIMULAZIONE!\n");
@@ -374,7 +376,6 @@ void create_ships(void) {
 
 void create_weather(void) {
     /* Pass the shared memory information through as arguments to the child processes */
-    int i;
     char *args[3];
 
     args[0] = PATH_METEO;
@@ -388,6 +389,9 @@ void create_weather(void) {
             raise(SIGINT);
             break;
         case 0:
+            /*TODO: piccolo problema risolto come meme. Sostanzialmente lo scheduler con tanti processi non riesce a dare
+             * priorità a meteo per uccidere/ fare cose...*/
+            setpriority(PRIO_PROCESS, getpid(), -20);
             CHECK_ERROR_CHILD(execv(PATH_METEO, args), "[METEO] execv has failed trying to run the weather process")
         default:
             break;

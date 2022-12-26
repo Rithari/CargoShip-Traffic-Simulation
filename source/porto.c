@@ -165,13 +165,14 @@ void porto_sig_handler(int signum) {
         case SIGCONT:
             break;
         case SIGINT:
-            /* semctl(sem_id, 0, IPC_RMID); */
             exit(EXIT_FAILURE);
         case SIGALRM:
             /*TODO: dump stato attuale*/
             /*printf("[PORTO] DUMP PID: [%d] SIGALRM\n", getpid());*/
             shm_dump_ports[id].id = id;
-            shm_dump_ports[id].dock_available = semctl(shm_cfg->sem_id_dock, id, GETVAL);
+            /* TODO: bug nell'otterenere il valore attuale del semaforo sem_id_dock[id] */
+            CHECK_ERROR_CHILD((shm_dump_ports[id].dock_available = semctl(shm_cfg->sem_id_dock, id, GETVAL)),
+                              "[PORTO] Error while trying to get dock available dock")
             CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
                               "[PORTO] Error while trying to release sem_id_gen_precedence")
             break;
