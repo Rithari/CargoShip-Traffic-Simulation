@@ -8,11 +8,11 @@ SO_MAX_VITA:        50
 SO_LATO:            1000
 SO_SPEED:           500
 SO_CAPACITY:        10
-SO_BANCHINE:        2
+SO_BANCHINE:        5
 SO_FILL:            500000
 SO_LOADSPEED:       200
 SO_DAYS:            10
 SO_DAY_LENGTH:      1
 SO_STORM_DURATION:  6 # hours
 SO_SWELL_DURATION:  24 # hours
-SO_MAELSTORM:       1 # hours
+SO_MAELSTORM:       1 # hours (real config number is 1 but SO_MAELSTORM is buggy rn)
