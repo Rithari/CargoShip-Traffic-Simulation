@@ -1,7 +1,6 @@
 #include "../headers/master.h"
 #include "../headers/utils.h"
 #include "../headers/common_ipcs.h"
-#include "../headers/linked_list.h"
 #include <sys/resource.h>
 
 
