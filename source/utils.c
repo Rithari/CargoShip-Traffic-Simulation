@@ -29,8 +29,8 @@ int string_to_int(char *s) {
 
 struct timespec calculate_timeout(int hours, int day_length) {
     struct timespec timeout;
-
-    timeout.tv_sec = hours / 24 * day_length;
+    hours *= day_length;
+    timeout.tv_sec = hours / 24;
     timeout.tv_nsec = (long) (((hours % 24) / 24.0) * 1000000000);
 
     return timeout;

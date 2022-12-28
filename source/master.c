@@ -2,11 +2,8 @@
 #include "../headers/utils.h"
 #include "../headers/common_ipcs.h"
 #include "../headers/linked_list.h"
-#include <sys/resource.h>
-
 
 #define BUFFER_SIZE 128
-
 #define CHECK_ERROR_MASTER(x, str) do { \
                                             if ((x)) { \
                                                 perror(str); \
@@ -68,7 +65,6 @@ int main(int argc, char **argv) {
 
     /* initialize goods array */
     for (i = 0; i < shm_cfg->SO_MERCI; i++) {
-        shm_goods_template[i].id = i;
         shm_goods_template[i].tons = (int) random() % shm_cfg->SO_SIZE + 1;
         shm_goods_template[i].lifespan = (int) random() % (shm_cfg->SO_MAX_VITA - shm_cfg->SO_MIN_VITA + 1)
                                          + shm_cfg->SO_MIN_VITA;
@@ -124,6 +120,8 @@ int main(int argc, char **argv) {
     /* WIP: create the semaphore for process generation control and the dump status, 7 is a test number */
     CHECK_ERROR_MASTER((shm_cfg->sem_id_dump_mutex = semget(IPC_PRIVATE, 7, 0600)) < 0,
                 "[MASTER] Error while creating semaphore for dump control")
+
+    /*i = 0 -> semaforo utilizzato per sincronizzare i dump dell*/
     for (i = 0; i < 7; i++) {
         CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_dump_mutex, i, SETVAL, 1) < 0,
                     "[MASTER] Error while setting the semaphore for ports dump control")
@@ -175,6 +173,7 @@ int main(int argc, char **argv) {
             printf("Child exit with status: %d. Quitting...\n", WEXITSTATUS(wstatus));
             raise(SIGINT);
         }
+
         if(WIFSIGNALED(wstatus)) {
             printf("[MASTER] CHILD GOT SIGNAL: %s\n", strsignal(WTERMSIG(wstatus)));
             raise(SIGINT);
@@ -298,15 +297,12 @@ void initialize_ports_coords(void) {
         double rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
         double rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
 
-        for(j = 0; j < i; j++) {
-            if(shm_ports_coords[j].x == rndx && shm_ports_coords[j].y == rndy) {
-                i--;
-            } else {
-                shm_ports_coords[i].x = rndx;
-                shm_ports_coords[i].y = rndy;
-                break;
-            }
-        }
+        for(j = 0; j < i && !(shm_ports_coords[j].x == rndx && shm_ports_coords[j].y == rndy); j++);
+
+        if(j == i) {
+            shm_ports_coords[i].x = rndx;
+            shm_ports_coords[i].y = rndy;
+        } else i--;
     }
 }
 
@@ -323,6 +319,7 @@ void create_ports(void) {
 
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
         int n_docks = (int) random() % shm_cfg->SO_BANCHINE + 1;
+
         switch(pid_process = fork()) {
             case -1:
                 perror("[MASTER] Error during: create_ports->fork()");
@@ -389,9 +386,6 @@ void create_weather(void) {
             raise(SIGINT);
             break;
         case 0:
-            /*TODO: piccolo problema risolto come meme. Sostanzialmente lo scheduler con tanti processi non riesce a dare
-             * priorità a meteo per uccidere/ fare cose...*/
-            setpriority(PRIO_PROCESS, getpid(), -20);
             CHECK_ERROR_CHILD(execv(PATH_METEO, args), "[METEO] execv has failed trying to run the weather process")
         default:
             break;
@@ -409,13 +403,13 @@ void print_dump(void) {
         printf("ID: [%d]\tSTATE: [%d]\n", shm_dump_goods[i].id, shm_dump_goods[i].state);
         printf("------\n");
     }
-    printf("---PORTI---\n");
+    /*printf("---PORTI---\n");
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
         printf("ID: [%d]\tON_SWELL: [%d]\n", shm_dump_ports[i].id, shm_dump_ports[i].on_swell);
         printf("DOCK: [%d/%d]\n", shm_dump_ports[i].dock_available, shm_dump_ports[i].dock_total);
         printf("GOODS: [%d/%d/%d]\n", shm_dump_ports[i].good_available, shm_dump_ports[i].good_send, shm_dump_ports[i].good_received);
         printf("------\n");
-    }
+    }*/
     printf("---NAVI---\n");
     printf("SHIPS: [%d/%d/%d]\n", shm_dump_ships->ships_with_cargo_en_route, shm_dump_ships->ships_without_cargo_en_route, shm_dump_ships->ships_being_loaded_unloaded);
     printf("SHIPS SLOWED: [%d]\tSHIPS SUNK: [%d]\n", shm_dump_ships->ships_slowed, shm_dump_ships->ships_sunk);
@@ -471,6 +465,9 @@ void master_sig_handler(int signum) {
                 print_dump(); /*dump finale*/
             } else {
                 print_dump();
+                shm_dump_ships->ships_with_cargo_en_route = 0;
+                shm_dump_ships->ships_without_cargo_en_route = 0;
+                shm_dump_ships->ships_being_loaded_unloaded = 0;
                 alarm(shm_cfg->SO_DAY_LENGTH);
             }
             break;
@@ -486,7 +483,7 @@ void master_sig_handler(int signum) {
             print_dump();
             exit(EXIT_SUCCESS);
         default:
-            printf("Signal: %s\n", strsignal(signum));
+            printf("[MASTER] Signal: %s\n", strsignal(signum));
             break;
     }
     errno = old_errno;

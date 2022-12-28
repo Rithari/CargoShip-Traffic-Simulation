@@ -37,7 +37,6 @@
 
 
 typedef struct {
-    int     id;
     int     tons;
     int     lifespan;
 } goods;

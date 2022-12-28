@@ -9,11 +9,11 @@ pid_t   *shm_pid_array;
 dump_ships *shm_dump_ships;
 
 int shm_id_config;
+unsigned int available_ships;
 
 int main(int argc, char** argv) {
     int i;
-    int index_pid_to_term;
-    int available_ships;
+    unsigned int index_pid_to_term;
     int *index_pid_status;
 
     struct sigaction sa;
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
 
     while (available_ships) {
         maelstorm_duration = calculate_timeout(shm_cfg->SO_MAELSTORM, shm_cfg->SO_DAY_LENGTH);
-        printf("[METEO] Maelstorm duration: %lds:%ldns\n", maelstorm_duration.tv_sec, maelstorm_duration.tv_nsec);
+        /* printf("[METEO] Maelstorm duration: %lds:%ldns\n", maelstorm_duration.tv_sec, maelstorm_duration.tv_nsec); */
         while (nanosleep(&maelstorm_duration, &rem)) {
             switch (errno) {
                 case EINTR:
@@ -63,11 +63,10 @@ int main(int argc, char** argv) {
                     continue;
                 default:
                     perror("[METEO] Generic error in nanosleep\n");
-                    kill(getppid(), SIGINT);
-                    break;
+                    exit(EXIT_FAILURE);
             }
         }
-        index_pid_to_term = (int) random() % available_ships;
+        index_pid_to_term = (unsigned int) random() % available_ships;
         printf("[METEO] index to kill: %d\n", index_pid_to_term);
         /*while (sem_cmd(sem_id_pid_mutex, index_pid_status[index_pid_to_term], -1, 0)); */
         kill(shm_pid_array[index_pid_status[index_pid_to_term] + shm_cfg->SO_PORTI], SIGTERM);
@@ -88,16 +87,17 @@ void meteo_sig_handler(int signum) {
         case SIGALRM:
             kill(shm_pid_array[random() % shm_cfg->SO_PORTI], SIGUSR1);
             /*TODO: in questo momento tutte le navi possono essere fermate, non solo quelle che navigano*/
-            kill(shm_pid_array[random() % shm_cfg->SO_NAVI + shm_cfg->SO_PORTI], SIGUSR1);
+            kill(shm_pid_array[random() % available_ships + shm_cfg->SO_PORTI], SIGUSR1);
             shm_dump_ships->ships_slowed++;
-            CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
-                              "[METEO] Error while trying to release sem_id_gen_precedence")
+            while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0)) {
+                CHECK_ERROR_CHILD(errno != EINTR, "[METEO] Error while trying to release sem_id_gen_precedence")
+            }
             break;
         case SIGTERM:
             exit(EXIT_SUCCESS);
         default:
+            printf("[METEO] Signal: %s\n", strsignal(signum));
             break;
     }
-
     errno = old_errno;
 }
