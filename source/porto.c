@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
     }
 
     /*printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);*/
-    start_of_goods_generation();
+   /* start_of_goods_generation(); */
 
     while (1) {
         /* Codice del porto da eseguire */
