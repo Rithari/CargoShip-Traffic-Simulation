@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
 
     /* initialize goods array */
     for (i = 0; i < shm_cfg->SO_MERCI; i++) {
-        shm_goods_template[i].tons = (int) random() % shm_cfg->SO_SIZE + 1;
+        shm_goods_template[i].ton = (int) random() % shm_cfg->SO_SIZE + 1;
         shm_goods_template[i].lifespan = (int) random() % (shm_cfg->SO_MAX_VITA - shm_cfg->SO_MIN_VITA + 1)
                                          + shm_cfg->SO_MIN_VITA;
     }

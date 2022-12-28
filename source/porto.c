@@ -169,7 +169,7 @@ void porto_sig_handler(int signum) {
             /*printf("[PORTO] DUMP PID: [%d] SIGALRM\n", getpid());*/
             shm_dump_ports[myid].id = myid;
             /* TODO: bug nell'otterenere il valore attuale del semaforo sem_id_dock[id] */
-            shm_dump_ports[id].dock_available = semctl(shm_cfg->sem_id_dock, id, GETVAL);
+            shm_dump_ports[myid].dock_available = semctl(shm_cfg->sem_id_dock, myid, GETVAL);
             while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0)) {
                 CHECK_ERROR_CHILD(errno != EINTR,
                                   "[PORTO] Error while trying to release sem_id_gen_precedence")

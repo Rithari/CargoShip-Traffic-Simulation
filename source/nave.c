@@ -148,7 +148,7 @@ int main(int argc, char** argv) {
         /* ovviamente serve un semaforo */
         shm_dump_goods[selected_good].state++;
 
-        selected_good = shm_goods_template[selected_good].tons * (random() % 3 + 1);
+        selected_good = shm_goods_template[selected_good].ton * (random() % 3 + 1);
         /* this implementation is in tons for load */
         lu_time = (double) selected_good / shm_cfg->SO_LOADSPEED * shm_cfg->SO_DAY_LENGTH;
         lu_operation_time.tv_sec = (long) lu_time;
