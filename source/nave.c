@@ -15,7 +15,7 @@ int get_nearest_port_from_sea(void);
 void nave_sig_handler(int);
 
 config  *shm_cfg;
-goods   *shm_goods_template;
+generalGoods *shm_goods_template;
 coord   *shm_ports_coords;
 dump_ships  *shm_dump_ships;
 dump_goods  *shm_dump_goods;

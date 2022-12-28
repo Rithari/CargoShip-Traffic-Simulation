@@ -32,10 +32,11 @@ pid_t   *shm_pid_array;
 pid_t   pid_weather;
 config  *shm_cfg;
 coord   *shm_ports_coords;
-goods   *shm_goods_template;
+generalGoods *shm_goods_template;
 dump_ports  *shm_dump_ports;
 dump_ships  *shm_dump_ships;
 dump_goods  *shm_dump_goods;
+int   *shm_id_mq;
 
 int     shm_id_config;
 
@@ -61,7 +62,7 @@ int main(int argc, char **argv) {
 
     /* create and attach goods shared memory segment */
     CHECK_ERROR_MASTER((shm_cfg->shm_id_goods_template = shmget(IPC_PRIVATE,
-                                              sizeof(goods) * shm_cfg->SO_MERCI, 0600)) < 0,
+                                              sizeof(generalGoods) * shm_cfg->SO_MERCI, 0600)) < 0,
                 "[MASTER] Error while creating shared memory for goods template generation")
     CHECK_ERROR_MASTER((shm_goods_template = shmat(shm_cfg->shm_id_goods_template, NULL, 0)) == (void *) -1,
                 "[MASTER] Error while trying to attach to ports coordinates shared memory")
@@ -69,7 +70,7 @@ int main(int argc, char **argv) {
     /* initialize goods array */
     for (i = 0; i < shm_cfg->SO_MERCI; i++) {
         shm_goods_template[i].id = i;
-        shm_goods_template[i].tons = (int) random() % shm_cfg->SO_SIZE + 1;
+        shm_goods_template[i].ton = (int) random() % shm_cfg->SO_SIZE + 1;
         shm_goods_template[i].lifespan = (int) random() % (shm_cfg->SO_MAX_VITA - shm_cfg->SO_MIN_VITA + 1)
                                          + shm_cfg->SO_MIN_VITA;
     }
@@ -89,6 +90,13 @@ int main(int argc, char **argv) {
                 "[MASTER] Error while creating shared memory for pid array")
     CHECK_ERROR_MASTER((shm_pid_array = shmat(shm_cfg->shm_id_pid_array, NULL, 0)) == (void *) -1,
                 "[MASTER] Error while trying to attach to pid array shared memory")
+
+    /*create and attach pid shm for the id of offerMq*/
+    CHECK_ERROR_MASTER((shm_cfg->shm_id_mq_offer =
+            shmget(IPC_PRIVATE, sizeof(int) * shm_cfg->SO_PORTI, 0600)) < 0,
+                "[MASTER] Error while creating shared memory for mq id offer")
+    CHECK_ERROR_MASTER((shm_pid_array = shmat(shm_cfg->shm_id_mq_offer, NULL, 0)) == (void *) -1,
+                 "[MASTER] Error while trying to attach to mq offer id shared memory")
 
     /* create and attach pid shm for dump report */
     CHECK_ERROR_MASTER((shm_cfg->shm_id_dump_ports = shmget(IPC_PRIVATE, sizeof(dump_ports) * shm_cfg->SO_PORTI, 0600)) < 0,
@@ -188,6 +196,16 @@ int main(int argc, char **argv) {
 }
 
 void clear_all(void) {
+
+    int i = 0;
+    while(i<shm_cfg->SO_PORTI) {
+        CHECK_ERROR_MASTER(msgctl(shm_id_mq[i], IPC_RMID, NULL),
+                "[MASTER] Error while removing a message queue port i shared memory in clear_all")
+        i++;
+    }
+    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_mq_offer, IPC_RMID, NULL),
+                       "[MASTER] Error while removing pid array shared memory in clear_all")
+
     CHECK_ERROR_MASTER(shmctl(shm_id_config, IPC_RMID, NULL),
                 "[MASTER] Error while removing config shared memory in clear_all")
     CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_goods_template, IPC_RMID, NULL),

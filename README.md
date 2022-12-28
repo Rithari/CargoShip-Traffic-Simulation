@@ -73,7 +73,7 @@ Having a good guideline for creating commits and sticking to it makes working wi
 
   _Why:_
 
-  > Git is smart enough to distinguish the first line of your commit message as your summary. In fact, if you try git shortlog, instead of git log, you will see a long list of commit messages, consisting of the id of the commit, and the summary only.
+  > Git is smart enough to distinguish the first line of your commit message as your summary. In fact, if you try git shortlog, instead of git log, you will see a long list of commit messages, consisting of the myid of the commit, and the summary only.
 
 - Limit the subject line to 50 characters and Wrap the body at 72 characters.
 
@@ -87,7 +87,7 @@ Having a good guideline for creating commits and sticking to it makes working wi
 
   _Why:_
 
-  > Rather than writing messages that say what a committer has done, it's better to consider these messages as the instruction for what is going to be done after the commit is applied on the repository. [read more...](https://news.ycombinator.com/item?id=2079612)
+  > Rather than writing messages that say what a committer has done, it's better to consider these messages as the instruction for what is going to be done after the commit is applied on the repository. [read more...](https://news.ycombinator.com/item?myid=2079612)
 
 - Use the body to explain **what** and **why** as opposed to **how**.
 

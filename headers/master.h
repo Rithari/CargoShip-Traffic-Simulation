@@ -35,13 +35,23 @@
 #define PATH_METEO  "debug/meteo.out"
 #endif
 
+typedef struct {
+    int     id;
+    int     ton;
+    int     lifespan;
+} generalGoods;
 
 typedef struct {
     int     id;
-    int     tons;
+    int     quantity;
     int     lifespan;
-} goods;
+} goodsOffers;
 
+typedef struct {
+    int     id;
+    int     quantity;
+    int     requestingPort;/*id del porto*/
+} goodsRequests;
 
 typedef struct {
     double  x;
@@ -97,6 +107,8 @@ typedef struct {
     int     shm_id_dump_ships;
     int     shm_id_dump_goods;
     int     mq_id_request;
+    int     shm_id_mq_offer;
+//    int     mq_id_offers;
     int     mq_id_ships;
     int     mq_id_ports;
     int     sem_id_gen_precedence; /* semaphore used to manage the general precedence */
