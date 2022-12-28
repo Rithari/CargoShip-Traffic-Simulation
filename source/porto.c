@@ -34,6 +34,7 @@ void goodsRequest_generator(int id, int quantity, int affiliated);
 int main(int argc, char *argv[]) {
     struct sigaction sa;
     struct sembuf sem;
+    int i;
 
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = porto_sig_handler;
@@ -80,13 +81,13 @@ int main(int argc, char *argv[]) {
 
 
     arrayDecision_making = calloc(shm_cfg->SO_MERCI, sizeof(int));
-    int i;
+
     for (i = 0; i<shm_cfg->SO_MERCI; i++) {
-        arrayDecision_making[i] = (int)(random() % 3);   // 0=nulla - 1=offre - 2=richiede
+        arrayDecision_making[i] = (int)(random() % 3);
     }
 
-    /*printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);
-    start_of_goods_generation();*/
+    /*printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);*/
+    start_of_goods_generation();
 
     while (1) {
         /* Codice del porto da eseguire */
@@ -94,30 +95,8 @@ int main(int argc, char *argv[]) {
     }
 }
 
-
-/* COME STRUTTURARE LA FUNZIONE DELLA GENERAZIONE DELLE MERCI
-*  0) La funzione di generazione delle merci e' chiaramente suddivisa nella parte delle offerte e delle richieste.
- * 1) Usiamo una linked list per le offerte, per ogni porto. (Ogni porto ha la sua, e, le richieste vanno in MQ)
- * 2) La linked list è composta da un nodo che contiene la struct di tipo goods delle offerte e un puntatore al nodo successivo
- * 3) La struct delle offerte contiene:
- *     - id della merce
- *     - tons (quantita')
- *     - lifespan (durata)
- * 4) La linked list viene ordinata in base al lifespan, dal piu corto al piu lungo.
- *      Ogni giorno, il porto controlla se il lifespan e' scaduto, se si, elimina la merce dalla lista finche' non trova una merce con lifespan > 0
- *      Se il lifespan non e' scaduto, decrementa il lifespan di 1.
- * 5) La funzione come prima cosa prende SO_FILL, SO_DAYS e SO_PORTI e suddivide le quantita' massima per ogni porto, ogni giorno.
- * 6) Per ogni porto (ovvero quello che chiama la funzione) genera un numero compreso nel limite sovra citato, e lo suddivide in offerte e richieste.
- * 7) Per ogni offerta e richiesta genera un id, un tons e un lifespan. Lifespan per la richiesta e' -1, per l'offerta e' random.
- * 8) Per ogni offerta generata, la inserisce nella linked list, in base al lifespan.
- * 9) Per ogni richiesta generata, la inserisce nella MQ.
- *10) Passiamo i puntatori alla linked list alla funzione di generazione delle offerte.
- * La linked list ovviamente e' una variabile globale.
- */
-
-
-void start_of_goods_generation(void) { //quanto posso generare, cosa va in o e cosa in r, il mio pid le struct
-    int maxFillValue = (int)((shm_cfg->SO_FILL / shm_cfg->SO_DAYS) / shm_cfg->SO_PORTI); //con questo ho so_fill per p
+void start_of_goods_generation(void) {
+    int maxFillValue = (int)((shm_cfg->SO_FILL / shm_cfg->SO_DAYS) / shm_cfg->SO_PORTI);
     int maxFillOffers = maxFillValue + leftoverOffers;
     int maxFillRequests = maxFillValue + leftoverRequests;
 
@@ -130,7 +109,7 @@ void start_of_goods_generation(void) { //quanto posso generare, cosa va in o e c
             case 0:
                 break;
 
-            case 1: //offerta
+            case 1:
                 iton = shm_goods_template[i].ton;
                 if(iton <= maxFillOffers) {
                     imaxQuantity = (int)(maxFillOffers/iton);
@@ -140,7 +119,7 @@ void start_of_goods_generation(void) { //quanto posso generare, cosa va in o e c
                 }
                 break;
 
-            case 2: //richiesta
+            case 2:
                 iton = shm_goods_template[i].ton;
                 if(iton <= maxFillRequests) {
                     imaxQuantity = (int)(maxFillRequests/iton);

@@ -108,7 +108,6 @@ typedef struct {
     int     shm_id_dump_goods;
     int     mq_id_request;
     int     shm_id_mq_offer;
-//    int     mq_id_offers;
     int     mq_id_ships;
     int     mq_id_ports;
     int     sem_id_gen_precedence; /* semaphore used to manage the general precedence */
