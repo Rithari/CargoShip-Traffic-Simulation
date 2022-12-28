@@ -31,11 +31,14 @@ int     id_destination_port;
 /* TODO: Attach to message queues */
 int main(int argc, char** argv) {
     int i;
+    int selected_good;
     double rndx;
     double rndy;
+    double lu_time;
 
     struct sigaction sa;
     struct sembuf sops;
+    struct timespec lu_operation_time, rem;
 
     if(argc != 2) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
@@ -58,8 +61,6 @@ int main(int argc, char** argv) {
     CHECK_ERROR_CHILD((shm_dump_goods = shmat(shm_cfg->shm_id_dump_goods, NULL, 0)) == (void*) -1,
                       "[NAVE] Error while trying to attach to dump goods shared memory")
 
-    id_actual_port = -1;
-
     rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
     rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
 
@@ -75,6 +76,7 @@ int main(int argc, char** argv) {
     actual_coordinate.x = rndx;
     actual_coordinate.y = rndy;
     actual_capacity = 0;
+    id_actual_port = -1;
     id_destination_port = -1; /* ship in sea */
 
     memset(&sa, 0, sizeof(sa));
@@ -92,61 +94,84 @@ int main(int argc, char** argv) {
     /* Wait until everyone is ready (master will send SIGCONT) */
     pause();
 
-    /* First iteration, ship on sea */
-    id_destination_port = get_nearest_port_from_sea();
-    printf("[%d] Chose port no: [%d] from [%d]\n", getpid(), id_destination_port, id_actual_port);
-    sops.sem_num = id_destination_port;
-    sops.sem_op = -1;
-    sops.sem_flg = 0;
-
-    move(id_destination_port);
-
-    while (semop(shm_cfg->sem_id_dock, &sops, 1)) {
-        CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while locking sem_id_dock[id_destination_port] semaphore")
-    }
-
-    id_actual_port = id_destination_port;
-
     /* now ship have a dock */
     while (1) {
         /* TODO: Pick a destination port based on the best request the ship can fulfill */
         /* scelta della tratta, stablita la tratta procedo a chiedere la banchina */
         /* nella versione definitiva sarà il porto a definire la tratta */
-        do {
-            id_destination_port = (int) random() % shm_cfg->SO_PORTI;
-        } while (id_destination_port == id_actual_port);
+        if(id_actual_port == -1) {
+            id_destination_port = get_nearest_port_from_sea();
+            /* this implementation is in tons for unload */
+        } else {
+            sops.sem_num = id_actual_port;
+            sops.sem_op =  1;
+            sops.sem_flg = SEM_UNDO;
 
-        /* Per adesso mi limito a scegliere un porto casuale e richiedere l'accesso alla banchina
-         * printf("[%d] Choose port no: [%d] from [%d]\n", getpid(), id_destination_port, id_actual_port);*/
-
-
-        sops.sem_num = id_actual_port;
-        sops.sem_op =  1;
-        sops.sem_flg = 0;
-
-        /* TODO: settare il semaforo per il successo dell'operazione a zero, ovvero non ho più una banchina */
-        while (semop(shm_cfg->sem_id_dock, &sops, 1)) {
-            CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while freeing sem_id_dock[id_actual_port] semaphore")
+            while (semop(shm_cfg->sem_id_dock, &sops, 1)) {
+                CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while freeing sem_id_dock[id_actual_port] semaphore")
+            }
+            id_actual_port = -1;
         }
-        id_actual_port = -1;
+
+        printf("[%d] Choose port no: [%d] from [%d]\n", getpid(), id_destination_port, id_actual_port);
 
         sops.sem_num = id_destination_port;
         sops.sem_op = -1;
-        sops.sem_flg = 0;
+        sops.sem_flg = SEM_UNDO;
 
         move(id_destination_port);
 
-        /*TODO: errore mentre una nave muore!!*/
-        /*TODO: e se utilizzassi un altro semaforo per indicare il successo dell'operazione?
-                Sostanzialmente lo utilizzo come un flag, se attivo ho il lock altrimenti no
-                utile in sigterm sicuramente */
         while (semop(shm_cfg->sem_id_dock, &sops, 1)) {
             CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while locking sem_id_dock[id_destination_port] semaphore")
         }
 
         id_actual_port = id_destination_port;
-
         /* Ship got a dock, now we can do some operation */
+
+        lu_time = (double) actual_capacity / shm_cfg->SO_LOADSPEED * shm_cfg->SO_DAY_LENGTH;
+        lu_operation_time.tv_sec = (long) lu_time;
+        lu_operation_time.tv_nsec = (lu_time - lu_operation_time.tv_sec) * 1000000000;
+
+        while (nanosleep(&lu_operation_time, &rem)) {
+            switch (errno) {
+                case EINTR:
+                    lu_operation_time = rem;
+                    continue;
+                default:
+                    perror("[NAVE] Generic error while loading/unloading the ship");
+                    exit(EXIT_FAILURE);
+            }
+        }
+        actual_capacity = 0;
+        printf("[%d] Unload operation!\n", getpid());
+        /* meme thing but I need the real implementation of goods */
+        /* ovviamente serve un semaforo */
+        shm_dump_goods[selected_good].state++;
+
+        selected_good = shm_goods_template[selected_good].tons * (random() % 3 + 1);
+        /* this implementation is in tons for load */
+        lu_time = (double) selected_good / shm_cfg->SO_LOADSPEED * shm_cfg->SO_DAY_LENGTH;
+        lu_operation_time.tv_sec = (long) lu_time;
+        lu_operation_time.tv_nsec = (lu_time - lu_operation_time.tv_sec) * 1000000000;
+
+        while (nanosleep(&lu_operation_time, &rem)) {
+            switch (errno) {
+                case EINTR:
+                    lu_operation_time = rem;
+                    continue;
+                default:
+                    perror("[NAVE] Generic error while loading/unloading the ship");
+                    exit(EXIT_FAILURE);
+            }
+        }
+        actual_capacity = selected_good;
+        printf("[%d] Load operation!\n", getpid());
+
+        do {
+            /* Per adesso mi limito a scegliere un porto casuale e richiedere l'accesso alla banchina */
+            id_destination_port = (int) random() % shm_cfg->SO_PORTI;
+        } while (id_destination_port == id_actual_port);
+
     }
 }
 
@@ -156,7 +181,7 @@ void move(int id_destination) {
     double dx = shm_ports_coords[id_destination].x - actual_coordinate.x;
     double dy = shm_ports_coords[id_destination].y - actual_coordinate.y;
     /*distance / SO_SPEED*/
-    double navigation_time = sqrt(dx * dx + dy * dy) / shm_cfg->SO_SPEED;
+    double navigation_time = sqrt(dx * dx + dy * dy) / shm_cfg->SO_SPEED * shm_cfg->SO_DAY_LENGTH;
 
     ts.tv_sec = (long) navigation_time;
     ts.tv_nsec = (long) ((navigation_time - ts.tv_sec) * 1000000000);
@@ -180,6 +205,7 @@ void move(int id_destination) {
 
 /*TODO: useless function? */
 int get_nearest_port_from_sea(void) {
+    /* TODO: creare una funzione in utils che dati due punti calcoli la distanza tra di essi */
     int port_index;
     int i;
     double distance = DBL_MAX;
@@ -206,22 +232,31 @@ void nave_sig_handler(int signum) {
         case SIGCONT:
             break;
         case SIGALRM:
+            /* sem_id_dump_mutex[0] is a mutex semaphore utilized for dump ship's cargo*/
             /*TODO: dump stato attuale*/
-            /* printf("[NAVE] DUMP PID: [%d] SIGALRM\n", getpid()); */
-            CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
-                              "[NAVE] Error while trying to release sem_id_gen_precedence")
+            while (sem_cmd(shm_cfg->sem_id_dump_mutex, 0, -1, 0)) {
+                CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while trying to get sem_id_dump_mutex[0]")
+            }
+            if (id_actual_port < 0) {
+                if (actual_capacity) {
+                    shm_dump_ships->ships_with_cargo_en_route++;
+                } else {
+                    shm_dump_ships->ships_without_cargo_en_route++;
+                }
+            } else {
+                shm_dump_ships->ships_being_loaded_unloaded++;
+            }
+            while (sem_cmd(shm_cfg->sem_id_dump_mutex, 0, 1, 0)) {
+                CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while trying to release sem_id_dump_mutex[0]")
+            }
+            while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0)) {
+                CHECK_ERROR_CHILD( errno != EINTR,
+                                   "[NAVE] Error while trying to release sem_id_gen_precedence")
+            }
             break;
         case SIGTERM:
-            /* malestorm killed the ship :C or program end*/
-            /* mascherare altri segnali ?*/
-            /* doesn't work... */
-            if(id_actual_port >= 0) {
-                CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_dock, id_actual_port, 1, 0),
-                                  "[NAVE] Unable to free the id_destination_port dock")
-            }
-            if (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, IPC_NOWAIT) < 0) {
-                CHECK_ERROR_CHILD(errno != EAGAIN, "[PORTO] Error while trying to release sem_id_gen_precedence")
-            }
+            /* malestorm killed the ship :C or program ended*/
+            while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, IPC_NOWAIT) && errno != EAGAIN);
             exit(EXIT_SUCCESS);
         case SIGUSR1:
             /* storm occurred */

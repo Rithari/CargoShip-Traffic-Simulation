@@ -1,5 +1,5 @@
 # file di configurazione n.1
-SO_NAVI:        3
+SO_NAVI:        10
 SO_PORTI:       4
 SO_MERCI:       5
 SO_SIZE:        1
@@ -8,7 +8,7 @@ SO_MAX_VITA:    50
 SO_LATO:        10
 SO_SPEED:       15
 SO_CAPACITY:    10
-SO_BANCHINE:    1
+SO_BANCHINE:    2
 SO_FILL:        5
 SO_LOADSPEED:   2
 SO_DAYS:        10
