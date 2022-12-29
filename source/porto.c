@@ -149,7 +149,10 @@ void goodsRequest_generator(int id, int quantity, int affiliated) {
     newRequest.mtype = id;
     newRequest.quantity = quantity;
     newRequest.requestingPort = affiliated;
-    msgsnd(shm_cfg->mq_id_request, &newRequest, sizeof(newRequest), 0600);
+    msgsnd(shm_cfg->mq_id_request, &newRequest, sizeof(newRequest), IPC_NOWAIT);
+    if(errno == EAGAIN) {
+        /*salvo la richiesta nella LL*/
+    }
 }
 
 

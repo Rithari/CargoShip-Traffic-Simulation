@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
     CHECK_ERROR_MASTER((shm_cfg->shm_id_mq_offer =
             shmget(IPC_PRIVATE, sizeof(int) * shm_cfg->SO_PORTI, 0600)) < 0,
                 "[MASTER] Error while creating shared memory for mq id offer")
-    CHECK_ERROR_MASTER((shm_pid_array = shmat(shm_cfg->shm_id_mq_offer, NULL, 0)) == (void *) -1,
+    CHECK_ERROR_MASTER((shm_id_mq = shmat(shm_cfg->shm_id_mq_offer, NULL, 0)) == (void *) -1,
                  "[MASTER] Error while trying to attach to mq offer id shared memory")
 
     /* create and attach pid shm for dump report */
