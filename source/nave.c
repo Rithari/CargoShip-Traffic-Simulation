@@ -39,6 +39,7 @@ int main(int argc, char** argv) {
     struct sigaction sa;
     struct sembuf sops;
     struct timespec lu_operation_time, rem;
+    msg_handshake msg;
 
     if(argc != 2) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
@@ -124,8 +125,13 @@ int main(int argc, char** argv) {
         while (semop(shm_cfg->sem_id_dock, &sops, 1)) {
             CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while locking sem_id_dock[id_destination_port] semaphore")
         }
-
         id_actual_port = id_destination_port;
+
+        /* Getting permission to load/unload */
+        msg.mtype = id_actual_port + 1;
+        msg.response_pid = getpid();
+        msgsnd(shm_cfg->mq_id_handshake, &msg, sizeof(msg.response_pid), 0);
+        msgrcv(shm_cfg->mq_id_handshake, &msg, sizeof(msg.response_pid), getpid(), 0);
         /* Ship got a dock, now we can do some operation */
 
         lu_time = (double) actual_capacity / shm_cfg->SO_LOADSPEED * shm_cfg->SO_DAY_LENGTH;
@@ -144,8 +150,9 @@ int main(int argc, char** argv) {
         }
         actual_capacity = 0;
         printf("[%d] Unload operation!\n", getpid());
-        /* meme thing but I need the real implementation of goods */
+        /* fake goods load/unload */
         /* ovviamente serve un semaforo */
+        selected_good = (int) random() % shm_cfg->SO_MERCI;
         shm_dump_goods[selected_good].state++;
 
         selected_good = shm_goods_template[selected_good].tons * (random() % 3 + 1);

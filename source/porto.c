@@ -39,6 +39,7 @@ void add(goodsList myOffers, goodsOffers); <--- solo per test
 int main(int argc, char *argv[]) {
     struct sigaction sa;
     struct sembuf sem;
+    msg_handshake msg;
 
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = porto_sig_handler;
@@ -81,10 +82,17 @@ int main(int argc, char *argv[]) {
     /*printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);
 
     start_of_goods_generation();*/
-
     while (1) {
         /* Codice del porto da eseguire */
-        pause();
+        while (msgrcv(shm_cfg->mq_id_handshake, &msg, sizeof(msg.response_pid), id + 1, 0) < 0) {
+            CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while waiting ships messages")
+        }
+        printf("[%d] Received message from [%d]\n", getpid(), msg.response_pid);
+        msg.mtype = msg.response_pid;
+        while (msgsnd(shm_cfg->mq_id_handshake, &msg, sizeof(msg.response_pid), 0)) {
+            CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending ships messages")
+        }
+        printf("[%d] Ok given to [%d]\n", getpid(), msg.response_pid);
     }
 }
 
