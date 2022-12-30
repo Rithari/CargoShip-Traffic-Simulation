@@ -37,6 +37,7 @@ void goodsRequest_generator(int id, int quantity, int affiliated);
 int main(int argc, char *argv[]) {
     struct sigaction sa;
     struct sembuf sem;
+    msg_handshake msg;
     int i;
 
     memset(&sa, 0, sizeof(sa));
@@ -94,7 +95,8 @@ int main(int argc, char *argv[]) {
 
     while (1) {
         /* Codice del porto da eseguire */
-        while (msgrcv(shm_cfg->mq_id_handshake, &msg, sizeof(msg.response_pid), id + 1, 0) < 0) {
+
+        while (msgrcv(shm_cfg->mq_id_handshake, &msg, sizeof(msg.response_pid), myid + 1, 0) < 0) {
             CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while waiting ships messages")
         }
         printf("[%d] Received message from [%d]\n", getpid(), msg.response_pid);
@@ -103,7 +105,9 @@ int main(int argc, char *argv[]) {
             CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending ships messages")
         }
         printf("[%d] Ok given to [%d]\n", getpid(), msg.response_pid);
+
     }
+
 }
 
 void start_of_goods_generation(void) {
