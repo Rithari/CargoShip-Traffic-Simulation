@@ -146,6 +146,7 @@ int main(int argc, char** argv) {
         printf("[%d] Unload operation!\n", getpid());
         /* meme thing but I need the real implementation of goods */
         /* ovviamente serve un semaforo */
+        selected_good = (int) random() % shm_cfg->SO_MERCI;
         shm_dump_goods[selected_good].state++;
 
         selected_good = shm_goods_template[selected_good].tons * (random() % 3 + 1);
@@ -256,6 +257,7 @@ void nave_sig_handler(int signum) {
             break;
         case SIGTERM:
             /* malestorm killed the ship :C or program ended*/
+            printf("Ship died\n");
             while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, IPC_NOWAIT) && errno != EAGAIN);
             exit(EXIT_SUCCESS);
         case SIGUSR1:
