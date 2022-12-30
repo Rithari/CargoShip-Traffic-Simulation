@@ -146,6 +146,7 @@ int main(int argc, char** argv) {
         printf("[%d] Unload operation!\n", getpid());
         /* meme thing but I need the real implementation of goods */
         /* ovviamente serve un semaforo */
+        selected_good = (int) random() % shm_cfg->SO_MERCI;
         shm_dump_goods[selected_good].state++;
 
         selected_good = shm_goods_template[selected_good].ton * (random() % 3 + 1);
