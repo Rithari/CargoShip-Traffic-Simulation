@@ -68,9 +68,7 @@ int main(int argc, char** argv) {
         }
         index_pid_to_term = (unsigned int) random() % available_ships;
         printf("[METEO] index to kill: %d\n", index_pid_to_term);
-        /*while (sem_cmd(sem_id_pid_mutex, index_pid_status[index_pid_to_term], -1, 0)); */
         kill(shm_pid_array[index_pid_status[index_pid_to_term] + shm_cfg->SO_PORTI], SIGTERM);
-        /*while (sem_cmd(sem_id_pid_mutex, index_pid_status[index_pid_to_term], 1, 0)); */
         index_pid_status[index_pid_to_term] = index_pid_status[--available_ships];
         shm_dump_ships->ships_sunk++;
     }

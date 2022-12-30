@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
     memset(shm_dump_goods, 0, sizeof(dump_goods) * shm_cfg->SO_MERCI);
 
     /* creates the message queue for the request of the ports */
-    CHECK_ERROR_MASTER((shm_cfg->mq_id_request = msgget(IPC_PRIVATE, 0600)) < 0,
+    CHECK_ERROR_MASTER((shm_cfg->mq_id_handshake = msgget(IPC_PRIVATE, 0600)) < 0,
                 "[MASTER] Error while creating message queue for requests")
 
     /* create the semaphore for process generation control and the dump status */
@@ -160,7 +160,6 @@ int main(int argc, char **argv) {
     sa.sa_flags = SA_RESTART;
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGCHLD, &sa, NULL);
     sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGUSR1, &sa, NULL);
 
@@ -220,7 +219,7 @@ void clear_all(void) {
                 "[MASTER] Error while removing dump simulation shared memory in clear_all")
     CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_dump_goods, IPC_RMID, NULL),
                 "[MASTER] Error while removing dump simulation shared memory in clear_all")
-    CHECK_ERROR_MASTER(msgctl(shm_cfg->mq_id_request, IPC_RMID, NULL),
+    CHECK_ERROR_MASTER(msgctl(shm_cfg->mq_id_handshake, IPC_RMID, NULL),
                 "[MASTER] Error while removing message queue in clear_all")
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, IPC_RMID, 0),
                 "[MASTER] Error while removing semaphore for generation order control in clear_all")
@@ -337,8 +336,6 @@ void create_ports(void) {
     args[3] = NULL;
 
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
-        int n_docks = (int) random() % shm_cfg->SO_BANCHINE + 1;
-
         switch(pid_process = fork()) {
             case -1:
                 perror("[MASTER] Error during: create_ports->fork()");
@@ -347,8 +344,8 @@ void create_ports(void) {
             case 0:
                 CHECK_ERROR_CHILD(asprintf(&args[2], "%d", i) < 0,
                             "[PORTO] Error while converting index into a string")
-                shm_dump_ports[i].dock_total = n_docks;
-                CHECK_ERROR_CHILD(semctl(shm_cfg->sem_id_dock, i, SETVAL, n_docks),
+                shm_dump_ports[i].dock_total = (int) random() % shm_cfg->SO_BANCHINE + 1;
+                CHECK_ERROR_CHILD(semctl(shm_cfg->sem_id_dock, i, SETVAL, shm_dump_ports[i].dock_total),
                                    "[PORTO] Error while generating dock semaphore")
                 CHECK_ERROR_CHILD(execv(PATH_PORTO, args), "[PORTO] execv has failed trying to run port")
             default:
@@ -356,7 +353,6 @@ void create_ports(void) {
                 break;
         }
     }
-
     /* Clear up the memory allocated for the arguments */
     free(args[1]);
 }
@@ -422,13 +418,13 @@ void print_dump(void) {
         printf("ID: [%d]\tSTATE: [%d]\n", shm_dump_goods[i].id, shm_dump_goods[i].state);
         printf("------\n");
     }
-    /*printf("---PORTI---\n");
+    printf("---PORTI---\n");
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
         printf("ID: [%d]\tON_SWELL: [%d]\n", shm_dump_ports[i].id, shm_dump_ports[i].on_swell);
         printf("DOCK: [%d/%d]\n", shm_dump_ports[i].dock_available, shm_dump_ports[i].dock_total);
         printf("GOODS: [%d/%d/%d]\n", shm_dump_ports[i].good_available, shm_dump_ports[i].good_send, shm_dump_ports[i].good_received);
         printf("------\n");
-    }*/
+    }
     printf("---NAVI---\n");
     printf("SHIPS: [%d/%d/%d]\n", shm_dump_ships->ships_with_cargo_en_route, shm_dump_ships->ships_without_cargo_en_route, shm_dump_ships->ships_being_loaded_unloaded);
     printf("SHIPS SLOWED: [%d]\tSHIPS SUNK: [%d]\n", shm_dump_ships->ships_slowed, shm_dump_ships->ships_sunk);
@@ -450,7 +446,8 @@ void master_sig_handler(int signum) {
                 }
             }
 
-            kill(pid_weather, SIGINT);
+            if(pid_weather >= 0)
+                kill(pid_weather, SIGINT);
             clear_all();
             exit(EXIT_FAILURE);
         /* Still needs to deal with statistics first */
@@ -489,8 +486,6 @@ void master_sig_handler(int signum) {
                 shm_dump_ships->ships_being_loaded_unloaded = 0;
                 alarm(shm_cfg->SO_DAY_LENGTH);
             }
-            break;
-        case SIGCHLD:
             break;
         case SIGUSR1:
             printf("ALL SHIPS ARE DEAD :C\n");

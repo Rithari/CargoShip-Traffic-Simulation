@@ -82,6 +82,11 @@ typedef struct {
 } dump_ships;
 
 typedef struct {
+    long mtype;
+    int response_pid;
+} msg_handshake;
+
+typedef struct {
     int     CURRENT_DAY;
     int     SO_NAVI;
     int     SO_PORTI;
@@ -110,6 +115,7 @@ typedef struct {
     int     shm_id_mq_offer;
     int     mq_id_ships;
     int     mq_id_ports;
+    int     mq_id_handshake;
     int     sem_id_gen_precedence; /* semaphore used to manage the general precedence */
     int     sem_id_dock;
     int     sem_id_dump_mutex;

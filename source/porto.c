@@ -12,6 +12,9 @@ Funzione/i per la creazione di tratte()
 Funzione/i per la comunicazione con le queue()
 Banchina: gestita come una risorsa condivisa protetta da un semaforo (n_docks)*/
 
+/*L'handler riceve il segnale di creazione delle merci e invoca la funzione designata --> "start_of_goods_generation"*/
+void porto_sig_handler(int);
+
 config  *shm_cfg;
 coord   *shm_ports_coords;
 generalGoods *shm_goods_template;
@@ -91,7 +94,15 @@ int main(int argc, char *argv[]) {
 
     while (1) {
         /* Codice del porto da eseguire */
-        pause();
+        while (msgrcv(shm_cfg->mq_id_handshake, &msg, sizeof(msg.response_pid), id + 1, 0) < 0) {
+            CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while waiting ships messages")
+        }
+        printf("[%d] Received message from [%d]\n", getpid(), msg.response_pid);
+        msg.mtype = msg.response_pid;
+        while (msgsnd(shm_cfg->mq_id_handshake, &msg, sizeof(msg.response_pid), 0)) {
+            CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending ships messages")
+        }
+        printf("[%d] Ok given to [%d]\n", getpid(), msg.response_pid);
     }
 }
 
