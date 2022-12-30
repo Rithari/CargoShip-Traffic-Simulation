@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
     }
 
     /*printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);*/
-   /* start_of_goods_generation(); */
+    /*start_of_goods_generation();*/
 
     while (1) {
         /* Codice del porto da eseguire */
@@ -141,7 +141,12 @@ void goodsOffers_generator(int id, int quantity, int lifespan) {
     newOffer.mtype = id;
     newOffer.quantity = quantity;
     newOffer.lifespan = lifespan;
-    msgsnd(shm_mq_ids[id], &newOffer, sizeof(newOffer), 0600);
+    msgsnd(shm_mq_ids[id], &newOffer, sizeof(newOffer), IPC_NOWAIT);
+    if(errno == EAGAIN) {
+        /*salvo l'offerta nella LL*/
+    }else if(errno != 0){
+        perror("[PORTO] Error while trying to generate new goods offer");
+    }
 }
 
 void goodsRequest_generator(int id, int quantity, int affiliated) {
@@ -152,6 +157,8 @@ void goodsRequest_generator(int id, int quantity, int affiliated) {
     msgsnd(shm_cfg->mq_id_request, &newRequest, sizeof(newRequest), IPC_NOWAIT);
     if(errno == EAGAIN) {
         /*salvo la richiesta nella LL*/
+    }else if(errno != 0){
+        perror("[PORTO] Error while trying to generate new goods request");
     }
 }
 
