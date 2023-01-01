@@ -3,16 +3,15 @@
 
 #include "master.h"
 
-#define CHECK_ERROR_CHILD(x, str)  if((x)) { \
+#define CHECK_ERROR_CHILD(x, str)  do { \
+                                        if((x)) { \
                                             perror(str); \
                                             exit(EXIT_FAILURE); \
-                                        }
-/* The below function is used to calculate the hours of the config
- * into minutes and seconds for the nanosleep */
-struct timespec calculate_timeout(int hours, int day_length);
-/* TODO: maybe useless function */
-void timespec_sub(struct timespec*, struct timespec*, struct timespec*);
+                                        } \
+                                    } while (0);
+
 void print_config(config *cfg);
+struct timespec calculate_sleep_time(double x);
 
 int string_to_int(char *s);
 

@@ -158,6 +158,9 @@ int main(int argc, char **argv) {
     getchar();*/
 
     /*TODO: magari implementare setpgid, getpgid, setpgrp, getpgrp*/
+    /* TODO: problema grave con l'implementazione dei semafori e dei dump
+     ovvero non assicurano l'assenza di deadlock e per di più rischiano di provocare falsi risultati nei dump */
+
     printf("INIZIO SIMULAZIONE!\n");
     for (i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
         kill(shm_pid_array[i], SIGCONT);
@@ -178,11 +181,6 @@ int main(int argc, char **argv) {
             raise(SIGINT);
         }
     }
-
-    /* You only get here when SO_DAYS have passed or all ships processes are killed */
-    clear_all();
-    printf("FINE SIMULAZIONE!\n\n");
-    return 0;
 }
 
 void clear_all(void) {
@@ -422,29 +420,23 @@ void master_sig_handler(int signum) {
         case SIGINT:
             printf("Error has occurred... killing all processes.\n");
             for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
-                if(shm_pid_array[i] >= 0) {
-                    kill(shm_pid_array[i], SIGINT);
-                }
+                kill(abs(shm_pid_array[i]), SIGINT);
             }
-
-            if(pid_weather >= 0)
-                kill(pid_weather, SIGINT);
+            kill(pid_weather, SIGINT);
             clear_all();
             exit(EXIT_FAILURE);
         /* Still needs to deal with statistics first */
         case SIGALRM:
+            kill(pid_weather, SIGALRM);
             shm_cfg->CURRENT_DAY++;
             CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL,
-                                      shm_cfg->SO_PORTI + shm_cfg->SO_NAVI + 1 - shm_dump_ships->ships_sunk) < 0,
+                                      shm_cfg->SO_PORTI + shm_cfg->SO_NAVI - shm_dump_ships->ships_sunk) < 0,
                         "[MASTER] Error while setting the semaphore for dump control in SIGALRM")
 
             printf("Day [%d]/[%d].\n", shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
             for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
-                if(shm_pid_array[i] >= 0) {
-                    kill(shm_pid_array[i], SIGALRM);
-                }
+                kill(abs(shm_pid_array[i]), SIGALRM);
             }
-            kill(pid_weather, SIGALRM);
 
             while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, 0, 0)) {
                 CHECK_ERROR_MASTER(errno != EINTR, "[MASTER] Error while waiting the semaphore for dump control in SIGALRM")
@@ -453,13 +445,14 @@ void master_sig_handler(int signum) {
             /* Check SO_DAYS against the current day. If they're the same kill everything */
             if(shm_cfg->CURRENT_DAY == shm_cfg->SO_DAYS) {
                 for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
-                    if(shm_pid_array[i] >= 0) {
-                        kill(shm_pid_array[i], SIGTERM);
-                    }
+                    kill(abs(shm_pid_array[i]), SIGTERM);
                 }
                 kill(pid_weather, SIGTERM);
+                clear_all();
+                print_dump(); /* dump finale */
+                printf("FINE SIMULAZIONE!\n\n");
+                exit(EXIT_SUCCESS);
                 /* TODO: dump dello stato finale */
-                print_dump(); /*dump finale*/
             } else {
                 print_dump();
                 shm_dump_ships->ships_with_cargo_en_route = 0;
@@ -467,12 +460,13 @@ void master_sig_handler(int signum) {
                 shm_dump_ships->ships_being_loaded_unloaded = 0;
                 alarm(shm_cfg->SO_DAY_LENGTH);
             }
+            kill(pid_weather, SIGCONT);
             break;
         case SIGUSR1:
             printf("ALL SHIPS ARE DEAD :C\n");
+            printf("Day [%d]/[%d].\n", shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
             for(i = 0; i < shm_cfg->SO_PORTI; i++) {
-                if(shm_pid_array[i] >= 0)
-                    kill(shm_pid_array[i], SIGTERM);
+                kill(abs(shm_pid_array[i]), SIGTERM);
             }
             clear_all();
             print_dump();
