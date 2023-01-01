@@ -20,7 +20,7 @@ coord   *shm_ports_coords;
 generalGoods *shm_goods_template;
 dump_ports  *shm_dump_ports;
 dump_goods  *shm_dump_goods;
-pid_t   *shm_pid_array;
+/* pid_t   *shm_pid_array; */
 
 int     shm_id_config;
 int     myid;
@@ -82,8 +82,8 @@ int main(int argc, char *argv[]) {
                       "[PORTO] Error while trying to release sem_id_gen_precedence")
     CHECK_ERROR_CHILD((shm_mq_ids[myid] = msgget(IPC_PRIVATE, 0600)) < 0,
                       "[PORTO] Error while trying to create my mq")
-    CHECK_ERROR_CHILD((shm_pid_array = shmat(shm_cfg->shm_id_pid_array, NULL, 0)) == (void *) -1,
-                       "[MASTER] Error while trying to attach to pid array shared memory")
+    /* CHECK_ERROR_CHILD((shm_pid_array = shmat(shm_cfg->shm_id_pid_array, NULL, 0)) == (void *) -1,
+                       "[MASTER] Error while trying to attach to pid array shared memory") */
 
     fflush(stdout);
 
@@ -99,12 +99,11 @@ int main(int argc, char *argv[]) {
 
 
     /* Check if port's pid is negative, if so call the function to generate goods */
-    printf("first check: MY PID IS %d and im port %d\n", shm_pid_array[myid], myid);
-    if(shm_pid_array[myid] < 0) {
+    /* printf("first check: MY PID IS %d and im port %d\n", shm_pid_array[myid], myid);
+       if(shm_pid_array[myid] < 0) {
         printf("I'm negative, first day of work!\n\n\n\n\n\n");
-        /* start_of_goods_generation(); */
-    }
-    /*start_of_goods_generation();*/
+        start goods gen here
+    } */
 
     while (1) {
         /* Codice del porto da eseguire */
@@ -212,12 +211,13 @@ void porto_sig_handler(int signum) {
                 CHECK_ERROR_CHILD(errno != EINTR,
                                   "[PORTO] Error while trying to release sem_id_gen_precedence")
             }
-            /* Check if own pid is negative, if so, call the gen goods function */
+            /* Check if own pid is negative, if so, call the gen goods function
             printf("MY PID IS %d and im port %d\n", shm_pid_array[myid], myid);
             if (shm_pid_array[myid] < 0) {
                 printf("im negative\n\n\n\n");
-                /* start_of_goods_generation(); */
-            }
+                start goods gen here
+            } */
+
             break;
         case SIGUSR1:
             /* swell occurred */
