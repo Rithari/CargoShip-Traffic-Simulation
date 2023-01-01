@@ -26,6 +26,8 @@ void clear_all(void);
 /* signal handler */
 void master_sig_handler(int signum);
 
+int pick_random_ports();
+
 pid_t   *shm_pid_array;
 pid_t   pid_weather;
 config  *shm_cfg;
@@ -142,20 +144,22 @@ int main(int argc, char **argv) {
     /* Initialize generation semaphore at the value of SO_PORTI */
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL, shm_cfg->SO_PORTI),
                 "[MASTER] Error while setting the semaphore for ports generation control")
-
-    create_ports();
-
     printf("Waiting for ports generation...\n");
+    create_ports();
     CHECK_ERROR_MASTER(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, 0, 0),
                 "[MASTER] Error while waiting for ports generation")
+
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL, shm_cfg->SO_NAVI),
                 "[MASTER] Error while setting the semaphore for ships generation control")
-    create_ships();
     printf("Waiting for ships generation...\n");
+    create_ships();
     CHECK_ERROR_MASTER(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, 0, 0),
                 "[MASTER] Error while waiting for ships generation")
 
     create_weather();
+
+    /* A random amount of ports is chosen to generate goods the first time around, this number is saved in shm */
+    shm_cfg->CHOSEN_PORTS = pick_random_ports();
 
     /* Initialize sigaction struct */
     memset(&sa, 0, sizeof(sa));
@@ -195,6 +199,24 @@ int main(int argc, char **argv) {
     clear_all();
     printf("FINE SIMULAZIONE!\n\n");
     return 0;
+}
+
+int pick_random_ports(void) {
+    int i, chosen_port_index, chosen_ports;
+
+    chosen_ports = (int) random() % shm_cfg->SO_PORTI;
+
+    for(i = 0; i < chosen_ports; i++) {
+        chosen_port_index = (int) random() % shm_cfg->SO_PORTI;
+        if(shm_pid_array[chosen_port_index] < 0) {
+            i--;
+            continue;
+        }
+        /* in the pid array, set this index's pid to negative. e.g. pid 2831 becomes -2831 */
+        shm_pid_array[chosen_port_index] = -shm_pid_array[chosen_port_index];
+        printf("Port %d will generate goods, pid: %d\n", chosen_port_index, shm_pid_array[chosen_port_index]);
+    }
+    return chosen_ports;
 }
 
 void clear_all(void) {
@@ -458,6 +480,9 @@ void master_sig_handler(int signum) {
         /* Still needs to deal with statistics first */
         case SIGALRM:
             shm_cfg->CURRENT_DAY++;
+            shm_cfg->CHOSEN_PORTS = pick_random_ports(); /* Pick new ports for the day */
+
+            /* Start dumping the information */
             CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL,
                                       shm_cfg->SO_PORTI + shm_cfg->SO_NAVI + 1 - shm_dump_ships->ships_sunk) < 0,
                         "[MASTER] Error while setting the semaphore for dump control in SIGALRM")
@@ -471,7 +496,7 @@ void master_sig_handler(int signum) {
             kill(pid_weather, SIGALRM);
 
             while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, 0, 0)) {
-                CHECK_ERROR_MASTER(errno != EINTR, "[MASTER] Error while waiting the semaphore for dump control in SIGALRM")
+                CHECK_ERROR_MASTER(errno != EINTR, "[MASTER] Error while waiting on the semaphore for dump control in SIGALRM")
             }
 
             /* Check SO_DAYS against the current day. If they're the same kill everything */

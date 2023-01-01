@@ -263,7 +263,6 @@ void nave_sig_handler(int signum) {
             break;
         case SIGTERM:
             /* malestorm killed the ship :C or program ended*/
-            printf("Ship died\n");
             while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, IPC_NOWAIT) && errno != EAGAIN);
             exit(EXIT_SUCCESS);
         case SIGUSR1:
