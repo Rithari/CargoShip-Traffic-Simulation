@@ -159,7 +159,7 @@ int main(int argc, char **argv) {
     create_weather();
 
     /* A random amount of ports is chosen to generate goods the first time around, this number is saved in shm */
-    shm_cfg->CHOSEN_PORTS = pick_random_ports();
+    /* shm_cfg->CHOSEN_PORTS = pick_random_ports(); */
 
     /* Initialize sigaction struct */
     memset(&sa, 0, sizeof(sa));
@@ -200,6 +200,7 @@ int main(int argc, char **argv) {
     printf("FINE SIMULAZIONE!\n\n");
     return 0;
 }
+
 
 int pick_random_ports(void) {
     int i, chosen_port_index, chosen_ports;
@@ -480,7 +481,7 @@ void master_sig_handler(int signum) {
         /* Still needs to deal with statistics first */
         case SIGALRM:
             shm_cfg->CURRENT_DAY++;
-            shm_cfg->CHOSEN_PORTS = pick_random_ports(); /* Pick new ports for the day */
+            /* shm_cfg->CHOSEN_PORTS = pick_random_ports(); Pick new ports for the day */
 
             /* Start dumping the information */
             CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL,
