@@ -28,6 +28,7 @@ int     leftoverOffers = 0;
 int     leftoverRequests = 0;
 int    *shm_mq_ids;
 
+
 void porto_sig_handler(int);
 
 void start_of_goods_generation(void);
@@ -86,12 +87,12 @@ int main(int argc, char *argv[]) {
 
     arrayDecision_making = calloc(shm_cfg->SO_MERCI, sizeof(int));
 
-    for (i = 0; i<shm_cfg->SO_MERCI; i++) {
+    for (i = 0; i< shm_cfg->SO_MERCI; i++) {
         arrayDecision_making[i] = (int)(random() % 3);
     }
 
     /*printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);*/
-    /*start_of_goods_generation();*/
+    start_of_goods_generation();
 
     while (1) {
         /* Codice del porto da eseguire */
@@ -128,9 +129,11 @@ void start_of_goods_generation(void) {
                 iton = shm_goods_template[i].ton;
                 if(iton <= maxFillOffers) {
                     imaxQuantity = (int)(maxFillOffers/iton);
-                    rng = (int)(random() % imaxQuantity);
+                    rng = (int)(random() % (imaxQuantity+1));
                     maxFillOffers = maxFillOffers - (rng*iton);
-                    goodsOffers_generator(i , rng , (shm_goods_template[i].lifespan + shm_cfg->CURRENT_DAY));
+                    if(rng!=0) {
+                        goodsOffers_generator(i+1, rng, (shm_goods_template[i].lifespan + shm_cfg->CURRENT_DAY));
+                    }
                 }
                 break;
 
@@ -138,9 +141,11 @@ void start_of_goods_generation(void) {
                 iton = shm_goods_template[i].ton;
                 if(iton <= maxFillRequests) {
                     imaxQuantity = (int)(maxFillRequests/iton);
-                    rng = (int)(random() % imaxQuantity);
+                    rng = (int)(random() % (imaxQuantity+1));
                     maxFillRequests = maxFillRequests - (rng*iton);
-                    goodsRequest_generator(i , rng , myid);
+                    if(rng!=0) {
+                        goodsRequest_generator(i+1, rng, myid);
+                    }
                 }
                 break;
         }
@@ -148,6 +153,8 @@ void start_of_goods_generation(void) {
     }
     leftoverOffers = maxFillOffers;
     leftoverRequests = maxFillRequests;
+    fprintf(stderr, "leftoverOffer: %d\n", leftoverOffers);
+    fprintf(stderr, "leftoverRequest: %d\n", leftoverRequests);
 }
 
 
@@ -156,7 +163,8 @@ void goodsOffers_generator(int id, int quantity, int lifespan) {
     newOffer.mtype = id;
     newOffer.quantity = quantity;
     newOffer.lifespan = lifespan;
-    msgsnd(shm_mq_ids[id], &newOffer, sizeof(newOffer), IPC_NOWAIT);
+    fprintf(stderr, "[OFFER] mytype: %ld   quantity: %d   lifespan: %d    | MQID: %d   SIZE: %lu \n" , newOffer.mtype, newOffer.quantity, newOffer.lifespan, shm_mq_ids[myid], sizeof(newOffer));
+    msgsnd(shm_mq_ids[myid], &newOffer, sizeof(offerMessage)-sizeof(long), IPC_NOWAIT);
     if(errno == EAGAIN) {
         /*salvo l'offerta nella LL*/
     }else if(errno != 0){
@@ -169,7 +177,8 @@ void goodsRequest_generator(int id, int quantity, int affiliated) {
     newRequest.mtype = id;
     newRequest.quantity = quantity;
     newRequest.requestingPort = affiliated;
-    msgsnd(shm_cfg->mq_id_request, &newRequest, sizeof(newRequest), IPC_NOWAIT);
+    fprintf(stderr, "[REQUEST] mytype: %ld   quantity: %d   affiliated: %d   | MQID: %d   SIZE: %lu \n" , newRequest.mtype, newRequest.quantity, newRequest.requestingPort,  shm_cfg->mq_id_request, sizeof(newRequest));
+    msgsnd(shm_cfg->mq_id_request, &newRequest, sizeof(requestMessage)-sizeof(long), IPC_NOWAIT);
     if(errno == EAGAIN) {
         /*salvo la richiesta nella LL*/
     }else if(errno != 0){

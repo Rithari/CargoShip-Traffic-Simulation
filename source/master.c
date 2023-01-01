@@ -114,8 +114,11 @@ int main(int argc, char **argv) {
     memset(shm_dump_ships, 0, sizeof(dump_ships));
     memset(shm_dump_goods, 0, sizeof(dump_goods) * shm_cfg->SO_MERCI);
 
-    /* creates the message queue for the request of the ports */
+    /*creates the message queue for the handshake*/
     CHECK_ERROR_MASTER((shm_cfg->mq_id_handshake = msgget(IPC_PRIVATE, 0600)) < 0,
+                       "[MASTER] Error while creating message queue for requests")
+    /* creates the message queue for the request of the ports */
+    CHECK_ERROR_MASTER((shm_cfg->mq_id_request = msgget(IPC_PRIVATE, 0600)) < 0,
                 "[MASTER] Error while creating message queue for requests")
 
     /* create the semaphore for process generation control and the dump status */
@@ -221,6 +224,8 @@ void clear_all(void) {
                 "[MASTER] Error while removing dump simulation shared memory in clear_all")
     CHECK_ERROR_MASTER(msgctl(shm_cfg->mq_id_handshake, IPC_RMID, NULL),
                 "[MASTER] Error while removing message queue in clear_all")
+    CHECK_ERROR_MASTER(msgctl(shm_cfg->mq_id_request, IPC_RMID, NULL),
+                       "[MASTER] Error while removing message queue in clear_all")
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, IPC_RMID, 0),
                 "[MASTER] Error while removing semaphore for generation order control in clear_all")
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_dock, 0, IPC_RMID, 0),
