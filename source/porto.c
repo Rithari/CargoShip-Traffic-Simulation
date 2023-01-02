@@ -101,7 +101,6 @@ int main(int argc, char *argv[]) {
 
     /* Check if port's pid is negative, if so call the function to generate goods */
        if(shm_pid_array[myid] < 0) {
-           printf("I'm negative, first day of work!\n");
            start_of_goods_generation();
     }
 
@@ -235,7 +234,6 @@ void porto_sig_handler(int signum) {
 
             /* Check if own pid is negative, if so, call the gen goods function */
             if (shm_pid_array[myid] < 0) {
-                printf("im negative\n\n\n\n");
                 start_of_goods_generation();
             }
 
