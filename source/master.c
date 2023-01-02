@@ -201,25 +201,6 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-
-int pick_random_ports(void) {
-    int i, chosen_port_index, chosen_ports;
-
-    chosen_ports = (int) random() % shm_cfg->SO_PORTI;
-
-    for(i = 0; i < chosen_ports; i++) {
-        chosen_port_index = (int) random() % shm_cfg->SO_PORTI;
-        if(shm_pid_array[chosen_port_index] < 0) {
-            i--;
-            continue;
-        }
-        /* in the pid array, set this index's pid to negative. e.g. pid 2831 becomes -2831 */
-        shm_pid_array[chosen_port_index] = -shm_pid_array[chosen_port_index];
-        printf("Port %d will generate goods, pid: %d\n", chosen_port_index, shm_pid_array[chosen_port_index]);
-    }
-    return chosen_ports;
-}
-
 void clear_all(void) {
 
     int i = 0;
@@ -481,7 +462,6 @@ void master_sig_handler(int signum) {
         /* Still needs to deal with statistics first */
         case SIGALRM:
             shm_cfg->CURRENT_DAY++;
-            /* shm_cfg->CHOSEN_PORTS = pick_random_ports(); Pick new ports for the day */
 
             /* Start dumping the information */
             CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL,
