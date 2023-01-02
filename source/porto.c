@@ -83,6 +83,7 @@ int main(int argc, char *argv[]) {
      CHECK_ERROR_CHILD((shm_pid_array = shmat(shm_cfg->shm_id_pid_array, NULL, 0)) == (void *) -1,
                        "[MASTER] Error while trying to attach to pid array shared memory")
 
+
     fflush(stdout);
 
 
@@ -94,6 +95,7 @@ int main(int argc, char *argv[]) {
 
     /*printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);*/
 
+
     /* Wait until everyone is ready (master will send SIGCONT) */
     pause();
 
@@ -102,6 +104,13 @@ int main(int argc, char *argv[]) {
            printf("I'm negative, first day of work!\n");
            start_of_goods_generation();
     }
+
+    /* TODO: Before or after pause? Confirmed working if placed after the pause. */
+    start_of_goods_generation();
+
+
+    /* Wait until everyone is ready (master will send SIGCONT) */
+    pause();
 
     while (1) {
         /* Codice del porto da eseguire */
