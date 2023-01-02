@@ -168,7 +168,6 @@ void goodsRequest_generator(int *goodsSetRequests, int *lifespanArray, int reque
 
 void porto_sig_handler(int signum) {
     int old_errno = errno;
-    sigset_t smask, omask;
 
     switch (signum) {
         case SIGTERM:
@@ -178,8 +177,6 @@ void porto_sig_handler(int signum) {
         case SIGINT:
             exit(EXIT_FAILURE);
         case SIGALRM:
-            sigfillset(&smask);
-            sigprocmask(SIG_BLOCK, &smask, &omask);
             /*TODO: dump stato attuale*/
             /*printf("[PORTO] DUMP PID: [%d] SIGALRM\n", getpid());*/
             shm_dump_ports[id].id = id;
@@ -188,7 +185,6 @@ void porto_sig_handler(int signum) {
                 CHECK_ERROR_CHILD(errno != EINTR,
                                   "[PORTO] Error while trying to release sem_id_gen_precedence")
             }
-            sigprocmask(SIG_SETMASK, &omask, NULL);
             break;
         case SIGUSR1:
             /* swell occurred */

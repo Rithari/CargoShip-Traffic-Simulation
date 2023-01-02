@@ -83,7 +83,7 @@ void meteo_sig_handler(int signum) {
                 kill(shm_pid_array[random() % shm_cfg->SO_PORTI], SIGUSR1);
             }
             if (shm_cfg->SO_STORM_DURATION > 0) {
-                /*TODO: in questo momento tutte le navi possono essere fermate, non solo quelle che navigano*/
+                /*TODO: in questo momento c'è race condition sull'update di ships slowed in dump dei porti*/
                 kill(shm_pid_array[index_pid_status[random() % available_ships] + shm_cfg->SO_PORTI], SIGUSR1);
             }
             raise(SIGSTOP);

@@ -37,6 +37,7 @@ int main(int argc, char** argv) {
 
     struct sigaction sa;
     struct sembuf sops;
+    sigset_t set;
     msg_handshake msg;
 
     if(argc != 2) {
@@ -87,6 +88,9 @@ int main(int argc, char** argv) {
     sigaddset(&sa.sa_mask, SIGUSR1);
     sigaction(SIGALRM, &sa, NULL);
 
+    sigemptyset(&set);
+    sigaddset(&set, SIGUSR1);
+
 
     CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
                       "[NAVE] Error while trying to release sem_id_gen_precedence")
@@ -111,6 +115,7 @@ int main(int argc, char** argv) {
                 CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while freeing sem_id_dock[id_actual_port] semaphore")
             }
             id_actual_port = -1;
+            sigprocmask(SIG_UNBLOCK, &set, NULL);
         }
 
         printf("[%d] Choose port no: [%d] from [%d]\n", getpid(), id_destination_port, id_actual_port);
@@ -125,6 +130,7 @@ int main(int argc, char** argv) {
             CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while locking sem_id_dock[id_destination_port] semaphore")
         }
         id_actual_port = id_destination_port;
+        sigprocmask(SIG_BLOCK, &set, NULL);
         /* Getting permission to load/unload */
         msg.mtype = id_actual_port + 1;
         msg.response_pid = getpid();
@@ -198,14 +204,11 @@ int get_nearest_port_from_sea(void) {
 
 void nave_sig_handler(int signum) {
     int old_errno = errno;
-    sigset_t smask, omask;
 
     switch (signum) {
         case SIGCONT:
             break;
         case SIGALRM:
-            sigfillset(&smask);
-            sigprocmask(SIG_BLOCK, &smask, &omask);
             /* sem_id_dump_mutex[0] is a mutex semaphore utilized for dump ship's cargo*/
             /*TODO: dump stato attuale*/
             while (sem_cmd(shm_cfg->sem_id_dump_mutex, 0, -1, 0)) {
@@ -227,7 +230,6 @@ void nave_sig_handler(int signum) {
                 CHECK_ERROR_CHILD(errno != EINTR,
                                   "[NAVE] Error while trying to release sem_id_gen_precedence")
             }
-            sigprocmask(SIG_SETMASK, &omask, NULL);
             break;
         case SIGUSR1:
             /* storm occurred */
