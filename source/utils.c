@@ -26,12 +26,23 @@ int string_to_int(char *s) {
     return val;
 }
 
-struct timespec calculate_sleep_time(double x) {
-    struct timespec t;
+/* TODO: find a better name lmao */
+void nanosleep_function(double time, char* str) {
+    struct timespec t, rem;
     double d;
-    t.tv_nsec = (long) (modf(x, &d) * 1e9);
+    t.tv_nsec = (long) (modf(time, &d) * 1e9);
     t.tv_sec = (long) d;
-    return t;
+
+    while (nanosleep(&t, &rem)) {
+        switch (errno) {
+            case EINTR:
+                t = rem;
+                continue;
+            default:
+                perror(str);
+                exit(EXIT_FAILURE);
+        }
+    }
 }
 
 void print_config(config *cfg) {

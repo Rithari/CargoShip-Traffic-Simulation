@@ -1,7 +1,7 @@
 # basic rules
 CC 		= gcc
 LDFLAGS	= -lm
-COMMON 	= common_ipcs.c utils.c
+COMMON 	= common_ipcs.c utils.c linked_list.c
 TARGET 	= master.out nave.out porto.out meteo.out
 SOURCE 	= master.c nave.c porto.c meteo.c
 EXE		= master.out

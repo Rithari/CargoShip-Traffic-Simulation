@@ -1,15 +1,12 @@
 #include "../headers/master.h"
 #include "../headers/utils.h"
 #include "../headers/common_ipcs.h"
-#include "../headers/linked_list.h"
 
 #define BUFFER_SIZE 128
-#define CHECK_ERROR_MASTER(x, str) do { \
-                                            if ((x)) { \
-                                                perror(str); \
-                                                kill(getpid(), SIGINT); \
-                                            } \
-                                        } while (0);
+#define CHECK_ERROR_MASTER(x, str)  if ((x)) { \
+                                        perror(str); \
+                                        kill(getpid(), SIGINT); \
+                                    } else {}\
 
 /* initialize @*cfg with parameters wrote on @*path_cfg_file*/
 void initialize_so_vars(char* path_cfg_file);
@@ -39,6 +36,7 @@ int     shm_id_config;
 int main(int argc, char **argv) {
     int i;
     int wstatus;
+    pid_t p_wait;
     struct sigaction sa;
 
     if(argc != 2) {
@@ -105,9 +103,11 @@ int main(int argc, char **argv) {
     memset(shm_dump_ships, 0, sizeof(dump_ships));
     memset(shm_dump_goods, 0, sizeof(dump_goods) * shm_cfg->SO_MERCI);
 
-    /* creates the message queue for the request of the ports */
-    CHECK_ERROR_MASTER((shm_cfg->mq_id_handshake = msgget(IPC_PRIVATE, 0600)) < 0,
-                "[MASTER] Error while creating message queue for requests")
+    /* creates the messages queues for the handshake between ports and ships of the ports */
+    CHECK_ERROR_MASTER((shm_cfg->mq_id_ports_handshake = msgget(IPC_PRIVATE, 0600)) < 0,
+                "[MASTER] Error while creating message queue for ports handshake")
+    CHECK_ERROR_MASTER((shm_cfg->mq_id_ships_handshake = msgget(IPC_PRIVATE, 0600)) < 0,
+                       "[MASTER] Error while creating message queue for ships handshake");
 
     /* create the semaphore for process generation control and the dump status */
     CHECK_ERROR_MASTER((shm_cfg->sem_id_gen_precedence = semget(IPC_PRIVATE, 1, 0600)) < 0,
@@ -158,8 +158,6 @@ int main(int argc, char **argv) {
     getchar();*/
 
     /*TODO: magari implementare setpgid, getpgid, setpgrp, getpgrp*/
-    /* TODO: problema grave con l'implementazione dei semafori e dei dump
-     ovvero non assicurano l'assenza di deadlock e per di più rischiano di provocare falsi risultati nei dump */
 
     printf("INIZIO SIMULAZIONE!\n");
     for (i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
@@ -170,17 +168,19 @@ int main(int argc, char **argv) {
     /* day 1 alarm */
     alarm(shm_cfg->SO_DAY_LENGTH);
 
-    while(waitpid(-1, &wstatus, 0) > 0) {
+    while((p_wait = waitpid(-1, &wstatus, 0)) > 0) {
         if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus) != 0) {
-            printf("Child exit with status: %d. Quitting...\n", WEXITSTATUS(wstatus));
+            printf("[MASTER] Child [%d] exit with status: %d. Quitting...\n", p_wait, WEXITSTATUS(wstatus));
             raise(SIGINT);
         }
 
         if(WIFSIGNALED(wstatus)) {
-            printf("[MASTER] CHILD GOT SIGNAL: %s\n", strsignal(WTERMSIG(wstatus)));
+            printf("[MASTER] CHILD [%d] GOT SIGNAL: %s\n", p_wait, strsignal(WTERMSIG(wstatus)));
             raise(SIGINT);
         }
     }
+
+    return 0;
 }
 
 void clear_all(void) {
@@ -198,8 +198,10 @@ void clear_all(void) {
                 "[MASTER] Error while removing dump simulation shared memory in clear_all")
     CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_dump_goods, IPC_RMID, NULL),
                 "[MASTER] Error while removing dump simulation shared memory in clear_all")
-    CHECK_ERROR_MASTER(msgctl(shm_cfg->mq_id_handshake, IPC_RMID, NULL),
-                "[MASTER] Error while removing message queue in clear_all")
+    CHECK_ERROR_MASTER(msgctl(shm_cfg->mq_id_ports_handshake, IPC_RMID, NULL),
+                "[MASTER] Error while removing mq_id_ports_handshake message queue in clear_all")
+    CHECK_ERROR_MASTER(msgctl(shm_cfg->mq_id_ships_handshake, IPC_RMID, NULL),
+                "[MASTER] Error while removing mq_id_ports_handshake message queue in clear_all")
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, IPC_RMID, 0),
                 "[MASTER] Error while removing semaphore for generation order control in clear_all")
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_dock, 0, IPC_RMID, 0),
@@ -269,11 +271,25 @@ void initialize_so_vars(char* path_cfg_file) {
     CHECK_ERROR_MASTER(check != 0x1FFFF, "[MASTER] Missing config")
     CHECK_ERROR_MASTER(shm_cfg->SO_NAVI < 1, "[MASTER] SO_NAVI is less than 1")
     CHECK_ERROR_MASTER(shm_cfg->SO_PORTI < 4, "[MASTER] SO_PORTI is less than 4")
-    CHECK_ERROR_MASTER(shm_cfg->SO_PORTI > SHRT_MAX,
-                "[MASTER] SO_PORTI is greater than SHRT_MAX")
+    CHECK_ERROR_MASTER(shm_cfg->SO_PORTI + shm_cfg->SO_NAVI > USHRT_MAX,
+                       "[MASTER] Too many processes than the sem_val limit")
+    CHECK_ERROR_MASTER(shm_cfg->SO_PORTI + shm_cfg->SO_NAVI + 1 > sysconf(_SC_CHILD_MAX),
+                       "[MASTER] Too many processes than the _SC_CHILD_MAX limit")
+    CHECK_ERROR_MASTER(shm_cfg->SO_MERCI <= 0, "[MASTER] SO_MERCI is less or equal than 0")
+    CHECK_ERROR_MASTER(shm_cfg->SO_MIN_VITA <= 0, "[MASTER] SO_MIN_VITA is less or equal than 0")
     CHECK_ERROR_MASTER(shm_cfg->SO_MIN_VITA > shm_cfg->SO_MAX_VITA, "[MASTER] SO_MIN_VITA is greater than SO_MAX_VITA")
+    CHECK_ERROR_MASTER(shm_cfg->SO_LATO <= 0, "[MASTER] SO_LATO is less or equal than 0")
     CHECK_ERROR_MASTER(shm_cfg->SO_SPEED <= 0, "[MASTER] SO_SPEED is less or equal than 0")
-    CHECK_ERROR_MASTER(shm_cfg->SO_BANCHINE > SHRT_MAX, "SO_BANCHINE is greater than SHRT_MAX")
+    CHECK_ERROR_MASTER(shm_cfg->SO_CAPACITY <= 0, "[MASTER] SO_CAPACITY is less or equal than 0")
+    CHECK_ERROR_MASTER(shm_cfg->SO_BANCHINE <= 0, "[MASTER] SO_BANCHINE is less or equal than 0")
+    CHECK_ERROR_MASTER(shm_cfg->SO_BANCHINE > USHRT_MAX, "SO_BANCHINE is greater than the sem_val limit")
+    CHECK_ERROR_MASTER(shm_cfg->SO_FILL <= 0, "[MASTER] SO_FILL is less or equal than 0")
+    CHECK_ERROR_MASTER(shm_cfg->SO_LOADSPEED <= 0, "[MASTER] SO_LOADSPEED is less or equal than 0")
+    CHECK_ERROR_MASTER(shm_cfg->SO_DAYS <= 0, "[MASTER] SO_DAYS is less or equal than 0")
+    CHECK_ERROR_MASTER(shm_cfg->SO_DAY_LENGTH <= 0, "[MASTER] SO_DAY_LENGTH is less or equal than 0")
+    CHECK_ERROR_MASTER(shm_cfg->SO_STORM_DURATION < 0, "[MASTER] SO_STORM_DURATION is less than 0")
+    CHECK_ERROR_MASTER(shm_cfg->SO_SWELL_DURATION < 0, "[MASTER] SO_SWELL_DURATION is less than 0")
+    CHECK_ERROR_MASTER(shm_cfg->SO_MAELSTORM < 0, "[MASTER] SO_MAELSTORM is less than 0")
     errno = 0;
 }
 
@@ -323,10 +339,8 @@ void create_ports(void) {
             case 0:
                 CHECK_ERROR_CHILD(asprintf(&args[2], "%d", i) < 0,
                             "[PORTO] Error while converting index into a string")
-                shm_dump_ports[i].dock_total = (int) random() % shm_cfg->SO_BANCHINE + 1;
-                CHECK_ERROR_CHILD(semctl(shm_cfg->sem_id_dock, i, SETVAL, shm_dump_ports[i].dock_total),
-                                   "[PORTO] Error while generating dock semaphore")
                 CHECK_ERROR_CHILD(execv(PATH_PORTO, args), "[PORTO] execv has failed trying to run port")
+                break;
             default:
                 shm_pid_array[i] = pid_process;
                 break;
@@ -355,6 +369,7 @@ void create_ships(void) {
                 break;
             case 0:
                 CHECK_ERROR_CHILD(execv(PATH_NAVE, args), "[NAVE] execv has failed trying to run the ship")
+                break;
             default:
                 shm_pid_array[i + shm_cfg->SO_PORTI] = pid_process;
                 break;
@@ -405,7 +420,8 @@ void print_dump(void) {
         printf("------\n");
     }
     printf("---NAVI---\n");
-    printf("SHIPS: [%d/%d/%d]\n", shm_dump_ships->ships_with_cargo_en_route, shm_dump_ships->ships_without_cargo_en_route, shm_dump_ships->ships_being_loaded_unloaded);
+    printf("SHIPS: [%d/%d/%d]\n", shm_dump_ships->ships_with_cargo_en_route,
+           shm_dump_ships->ships_without_cargo_en_route, shm_dump_ships->ships_being_loaded_unloaded);
     printf("SHIPS SLOWED: [%d]\tSHIPS SUNK: [%d]\n", shm_dump_ships->ships_slowed, shm_dump_ships->ships_sunk);
     printf("----------------------\n");
 }
@@ -414,7 +430,6 @@ void master_sig_handler(int signum) {
     int old_errno = errno;
     int i;
 
-    /*TODO: migliore implementazione di tutti i segnali. Schematizzazione necessaria*/
     switch(signum) {
         case SIGTERM:
         case SIGINT:

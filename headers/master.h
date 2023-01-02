@@ -37,6 +37,7 @@
 
 
 typedef struct {
+    int     id;
     int     tons;
     int     lifespan;
 } goods;
@@ -100,7 +101,8 @@ typedef struct {
     int     shm_id_dump_ships;
     int     shm_id_dump_goods;
     int     mq_id_request;
-    int     mq_id_handshake;
+    int     mq_id_ports_handshake;
+    int     mq_id_ships_handshake;
     int     sem_id_gen_precedence; /* semaphore used to manage the general precedence */
     int     sem_id_dock;
     int     sem_id_dump_mutex;

@@ -3,15 +3,13 @@
 
 #include "master.h"
 
-#define CHECK_ERROR_CHILD(x, str)  do { \
-                                        if((x)) { \
-                                            perror(str); \
-                                            exit(EXIT_FAILURE); \
-                                        } \
-                                    } while (0);
+#define CHECK_ERROR_CHILD(x, str)   if((x)) { \
+                                        perror(str); \
+                                        exit(EXIT_FAILURE); \
+                                    } else {}\
 
 void print_config(config *cfg);
-struct timespec calculate_sleep_time(double x);
+void nanosleep_function(double time, char* str);
 
 int string_to_int(char *s);
 

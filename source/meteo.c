@@ -17,7 +17,6 @@ int main(int argc, char** argv) {
     unsigned int index_pid_to_term;
 
     struct sigaction sa;
-    struct timespec maelstorm_duration, rem;
 
     if(argc != 2) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
@@ -53,26 +52,21 @@ int main(int argc, char** argv) {
 
     pause();
 
-    while (available_ships) {
-        maelstorm_duration = calculate_sleep_time(shm_cfg->SO_MAELSTORM / 24.0 * shm_cfg->SO_DAY_LENGTH);
-        printf("[METEO] Maelstorm duration: %lds:%ldns\n", maelstorm_duration.tv_sec, maelstorm_duration.tv_nsec);
-        while (nanosleep(&maelstorm_duration, &rem)) {
-            switch (errno) {
-                case EINTR:
-                    maelstorm_duration = rem;
-                    continue;
-                default:
-                    perror("[METEO] Generic error in nanosleep\n");
-                    exit(EXIT_FAILURE);
-            }
+    if(shm_cfg->SO_MAELSTORM > 0) {
+        while (available_ships) {
+            nanosleep_function(shm_cfg->SO_MAELSTORM / 24.0 * shm_cfg->SO_DAY_LENGTH, "[METEO] Generic error in nanosleep");
+            index_pid_to_term = (unsigned int) random() % available_ships;
+            printf("[METEO] index to kill: %d\n", index_pid_to_term);
+            kill(shm_pid_array[index_pid_status[index_pid_to_term] + shm_cfg->SO_PORTI], SIGUSR2);
+            index_pid_status[index_pid_to_term] = index_pid_status[--available_ships];
         }
-        index_pid_to_term = (unsigned int) random() % available_ships;
-        printf("[METEO] index to kill: %d\n", index_pid_to_term);
-        kill(shm_pid_array[index_pid_status[index_pid_to_term] + shm_cfg->SO_PORTI], SIGUSR2);
-        index_pid_status[index_pid_to_term] = index_pid_status[--available_ships];
+        kill(getppid(), SIGUSR1);
+        free(index_pid_status);
+    } else {
+        while (1) {
+            pause();
+        }
     }
-    kill(getppid(), SIGUSR1);
-    free(index_pid_status);
     return 0;
 }
 
@@ -83,10 +77,13 @@ void meteo_sig_handler(int signum) {
         case SIGCONT:
             break;
         case SIGALRM:
-            kill(shm_pid_array[random() % shm_cfg->SO_PORTI], SIGUSR1);
-            /*TODO: in questo momento tutte le navi possono essere fermate, non solo quelle che navigano*/
-            kill(shm_pid_array[index_pid_status[random() % available_ships] + shm_cfg->SO_PORTI], SIGUSR1);
-            printf("[METEO] finito sigalrm!\n\n");
+            if (shm_cfg->SO_SWELL_DURATION > 0) {
+                kill(shm_pid_array[random() % shm_cfg->SO_PORTI], SIGUSR1);
+            }
+            if (shm_cfg->SO_STORM_DURATION > 0) {
+                /*TODO: in questo momento tutte le navi possono essere fermate, non solo quelle che navigano*/
+                kill(shm_pid_array[index_pid_status[random() % available_ships] + shm_cfg->SO_PORTI], SIGUSR1);
+            }
             raise(SIGSTOP);
             break;
         case SIGTERM:

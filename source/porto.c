@@ -38,18 +38,7 @@ void add(goodsList myOffers, goodsOffers); <--- solo per test
 
 int main(int argc, char *argv[]) {
     struct sigaction sa;
-    struct sembuf sem;
     msg_handshake msg;
-
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = porto_sig_handler;
-    sa.sa_flags = SA_RESTART;
-    sigaction(SIGCONT, &sa, NULL);
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGALRM, &sa, NULL);
-    sigaction(SIGTERM, &sa, NULL);
-    sa.sa_flags |= SA_NODEFER;
-    sigaction(SIGUSR1, &sa, NULL);
 
     srandom(getpid());
 
@@ -74,26 +63,37 @@ int main(int argc, char *argv[]) {
                       "[PORTO] Error while trying to attach to dump port shared memory")
     CHECK_ERROR_CHILD((shm_dump_goods = shmat(shm_cfg->shm_id_dump_goods, NULL, 0)) == (void*) -1,
                       "[PORTO] Error while trying to attach to dump goods shared memory")
-    CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
-                      "[PORTO] Error while trying to release sem_id_gen_precedence")
 
-    fflush(stdout);
+    shm_dump_ports[id].dock_total = (int) random() % shm_cfg->SO_BANCHINE + 1;
+    CHECK_ERROR_CHILD(semctl(shm_cfg->sem_id_dock, id, SETVAL, shm_dump_ports[id].dock_total),
+                      "[PORTO] Error while generating dock semaphore")
 
     /*printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);
-
     start_of_goods_generation();*/
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = porto_sig_handler;
+
+    sigaction(SIGCONT, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGUSR1, &sa, NULL);
+    sa.sa_flags |= SA_NODEFER;
+    sigaction(SIGALRM, &sa, NULL);
+
+    CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
+                      "[PORTO] Error while trying to release sem_id_gen_precedence")
 
     pause();
 
     while (1) {
         /* Codice del porto da eseguire */
-        while (msgrcv(shm_cfg->mq_id_handshake, &msg, sizeof(msg.response_pid), id + 1, 0) < 0) {
-            CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while waiting ships messages")
+        while (msgrcv(shm_cfg->mq_id_ports_handshake, &msg, sizeof(msg.response_pid), id + 1, 0) < 0) {
+            CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while waiting handshake message")
         }
         printf("[%d] Received message from [%d]\n", getpid(), msg.response_pid);
         msg.mtype = msg.response_pid;
-        while (msgsnd(shm_cfg->mq_id_handshake, &msg, sizeof(msg.response_pid), 0)) {
-            CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending ships messages")
+        while (msgsnd(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg.response_pid), 0)) {
+            CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message")
         }
         printf("[%d] Ok given to [%d]\n", getpid(), msg.response_pid);
     }
@@ -168,7 +168,7 @@ void goodsRequest_generator(int *goodsSetRequests, int *lifespanArray, int reque
 
 void porto_sig_handler(int signum) {
     int old_errno = errno;
-    struct timespec swell_duration, rem;
+    sigset_t smask, omask;
 
     switch (signum) {
         case SIGTERM:
@@ -178,33 +178,26 @@ void porto_sig_handler(int signum) {
         case SIGINT:
             exit(EXIT_FAILURE);
         case SIGALRM:
+            sigfillset(&smask);
+            sigprocmask(SIG_BLOCK, &smask, &omask);
             /*TODO: dump stato attuale*/
             /*printf("[PORTO] DUMP PID: [%d] SIGALRM\n", getpid());*/
             shm_dump_ports[id].id = id;
-            /* TODO: bug nell'otterenere il valore attuale del semaforo sem_id_dock[id] */
             shm_dump_ports[id].dock_available = semctl(shm_cfg->sem_id_dock, id, GETVAL);
             while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0)) {
                 CHECK_ERROR_CHILD(errno != EINTR,
                                   "[PORTO] Error while trying to release sem_id_gen_precedence")
             }
+            sigprocmask(SIG_SETMASK, &omask, NULL);
             break;
         case SIGUSR1:
             /* swell occurred */
-            /*printf("[PORTO] SWELL: %d\n", getpid()); */
-
-            swell_duration = calculate_sleep_time(shm_cfg->SO_SWELL_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH);
+            printf("[PORTO] SWELL: %d\n", getpid());
             shm_dump_ports[id].on_swell = 1;
-            while (nanosleep(&swell_duration, &rem)) {
-                switch (errno) {
-                    case EINTR:
-                        swell_duration = rem;
-                        continue;
-                    default:
-                        perror("[PORTO] Generic error while sleeping");
-                        kill(getppid(), SIGINT);
-                }
-            }
+            nanosleep_function(shm_cfg->SO_SWELL_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH,
+                               "Generic error while sleeping because of the swell");
             shm_dump_ports[id].on_swell = 0;
+            printf("[PORTO] END SWELL: %d\n", getpid());
             break;
         default:
             printf("[PORTO] Signal: %s\n", strsignal(signum));

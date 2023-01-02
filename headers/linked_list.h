@@ -8,7 +8,8 @@ struct node{
     struct node *next;
 };
 
-struct node *ll_add(struct node*, void*, size_t);
+struct node *ll_add(struct node*, goods to_add);
 void ll_print(struct node *head);
+struct node* ll_remove(struct node *head, goods *to_remove);
 
 #endif /*PROGETTOSO_LINKED_LIST_H*/

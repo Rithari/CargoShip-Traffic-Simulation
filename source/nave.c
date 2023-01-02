@@ -34,11 +34,9 @@ int main(int argc, char** argv) {
     int selected_good;
     double rndx;
     double rndy;
-    double lu_time;
 
     struct sigaction sa;
     struct sembuf sops;
-    struct timespec lu_operation_time, rem;
     msg_handshake msg;
 
     if(argc != 2) {
@@ -82,13 +80,11 @@ int main(int argc, char** argv) {
 
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = nave_sig_handler;
-    sa.sa_flags = SA_RESTART;
     sigaction(SIGCONT, &sa, NULL);
-    sigaction(SIGALRM, &sa, NULL);
-    sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGUSR2, &sa, NULL);
-    sa.sa_flags |= SA_NODEFER;
     sigaction(SIGUSR1, &sa, NULL);
+    sa.sa_flags |= SA_NODEFER;
+    sigaction(SIGALRM, &sa, NULL);
 
     CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
                       "[NAVE] Error while trying to release sem_id_gen_precedence")
@@ -127,27 +123,19 @@ int main(int argc, char** argv) {
             CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while locking sem_id_dock[id_destination_port] semaphore")
         }
         id_actual_port = id_destination_port;
-
         /* Getting permission to load/unload */
         msg.mtype = id_actual_port + 1;
         msg.response_pid = getpid();
-        msgsnd(shm_cfg->mq_id_handshake, &msg, sizeof(msg.response_pid), 0);
-        msgrcv(shm_cfg->mq_id_handshake, &msg, sizeof(msg.response_pid), getpid(), 0);
-        /* Ship got a dock, now we can do some operation */
-
-        lu_time = (double) actual_capacity / shm_cfg->SO_LOADSPEED * shm_cfg->SO_DAY_LENGTH;
-        lu_operation_time = calculate_sleep_time(lu_time);
-
-        while (nanosleep(&lu_operation_time, &rem)) {
-            switch (errno) {
-                case EINTR:
-                    lu_operation_time = rem;
-                    continue;
-                default:
-                    perror("[NAVE] Generic error while loading/unloading the ship");
-                    exit(EXIT_FAILURE);
-            }
+        while (msgsnd(shm_cfg->mq_id_ports_handshake, &msg, sizeof(msg.response_pid), 0)) {
+            CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while sending handshake message")
         }
+        while (msgrcv(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg.response_pid), getpid(), 0) < 0) {
+            CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while waiting handshake message")
+        }
+        /* Ship got a dock, now we can do some operation */
+        nanosleep_function((double) actual_capacity / shm_cfg->SO_LOADSPEED * shm_cfg->SO_DAY_LENGTH,
+                           "[NAVE] Generic error while unloading the ship");
+
         actual_capacity = 0;
         printf("[%d] Unload operation!\n", getpid());
         /* fake goods load/unload */
@@ -157,19 +145,8 @@ int main(int argc, char** argv) {
 
         selected_good = shm_goods_template[selected_good].tons * (random() % 3 + 1);
         /* this implementation is in tons for load */
-        lu_time = (double) selected_good / shm_cfg->SO_LOADSPEED * shm_cfg->SO_DAY_LENGTH;
-        lu_operation_time = calculate_sleep_time(lu_time);
-
-        while (nanosleep(&lu_operation_time, &rem)) {
-            switch (errno) {
-                case EINTR:
-                    lu_operation_time = rem;
-                    continue;
-                default:
-                    perror("[NAVE] Generic error while loading/unloading the ship");
-                    exit(EXIT_FAILURE);
-            }
-        }
+        nanosleep_function((double) selected_good / shm_cfg->SO_LOADSPEED * shm_cfg->SO_DAY_LENGTH,
+                           "[NAVE] Generic error while loading the ship");
         actual_capacity = selected_good;
         printf("[%d] Load operation!\n", getpid());
 
@@ -182,28 +159,13 @@ int main(int argc, char** argv) {
 }
 
 void move(int id_destination) {
-    struct timespec ts, rem;
-
     double dx = shm_ports_coords[id_destination].x - actual_coordinate.x;
     double dy = shm_ports_coords[id_destination].y - actual_coordinate.y;
     /*distance / SO_SPEED*/
     double navigation_time = sqrt(dx * dx + dy * dy) / shm_cfg->SO_SPEED * shm_cfg->SO_DAY_LENGTH;
 
-    ts = calculate_sleep_time(navigation_time);
-
     /*shm_pid_array[id] = -shm_pid_array[id];*/
-    while (nanosleep(&ts, &rem)) {
-        switch (errno) {
-            case EINTR:
-                ts = rem;
-                /*printf("[%d] Interrupt occurred while travelling for port no: [%d], time left [s:  %ld\tns:    %ld]\n",
-                       getpid(), id_destination, ts.tv_sec, ts.tv_nsec);*/
-                continue;
-            default:
-                perror("[NAVE] Generic error in move");
-                exit(EXIT_FAILURE);
-        }
-    }
+    nanosleep_function(navigation_time, "[NAVE] Generic error while moving");
     /*shm_pid_array[id] = -shm_pid_array[id];*/
 
     printf("[%d] Arrived in port no: [%d]\tNavigation time: %f\n", getpid(), id_destination, navigation_time);
@@ -214,7 +176,7 @@ void move(int id_destination) {
 /*TODO: useless function? */
 int get_nearest_port_from_sea(void) {
     /* TODO: creare una funzione in utils che dati due punti calcoli la distanza tra di essi */
-    int port_index;
+    int port_index = -1;
     int i;
     double distance = DBL_MAX;
 
@@ -234,12 +196,14 @@ int get_nearest_port_from_sea(void) {
 
 void nave_sig_handler(int signum) {
     int old_errno = errno;
-    struct timespec storm_duration, rem;
+    sigset_t smask, omask;
 
     switch (signum) {
         case SIGCONT:
             break;
         case SIGALRM:
+            sigfillset(&smask);
+            sigprocmask(SIG_BLOCK, &smask, &omask);
             /* sem_id_dump_mutex[0] is a mutex semaphore utilized for dump ship's cargo*/
             /*TODO: dump stato attuale*/
             while (sem_cmd(shm_cfg->sem_id_dump_mutex, 0, -1, 0)) {
@@ -261,26 +225,14 @@ void nave_sig_handler(int signum) {
                 CHECK_ERROR_CHILD(errno != EINTR,
                                   "[NAVE] Error while trying to release sem_id_gen_precedence")
             }
+            sigprocmask(SIG_SETMASK, &omask, NULL);
             break;
-        case SIGTERM:
-            exit(EXIT_SUCCESS);
         case SIGUSR1:
             /* storm occurred */
             printf("[NAVE] STORM: %d\n", getpid());
             shm_dump_ships->ships_slowed++;
-
-            storm_duration = calculate_sleep_time(shm_cfg->SO_STORM_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH);
-
-            while (nanosleep(&storm_duration, &rem)) {
-                switch (errno) {
-                    case EINTR:
-                        storm_duration = rem;
-                        continue;
-                    default:
-                        perror("[NAVE] Generic error while sleeping");
-                        exit(EXIT_FAILURE);
-                }
-            }
+            nanosleep_function(shm_cfg->SO_STORM_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH,
+                               "[NAVE] Generic error while sleeping because of the storm");
             break;
         case SIGUSR2:
             /* malestorm killed the ship :C*/
