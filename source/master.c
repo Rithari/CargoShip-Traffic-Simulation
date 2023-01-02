@@ -220,27 +220,6 @@ int pick_random_ports(void) {
     return chosen_ports;
 }
 
-int pick_random_ports(void) {
-    int i, chosen_port_index, chosen_ports;
-
-    /* TODO: Make already negative ports positive again.
-        Probably could make the goods gen function reset the PID at the end of the generation */
-
-    chosen_ports = (int) random() % shm_cfg->SO_PORTI;
-
-    for(i = 0; i < chosen_ports; i++) {
-        chosen_port_index = (int) random() % shm_cfg->SO_PORTI;
-        if(shm_pid_array[chosen_port_index] < 0) {
-            i--;
-            continue;
-        }
-        /* in the pid array, set this index's pid to negative. e.g. pid 2831 becomes -2831 */
-        shm_pid_array[chosen_port_index] = -shm_pid_array[chosen_port_index];
-        printf("Port %d will generate goods, pid: %d\n", chosen_port_index, shm_pid_array[chosen_port_index]);
-    }
-    return chosen_ports;
-}
-
 void clear_all(void) {
 
     int i = 0;
