@@ -23,6 +23,8 @@ int main(int argc, char** argv) {
         kill(getppid(), SIGINT);
     }
 
+    srandom(getpid());
+
     shm_id_config = string_to_int(argv[1]);
     CHECK_ERROR_CHILD(errno, "[METEO] Error while trying to convert shm_id_config")
 

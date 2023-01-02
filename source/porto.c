@@ -47,7 +47,6 @@ int main(int argc, char *argv[]) {
         kill(getppid(), SIGINT);
     }
 
-    /*TODO: improve string to int function */
     shm_id_config = string_to_int(argv[1]);
     CHECK_ERROR_CHILD(errno, "[PORTO] Error while trying to convert shm_id_config")
     id = string_to_int(argv[2]);
@@ -76,8 +75,9 @@ int main(int argc, char *argv[]) {
     sigaction(SIGCONT, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
-    sigaction(SIGUSR1, &sa, NULL);
     sa.sa_flags |= SA_NODEFER;
+    sigaction(SIGUSR1, &sa, NULL);
+    sigaddset(&sa.sa_mask, SIGUSR1);
     sigaction(SIGALRM, &sa, NULL);
 
     CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
@@ -193,10 +193,10 @@ void porto_sig_handler(int signum) {
         case SIGUSR1:
             /* swell occurred */
             printf("[PORTO] SWELL: %d\n", getpid());
-            shm_dump_ports[id].on_swell = 1;
+            shm_dump_ports[id].on_swell += 1;
             nanosleep_function(shm_cfg->SO_SWELL_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH,
                                "Generic error while sleeping because of the swell");
-            shm_dump_ports[id].on_swell = 0;
+            shm_dump_ports[id].on_swell -= 1;
             printf("[PORTO] END SWELL: %d\n", getpid());
             break;
         default:

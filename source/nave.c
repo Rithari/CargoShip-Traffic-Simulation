@@ -82,9 +82,11 @@ int main(int argc, char** argv) {
     sa.sa_handler = nave_sig_handler;
     sigaction(SIGCONT, &sa, NULL);
     sigaction(SIGUSR2, &sa, NULL);
-    sigaction(SIGUSR1, &sa, NULL);
     sa.sa_flags |= SA_NODEFER;
+    sigaction(SIGUSR1, &sa, NULL);
+    sigaddset(&sa.sa_mask, SIGUSR1);
     sigaction(SIGALRM, &sa, NULL);
+
 
     CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
                       "[NAVE] Error while trying to release sem_id_gen_precedence")

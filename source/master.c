@@ -154,9 +154,6 @@ int main(int argc, char **argv) {
     sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGUSR1, &sa, NULL);
 
-    /*print_config(shm_cfg);
-    getchar();*/
-
     /*TODO: magari implementare setpgid, getpgid, setpgrp, getpgrp*/
 
     printf("INIZIO SIMULAZIONE!\n");
