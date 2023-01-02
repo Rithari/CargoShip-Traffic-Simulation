@@ -133,6 +133,10 @@ void start_of_goods_generation(void) {
     /* Set my pid back to positive */
     shm_pid_array[myid] = getpid();
 
+    if(shm_cfg->CURRENT_DAY == shm_cfg->SO_DAYS) {
+        return;
+    }
+
     while(i < shm_cfg->SO_MERCI) {
         switch (arrayDecision_making[i]) {
             case 0:
