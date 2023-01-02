@@ -231,8 +231,8 @@ void porto_sig_handler(int signum) {
             /* swell occurred */
             /*printf("[PORTO] SWELL: %d\n", getpid()); */
 
-            swell_duration = calculate_timeout(shm_cfg->SO_SWELL_DURATION, shm_cfg->SO_DAY_LENGTH);
-            shm_dump_ports[myid].on_swell = 1;
+            swell_duration = calculate_sleep_time(shm_cfg->SO_SWELL_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH);
+            shm_dump_ports[id].on_swell = 1;
             while (nanosleep(&swell_duration, &rem)) {
                 switch (errno) {
                     case EINTR:
