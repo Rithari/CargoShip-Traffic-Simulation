@@ -50,7 +50,7 @@ jobs:
       # If we enabled the memory check environment variable, run the checks.
       if: ${{ env.RUN_MEMORY_CHECK == 'true' }}
       run: |
-        valgrind --leak-check=full ---show-leak-kinds=all --trace-children=yes --trace-origin=yes --log-file=valgrind.rpt /home/runner/work/progettoso/progettoso/${{env.BUILD_TYPE}}/master.out "testing config.txt"
+        valgrind --leak-check=full --show-leak-kinds=all --trace-children=yes --trace-origin=yes --log-file=valgrind.rpt /home/runner/work/progettoso/progettoso/${{env.BUILD_TYPE}}/master.out "testing config.txt"
         cat valgrind.rpt
 
    # - name: Test
