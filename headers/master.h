@@ -1,7 +1,6 @@
 #ifndef PROGETTOSO_MASTER_H
 #define PROGETTOSO_MASTER_H
 
-
 #define _GNU_SOURCE
 
 #include <sys/types.h>
@@ -36,18 +35,56 @@
 #define PATH_METEO  "debug/meteo.out"
 #endif
 
+typedef struct {
+    int     id;
+    int     ton;
+    int     lifespan;
+} generalGoods;
 
 typedef struct {
-    int id;
-    int ton;
-    int lifespan;
-} goods;
-
+    int     id;
+    int     quantity;
+    int     lifespan;
+} goodsOffers;
 
 typedef struct {
-    double x;
-    double y;
+    int     id;
+    int     quantity;
+    int     requestingPort;/*id del porto*/
+} goodsRequests;
+
+typedef struct {
+    double  x;
+    double  y;
 } coord;
+
+typedef struct {
+    int     id;
+    int     state;
+} dump_goods;
+
+typedef struct {
+    int    id;
+    int    good_available;
+    int    good_send;
+    int    good_received;
+    int    dock_total;
+    int    dock_available;
+    int     on_swell;
+} dump_ports;
+
+typedef struct {
+    int     ships_with_cargo_en_route;
+    int     ships_without_cargo_en_route;
+    int     ships_being_loaded_unloaded;
+    int     ships_slowed;
+    int     ships_sunk;
+} dump_ships;
+
+typedef struct {
+    long mtype;
+    int response_pid;
+} msg_handshake;
 
 typedef struct {
     int     CURRENT_DAY;
@@ -65,10 +102,24 @@ typedef struct {
     int     SO_LOADSPEED;
     int     SO_DAYS;
     int     SO_DAY_LENGTH;
-    int     STORM_DURATION;
-    int     SWELL_DURATION;
-    int     ML_INTENSITY;
-    unsigned int check;
+    int     SO_STORM_DURATION;
+    int     SO_SWELL_DURATION;
+    int     SO_MAELSTORM;
+    int     shm_id_goods_template;
+    int     shm_id_ports_coords;
+    int     shm_id_pid_array;
+    int     shm_id_dump_ports;
+    int     shm_id_dump_ships;
+    int     shm_id_dump_goods;
+    int     mq_id_request;
+    int     shm_id_mq_offer;
+    int     mq_id_ships;
+    int     mq_id_ports;
+    int     mq_id_handshake;
+    int     sem_id_gen_precedence; /* semaphore used to manage the general precedence */
+    int     sem_id_dock;
+    int     sem_id_dump_mutex;
+    int     CHOSEN_PORTS;
 } config;
 
 #endif /*PROGETTOSO_MASTER_H*/
