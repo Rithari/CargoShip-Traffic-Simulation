@@ -20,7 +20,7 @@ coord   *shm_ports_coords;
 generalGoods *shm_goods_template;
 dump_ports  *shm_dump_ports;
 dump_goods  *shm_dump_goods;
-/* pid_t   *shm_pid_array; */
+pid_t   *shm_pid_array;
 
 int     shm_id_config;
 int     myid;
@@ -29,9 +29,6 @@ int    *arrayDecision_making;
 int     leftoverOffers = 0;
 int     leftoverRequests = 0;
 int    *shm_mq_ids;
-
-
-void porto_sig_handler(int);
 
 void start_of_goods_generation(void);
 void goodsOffers_generator(int id, int quantity, int lifespan);
@@ -83,8 +80,8 @@ int main(int argc, char *argv[]) {
                       "[PORTO] Error while trying to release sem_id_gen_precedence")
     CHECK_ERROR_CHILD((shm_mq_ids[myid] = msgget(IPC_PRIVATE, 0600)) < 0,
                       "[PORTO] Error while trying to create my mq")
-    /* CHECK_ERROR_CHILD((shm_pid_array = shmat(shm_cfg->shm_id_pid_array, NULL, 0)) == (void *) -1,
-                       "[MASTER] Error while trying to attach to pid array shared memory") */
+     CHECK_ERROR_CHILD((shm_pid_array = shmat(shm_cfg->shm_id_pid_array, NULL, 0)) == (void *) -1,
+                       "[MASTER] Error while trying to attach to pid array shared memory")
 
     fflush(stdout);
 
@@ -96,17 +93,15 @@ int main(int argc, char *argv[]) {
     }
 
     /*printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y);*/
-    start_of_goods_generation();
+
     /* Wait until everyone is ready (master will send SIGCONT) */
     pause();
 
-
     /* Check if port's pid is negative, if so call the function to generate goods */
-    /* printf("first check: MY PID IS %d and im port %d\n", shm_pid_array[myid], myid);
        if(shm_pid_array[myid] < 0) {
-        printf("I'm negative, first day of work!\n\n\n\n\n\n");
-        start goods gen here
-    } */
+           printf("I'm negative, first day of work!\n");
+           start_of_goods_generation();
+    }
 
     while (1) {
         /* Codice del porto da eseguire */
@@ -126,7 +121,7 @@ int main(int argc, char *argv[]) {
 }
 
 void start_of_goods_generation(void) {
-    int maxFillValue = (int)((shm_cfg->SO_FILL / shm_cfg->SO_DAYS) / shm_cfg->SO_PORTI);
+    int maxFillValue = (int)((shm_cfg->SO_FILL / shm_cfg->SO_DAYS) / shm_cfg->CHOSEN_PORTS);
     int maxFillOffers = maxFillValue + leftoverOffers;
     int maxFillRequests = maxFillValue + leftoverRequests;
 
@@ -134,6 +129,10 @@ void start_of_goods_generation(void) {
     int iton;
     int imaxQuantity;
     int i = 0;
+    
+    /* Set my pid back to positive */
+    shm_pid_array[myid] = getpid();
+
     while(i < shm_cfg->SO_MERCI) {
         switch (arrayDecision_making[i]) {
             case 0:
@@ -171,7 +170,6 @@ void start_of_goods_generation(void) {
     fprintf(stderr, "leftoverRequest: %d\n", leftoverRequests);
 }
 
-
 void goodsOffers_generator(int id, int quantity, int lifespan) {
     offerMessage newOffer;
     newOffer.mtype = id;
@@ -200,7 +198,6 @@ void goodsRequest_generator(int id, int quantity, int affiliated) {
     }
 }
 
-
 void porto_sig_handler(int signum) {
     int old_errno = errno;
     struct timespec swell_duration, rem;
@@ -222,12 +219,12 @@ void porto_sig_handler(int signum) {
                 CHECK_ERROR_CHILD(errno != EINTR,
                                   "[PORTO] Error while trying to release sem_id_gen_precedence")
             }
-            /* Check if own pid is negative, if so, call the gen goods function
-            printf("MY PID IS %d and im port %d\n", shm_pid_array[myid], myid);
+
+            /* Check if own pid is negative, if so, call the gen goods function */
             if (shm_pid_array[myid] < 0) {
                 printf("im negative\n\n\n\n");
-                start goods gen here
-            } */
+                start_of_goods_generation();
+            }
 
             break;
         case SIGUSR1:

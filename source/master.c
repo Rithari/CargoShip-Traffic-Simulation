@@ -159,7 +159,7 @@ int main(int argc, char **argv) {
     create_weather();
 
     /* A random amount of ports is chosen to generate goods the first time around, this number is saved in shm */
-    /* shm_cfg->CHOSEN_PORTS = pick_random_ports(); */
+    shm_cfg->CHOSEN_PORTS = pick_random_ports();
 
     /* Initialize sigaction struct */
     memset(&sa, 0, sizeof(sa));
@@ -176,9 +176,9 @@ int main(int argc, char **argv) {
     /*TODO: magari implementare setpgid, getpgid, setpgrp, getpgrp*/
     printf("INIZIO SIMULAZIONE!\n");
     for (i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
-        kill(shm_pid_array[i], SIGCONT);
+        kill(abs(shm_pid_array[i]), SIGCONT);
     }
-    kill(pid_weather, SIGCONT);
+    kill(abs(pid_weather), SIGCONT);
 
     /* day 1 alarm */
     alarm(shm_cfg->SO_DAY_LENGTH);
@@ -201,9 +201,11 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-
 int pick_random_ports(void) {
     int i, chosen_port_index, chosen_ports;
+
+    /* TODO: Make already negative ports positive again.
+        Probably could make the goods gen function reset the PID at the end of the generation */
 
     chosen_ports = (int) random() % shm_cfg->SO_PORTI;
 
@@ -470,18 +472,27 @@ void master_sig_handler(int signum) {
             printf("Error has occurred... killing all processes.\n");
             for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
                 if(shm_pid_array[i] >= 0) {
-                    kill(shm_pid_array[i], SIGINT);
+                    kill(abs(shm_pid_array[i]), SIGINT);
                 }
             }
 
             if(pid_weather >= 0)
-                kill(pid_weather, SIGINT);
+                kill(abs(pid_weather), SIGINT);
             clear_all();
             exit(EXIT_FAILURE);
         /* Still needs to deal with statistics first */
         case SIGALRM:
             shm_cfg->CURRENT_DAY++;
-            /* shm_cfg->CHOSEN_PORTS = pick_random_ports(); Pick new ports for the day */
+            /* Send all ports SGISTOP to stop the ships from moving */
+            for(i = 0; i < shm_cfg->SO_PORTI; i++) {
+                CHECK_ERROR_MASTER(kill(abs(shm_pid_array[i]), SIGSTOP) < 0,
+                            "[MASTER] Error while sending SIGSTOP to the port")
+            }
+            shm_cfg->CHOSEN_PORTS = pick_random_ports(); /* Pick new ports for the day */
+            for(i = 0; i < shm_cfg->SO_PORTI; i++) {
+                CHECK_ERROR_MASTER(kill(abs(shm_pid_array[i]), SIGCONT) < 0,
+                            "[MASTER] Error while sending SIGCONT to the port")
+            }
 
             /* Start dumping the information */
             CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL,
@@ -491,10 +502,12 @@ void master_sig_handler(int signum) {
             printf("Day [%d]/[%d].\n", shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
             for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
                 if(shm_pid_array[i] >= 0) {
-                    kill(shm_pid_array[i], SIGALRM);
+                    kill(abs(shm_pid_array[i]), SIGALRM);
                 }
             }
-            kill(pid_weather, SIGALRM);
+            kill(abs(pid_weather), SIGALRM);
+
+
 
             while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, 0, 0)) {
                 CHECK_ERROR_MASTER(errno != EINTR, "[MASTER] Error while waiting on the semaphore for dump control in SIGALRM")
@@ -504,10 +517,10 @@ void master_sig_handler(int signum) {
             if(shm_cfg->CURRENT_DAY == shm_cfg->SO_DAYS) {
                 for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
                     if(shm_pid_array[i] >= 0) {
-                        kill(shm_pid_array[i], SIGTERM);
+                        kill(abs(shm_pid_array[i]), SIGTERM);
                     }
                 }
-                kill(pid_weather, SIGTERM);
+                kill(abs(pid_weather), SIGTERM);
                 /* TODO: dump dello stato finale */
                 print_dump(); /*dump finale*/
             } else {
@@ -522,7 +535,7 @@ void master_sig_handler(int signum) {
             printf("ALL SHIPS ARE DEAD :C\n");
             for(i = 0; i < shm_cfg->SO_PORTI; i++) {
                 if(shm_pid_array[i] >= 0)
-                    kill(shm_pid_array[i], SIGTERM);
+                    kill(abs(shm_pid_array[i]), SIGTERM);
             }
             clear_all();
             print_dump();

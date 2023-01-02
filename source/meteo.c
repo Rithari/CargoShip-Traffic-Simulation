@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
         }
         index_pid_to_term = (unsigned int) random() % available_ships;
         printf("[METEO] index to kill: %d\n", index_pid_to_term);
-        kill(shm_pid_array[index_pid_status[index_pid_to_term] + shm_cfg->SO_PORTI], SIGTERM);
+        kill(abs(shm_pid_array[index_pid_status[index_pid_to_term] + shm_cfg->SO_PORTI]), SIGTERM);
         index_pid_status[index_pid_to_term] = index_pid_status[--available_ships];
         shm_dump_ships->ships_sunk++;
     }
@@ -83,9 +83,9 @@ void meteo_sig_handler(int signum) {
         case SIGCONT:
             break;
         case SIGALRM:
-            kill(shm_pid_array[random() % shm_cfg->SO_PORTI], SIGUSR1);
+            kill(abs(shm_pid_array[random() % shm_cfg->SO_PORTI]), SIGUSR1);
             /*TODO: in questo momento tutte le navi possono essere fermate, non solo quelle che navigano*/
-            kill(shm_pid_array[random() % available_ships + shm_cfg->SO_PORTI], SIGUSR1);
+            kill(abs(shm_pid_array[random() % available_ships + shm_cfg->SO_PORTI]), SIGUSR1);
             shm_dump_ships->ships_slowed++;
             while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0)) {
                 CHECK_ERROR_CHILD(errno != EINTR, "[METEO] Error while trying to release sem_id_gen_precedence")
