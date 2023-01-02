@@ -478,6 +478,8 @@ void master_sig_handler(int signum) {
         case SIGALRM:
             kill(pid_weather, SIGALRM);
             shm_cfg->CURRENT_DAY++;
+
+            /* Worth it? Seems to work without SGISTOP and SIGCONT */
             /* Send all ports SGISTOP to stop the ships from moving */
             for(i = 0; i < shm_cfg->SO_PORTI; i++) {
                 CHECK_ERROR_MASTER(kill(abs(shm_pid_array[i]), SIGSTOP) < 0,
