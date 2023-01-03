@@ -38,6 +38,7 @@ jobs:
     - name: Run
       # Build your program with the given configuration
       #run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      if: ${{ env.RUN_MEMORY_CHECK == 'false' }}
       run: make run
       
     - name: Install Valgrind
@@ -50,7 +51,7 @@ jobs:
       # If we enabled the memory check environment variable, run the checks.
       if: ${{ env.RUN_MEMORY_CHECK == 'true' }}
       run: |
-        valgrind --leak-check=yes --log-file=valgrind.rpt /home/runner/work/progettoso/progettoso/${{env.BUILD_TYPE}}/master.out "testing config.txt"
+        valgrind --leak-check=full --show-leak-kinds=all --trace-children=yes --track-origins=yes --log-file=valgrind.rpt /home/runner/work/progettoso/progettoso/${{env.BUILD_TYPE}}/master.out "testing config.txt"
         cat valgrind.rpt
 
    # - name: Test

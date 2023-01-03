@@ -9,12 +9,12 @@ pid_t   *shm_pid_array;
 dump_ships *shm_dump_ships;
 
 int shm_id_config;
+int *index_pid_status;
 unsigned int available_ships;
 
 int main(int argc, char** argv) {
     int i;
     unsigned int index_pid_to_term;
-    int *index_pid_status;
 
     struct sigaction sa;
     struct timespec maelstorm_duration, rem;
@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
                       "[METEO] Error while trying to attach to ships dump shared memory")
 
     available_ships = shm_cfg->SO_NAVI;
-    index_pid_status = malloc(sizeof(shm_cfg->SO_NAVI) * shm_cfg->SO_NAVI);
+    index_pid_status = malloc(sizeof(int) * shm_cfg->SO_NAVI);
 
     for(i = 0; i < shm_cfg->SO_NAVI; i++) {
         index_pid_status[i] = i;
@@ -54,8 +54,8 @@ int main(int argc, char** argv) {
     pause();
 
     while (available_ships) {
-        maelstorm_duration = calculate_timeout(shm_cfg->SO_MAELSTORM, shm_cfg->SO_DAY_LENGTH);
-        /* printf("[METEO] Maelstorm duration: %lds:%ldns\n", maelstorm_duration.tv_sec, maelstorm_duration.tv_nsec); */
+        maelstorm_duration = calculate_sleep_time(shm_cfg->SO_MAELSTORM / 24.0 * shm_cfg->SO_DAY_LENGTH);
+        printf("[METEO] Maelstorm duration: %lds:%ldns\n", maelstorm_duration.tv_sec, maelstorm_duration.tv_nsec);
         while (nanosleep(&maelstorm_duration, &rem)) {
             switch (errno) {
                 case EINTR:
@@ -68,11 +68,11 @@ int main(int argc, char** argv) {
         }
         index_pid_to_term = (unsigned int) random() % available_ships;
         printf("[METEO] index to kill: %d\n", index_pid_to_term);
-        kill(shm_pid_array[index_pid_status[index_pid_to_term] + shm_cfg->SO_PORTI], SIGTERM);
+        kill(shm_pid_array[index_pid_status[index_pid_to_term] + shm_cfg->SO_PORTI], SIGUSR2);
         index_pid_status[index_pid_to_term] = index_pid_status[--available_ships];
-        shm_dump_ships->ships_sunk++;
     }
     kill(getppid(), SIGUSR1);
+    free(index_pid_status);
     return 0;
 }
 
@@ -83,13 +83,11 @@ void meteo_sig_handler(int signum) {
         case SIGCONT:
             break;
         case SIGALRM:
-            kill(shm_pid_array[random() % shm_cfg->SO_PORTI], SIGUSR1);
+            kill(abs(shm_pid_array[random() % shm_cfg->SO_PORTI]), SIGUSR1);
             /*TODO: in questo momento tutte le navi possono essere fermate, non solo quelle che navigano*/
-            kill(shm_pid_array[random() % available_ships + shm_cfg->SO_PORTI], SIGUSR1);
-            shm_dump_ships->ships_slowed++;
-            while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0)) {
-                CHECK_ERROR_CHILD(errno != EINTR, "[METEO] Error while trying to release sem_id_gen_precedence")
-            }
+            kill(shm_pid_array[index_pid_status[random() % available_ships] + shm_cfg->SO_PORTI], SIGUSR1);
+            printf("[METEO] finito sigalrm!\n\n");
+            raise(SIGSTOP);
             break;
         case SIGTERM:
             exit(EXIT_SUCCESS);

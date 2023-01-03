@@ -26,19 +26,12 @@ int string_to_int(char *s) {
     return val;
 }
 
-
-struct timespec calculate_timeout(int hours, int day_length) {
-    struct timespec timeout;
-    hours *= day_length;
-    timeout.tv_sec = hours / 24;
-    timeout.tv_nsec = (long) (((hours % 24) / 24.0) * 1000000000);
-
-    return timeout;
-}
-
-void timespec_sub(struct timespec* res, struct timespec *minuend, struct timespec *subtrahend) {
-    res->tv_sec = minuend->tv_sec - subtrahend->tv_sec;
-    res->tv_nsec = minuend->tv_nsec - subtrahend->tv_nsec;
+struct timespec calculate_sleep_time(double x) {
+    struct timespec t;
+    double d;
+    t.tv_nsec = (long) (modf(x, &d) * 1e9);
+    t.tv_sec = (long) d;
+    return t;
 }
 
 void print_config(config *cfg) {

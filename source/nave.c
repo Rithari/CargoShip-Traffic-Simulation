@@ -23,7 +23,7 @@ dump_goods  *shm_dump_goods;
 int     shm_id_config;
 
 coord   actual_coordinate;
-int     actual_capacity;
+unsigned int     actual_capacity;
 int     id_actual_port;
 int     id_destination_port;
 
@@ -86,6 +86,7 @@ int main(int argc, char** argv) {
     sigaction(SIGCONT, &sa, NULL);
     sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGUSR2, &sa, NULL);
     sa.sa_flags |= SA_NODEFER;
     sigaction(SIGUSR1, &sa, NULL);
 
@@ -135,8 +136,7 @@ int main(int argc, char** argv) {
         /* Ship got a dock, now we can do some operation */
 
         lu_time = (double) actual_capacity / shm_cfg->SO_LOADSPEED * shm_cfg->SO_DAY_LENGTH;
-        lu_operation_time.tv_sec = (long) lu_time;
-        lu_operation_time.tv_nsec = (lu_time - lu_operation_time.tv_sec) * 1000000000;
+        lu_operation_time = calculate_sleep_time(lu_time);
 
         while (nanosleep(&lu_operation_time, &rem)) {
             switch (errno) {
@@ -158,8 +158,7 @@ int main(int argc, char** argv) {
         selected_good = shm_goods_template[selected_good].ton * (random() % 3 + 1);
         /* this implementation is in tons for load */
         lu_time = (double) selected_good / shm_cfg->SO_LOADSPEED * shm_cfg->SO_DAY_LENGTH;
-        lu_operation_time.tv_sec = (long) lu_time;
-        lu_operation_time.tv_nsec = (lu_time - lu_operation_time.tv_sec) * 1000000000;
+        lu_operation_time = calculate_sleep_time(lu_time);
 
         while (nanosleep(&lu_operation_time, &rem)) {
             switch (errno) {
@@ -190,12 +189,12 @@ void move(int id_destination) {
     /*distance / SO_SPEED*/
     double navigation_time = sqrt(dx * dx + dy * dy) / shm_cfg->SO_SPEED * shm_cfg->SO_DAY_LENGTH;
 
-    ts.tv_sec = (long) navigation_time;
-    ts.tv_nsec = (long) ((navigation_time - ts.tv_sec) * 1000000000);
+    ts = calculate_sleep_time(navigation_time);
+
+    /*shm_pid_array[id] = -shm_pid_array[id];*/
     while (nanosleep(&ts, &rem)) {
         switch (errno) {
             case EINTR:
-                /* TODO: aggiungere funzionalità (forse non necessario)*/
                 ts = rem;
                 /*printf("[%d] Interrupt occurred while travelling for port no: [%d], time left [s:  %ld\tns:    %ld]\n",
                        getpid(), id_destination, ts.tv_sec, ts.tv_nsec);*/
@@ -205,6 +204,8 @@ void move(int id_destination) {
                 exit(EXIT_FAILURE);
         }
     }
+    /*shm_pid_array[id] = -shm_pid_array[id];*/
+
     printf("[%d] Arrived in port no: [%d]\tNavigation time: %f\n", getpid(), id_destination, navigation_time);
     fflush(stdout);
     actual_coordinate = shm_ports_coords[id_destination];
@@ -257,19 +258,18 @@ void nave_sig_handler(int signum) {
                 CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while trying to release sem_id_dump_mutex[0]")
             }
             while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0)) {
-                CHECK_ERROR_CHILD( errno != EINTR,
-                                   "[NAVE] Error while trying to release sem_id_gen_precedence")
+                CHECK_ERROR_CHILD(errno != EINTR,
+                                  "[NAVE] Error while trying to release sem_id_gen_precedence")
             }
             break;
         case SIGTERM:
-            /* malestorm killed the ship :C or program ended*/
-            while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, IPC_NOWAIT) && errno != EAGAIN);
             exit(EXIT_SUCCESS);
         case SIGUSR1:
             /* storm occurred */
             printf("[NAVE] STORM: %d\n", getpid());
+            shm_dump_ships->ships_slowed++;
 
-            storm_duration = calculate_timeout(shm_cfg->SO_STORM_DURATION, shm_cfg->SO_DAY_LENGTH);
+            storm_duration = calculate_sleep_time(shm_cfg->SO_STORM_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH);
 
             while (nanosleep(&storm_duration, &rem)) {
                 switch (errno) {
@@ -282,6 +282,14 @@ void nave_sig_handler(int signum) {
                 }
             }
             break;
+        case SIGUSR2:
+            /* malestorm killed the ship :C*/
+            shm_dump_ships->ships_sunk++;
+            if (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, IPC_NOWAIT)) {
+                CHECK_ERROR_CHILD(errno != EINTR && errno != EAGAIN,
+                                  "[NAVE] Error while trying to release sem_id_gen_precedence")
+            }
+            exit(EXIT_SUCCESS);
         default:
             printf("[NAVE] Signal: %s\n", strsignal(signum));
             break;
