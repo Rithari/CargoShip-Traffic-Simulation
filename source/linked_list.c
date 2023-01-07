@@ -1,11 +1,11 @@
 #include "../headers/linked_list.h"
 
-int compare_goods(goods *a, goods *b) {
+int compare_goods(goods_template *a, goods_template *b) {
     return a->id == b->id && a->tons == b->tons && a->lifespan == b->lifespan;
 }
 
-struct node* ll_add(struct node *head, goods to_add) {
-    struct node *new_node = (struct node*) malloc(sizeof(new_node));
+struct node* ll_add(struct node *head, goods_template to_add) {
+    struct node *new_node = (struct node*) malloc(sizeof(*new_node));
     struct node *cur;
 
     new_node->element = malloc(sizeof(to_add));
@@ -43,7 +43,7 @@ void ll_print(struct node *head) {
     printf("[%d, %d, %d] -> ", cur->element->id, cur->element->tons, cur->element->lifespan);
 }
 
-struct node* ll_remove(struct node *head, goods *to_remove) {
+struct node* ll_remove(struct node *head, goods_template *to_remove) {
     struct node *cur, *pre;
 
     if(head == NULL) return head;

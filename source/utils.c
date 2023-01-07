@@ -45,6 +45,14 @@ void nanosleep_function(double time, char* str) {
     }
 }
 
+/* ordina in base al peso la merce */
+int compare_goods_template(const void *g, const void *g1) {
+    goods_template *s_g = (goods_template*) g;
+    goods_template *s_g1 = (goods_template*) g1;
+
+    return s_g1->tons - s_g->tons;
+}
+
 void print_config(config *cfg) {
     printf("--------------------------\n");
     printf("--------- CONFIG ---------\n");

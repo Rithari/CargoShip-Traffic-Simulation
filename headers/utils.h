@@ -10,6 +10,8 @@
 
 void print_config(config *cfg);
 void nanosleep_function(double time, char* str);
+/* ordina in base al peso la merce */
+int compare_goods_template(const void *g, const void *g1);
 
 int string_to_int(char *s);
 

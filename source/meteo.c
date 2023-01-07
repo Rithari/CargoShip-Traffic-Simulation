@@ -50,6 +50,7 @@ int main(int argc, char** argv) {
 
     sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
     sigaction(SIGCONT, &sa, NULL);
 
     pause();
@@ -59,36 +60,45 @@ int main(int argc, char** argv) {
             nanosleep_function(shm_cfg->SO_MAELSTORM / 24.0 * shm_cfg->SO_DAY_LENGTH, "[METEO] Generic error in nanosleep");
             index_pid_to_term = (unsigned int) random() % available_ships;
             printf("[METEO] index to kill: %d\n", index_pid_to_term);
-            kill(shm_pid_array[index_pid_status[index_pid_to_term] + shm_cfg->SO_PORTI], SIGUSR2);
+            kill(abs(shm_pid_array[index_pid_status[index_pid_to_term] + shm_cfg->SO_PORTI]), SIGUSR2);
             index_pid_status[index_pid_to_term] = index_pid_status[--available_ships];
         }
-        kill(getppid(), SIGUSR1);
-        free(index_pid_status);
     } else {
         while (1) {
             pause();
         }
     }
+    kill(getppid(), SIGUSR1);
+    free(index_pid_status);
     return 0;
 }
 
 void meteo_sig_handler(int signum) {
     int old_errno = errno;
+    unsigned int i, j;
 
     switch (signum) {
         case SIGCONT:
             break;
+        case SIGINT:
+            free(index_pid_status);
+            exit(EXIT_FAILURE);
         case SIGALRM:
             if (shm_cfg->SO_SWELL_DURATION > 0) {
-                kill(shm_pid_array[random() % shm_cfg->SO_PORTI], SIGUSR1);
+                kill(abs(shm_pid_array[random() % shm_cfg->SO_PORTI]), SIGUSR1);
             }
             if (shm_cfg->SO_STORM_DURATION > 0) {
-                /*TODO: in questo momento c'è race condition sull'update di ships slowed in dump dei porti*/
-                kill(shm_pid_array[index_pid_status[random() % available_ships] + shm_cfg->SO_PORTI], SIGUSR1);
+                for(i = 0, j = (int) random() % available_ships; i < shm_cfg->SO_NAVI; i++, j = (j + 1) % available_ships) {
+                    if (shm_pid_array[index_pid_status[j] + shm_cfg->SO_PORTI] < 0) {
+                        kill(abs(shm_pid_array[index_pid_status[j] + shm_cfg->SO_PORTI]), SIGUSR1);
+                        break;
+                    }
+                }
             }
             raise(SIGSTOP);
             break;
         case SIGTERM:
+            free(index_pid_status);
             exit(EXIT_SUCCESS);
         default:
             printf("[METEO] Signal: %s\n", strsignal(signum));
