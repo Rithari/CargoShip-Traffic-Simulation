@@ -36,10 +36,10 @@ struct node *head;
 /* TODO: Attach to message queues */
 int main(int argc, char** argv) {
     int i;
-    int selected_good;
+    int selected_good = 0;
     double rndx;
     double rndy;
-    double time_to_sleep;
+    double time_to_sleep = 0;
 
     struct sigaction sa;
     struct sembuf sops;
