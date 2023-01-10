@@ -50,7 +50,7 @@ int compare_goods_template(const void *g, const void *g1) {
     goods_template *s_g = (goods_template*) g;
     goods_template *s_g1 = (goods_template*) g1;
 
-    return s_g1->tons - s_g->tons;
+    return s_g->tons - s_g1->tons;
 }
 
 void print_config(config *cfg) {

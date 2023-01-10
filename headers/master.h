@@ -59,27 +59,33 @@ typedef struct {
 } dump_goods;
 
 typedef struct {
-    int    id;
-    int    good_available;
-    int    good_send;
-    int    good_received;
-    int    dock_total;
-    int    dock_available;
+    int     good_available;
+    int     good_send;
+    int     good_received;
+    int     dock_total;
+    int     dock_available;
     int     on_swell;
+    int     ton_in_excess;
 } dump_ports;
 
 typedef struct {
-    int     ships_with_cargo_en_route;
-    int     ships_without_cargo_en_route;
-    int     ships_being_loaded_unloaded;
-    int     ships_slowed;
-    int     ships_sunk;
+    int     with_cargo_en_route;
+    int     without_cargo_en_route;
+    int     being_loaded_unloaded;
+    int     slowed;
+    int     sunk;
 } dump_ships;
 
 typedef struct {
     long mtype;
     int response_pid;
+    int how_many;
 } msg_handshake;
+
+typedef struct {
+    long mtype;
+    goods to_add;
+} msg_goods;
 
 typedef struct {
     int     CURRENT_DAY;
@@ -110,6 +116,7 @@ typedef struct {
     int     shm_id_dump_goods;
     int     mq_id_ports_handshake;
     int     mq_id_ships_handshake;
+    int     mq_id_ships_goods;
     int     sem_id_gen_precedence; /* semaphore used to manage the general precedence */
     int     sem_id_dock;
     int     sem_id_dump_mutex;

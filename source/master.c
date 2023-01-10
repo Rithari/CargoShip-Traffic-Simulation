@@ -33,6 +33,7 @@ int     *shm_goods;
 dump_ports  *shm_dump_ports;
 dump_ships  *shm_dump_ships;
 dump_goods  *shm_dump_goods;
+FILE *output;
 
 int     shm_id_config;
 
@@ -73,7 +74,7 @@ int main(int argc, char **argv) {
         shm_goods_template[i].lifespan = (int) random() % (shm_cfg->SO_MAX_VITA - shm_cfg->SO_MIN_VITA + 1)
                                          + shm_cfg->SO_MIN_VITA;
     }
-    /*qsort(shm_goods_template, shm_cfg->SO_MERCI, sizeof(*shm_goods_template), compare_goods_template); */
+    qsort(shm_goods_template, shm_cfg->SO_MERCI, sizeof(goods_template), compare_goods_template);
 
     /* create and attach ports coordinate shared memory segment */
     CHECK_ERROR_MASTER((shm_cfg->shm_id_ports_coords = shmget(IPC_PRIVATE,
@@ -123,6 +124,8 @@ int main(int argc, char **argv) {
                 "[MASTER] Error while creating ports_handshake message queue")
     CHECK_ERROR_MASTER((shm_cfg->mq_id_ships_handshake = msgget(IPC_PRIVATE, 0600)) < 0,
                        "[MASTER] Error while creating ships_handshake message queue");
+    CHECK_ERROR_MASTER((shm_cfg->mq_id_ships_goods = msgget(IPC_PRIVATE, 0600)) < 0,
+                       "[MASTER] Error while creating ships_goods message queue");
 
     /* create the semaphore for process generation control and the dump status */
     CHECK_ERROR_MASTER((shm_cfg->sem_id_gen_precedence = semget(IPC_PRIVATE, 1, 0600)) < 0,
@@ -142,6 +145,8 @@ int main(int argc, char **argv) {
         CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_dump_mutex, i, SETVAL, 1) < 0,
                     "[MASTER] Error while setting the semaphore for ports dump control")
     }
+
+    output = fopen("output.txt", "w");
 
     /* Initialize generation semaphore at the value of SO_PORTI */
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL, shm_cfg->SO_PORTI),
@@ -173,8 +178,6 @@ int main(int argc, char **argv) {
     sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGUSR1, &sa, NULL);
 
-    /*TODO: magari implementare setpgid, getpgid, setpgrp, getpgrp*/
-
     printf("INIZIO SIMULAZIONE!\n");
     killpg(0, SIGCONT);
 
@@ -192,6 +195,10 @@ int main(int argc, char **argv) {
             raise(SIGINT);
         }
     }
+
+    print_dump(); /* dump finale */
+    printf("FINE SIMULAZIONE!\n\n");
+    fclose(output);
 
     return 0;
 }
@@ -217,6 +224,8 @@ void clear_all(void) {
                 "[MASTER] Error while removing mq_id_ports_handshake message queue in clear_all")
     CHECK_ERROR_MASTER(msgctl(shm_cfg->mq_id_ships_handshake, IPC_RMID, NULL),
                 "[MASTER] Error while removing mq_id_ports_handshake message queue in clear_all")
+    CHECK_ERROR_MASTER(msgctl(shm_cfg->mq_id_ships_goods, IPC_RMID, NULL),
+                       "[MASTER] Error while removing mq_id_ports_handshake message queue in clear_all")
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, IPC_RMID, 0),
                 "[MASTER] Error while removing semaphore for generation order control in clear_all")
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_dock, 0, IPC_RMID, 0),
@@ -423,24 +432,25 @@ void create_weather(void) {
 
 void print_dump(void) {
     int i;
-    printf("----------------------\n");
+    fprintf(output, "----------------------\n");
     /*printf("---MERCI---\n");
     for(i = 0; i < shm_cfg->SO_MERCI; i++) {
         printf("ID: [%d]\tSTATE: [%d]\n", shm_dump_goods[i].id, shm_dump_goods[i].state);
         printf("------\n");
     }*/
-    printf("---PORTI---\n");
+    fprintf(output,"---PORTI---\n");
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
-        printf("ID: [%d]\tON_SWELL: [%d]\n", shm_dump_ports[i].id, shm_dump_ports[i].on_swell);
-        printf("DOCK: [%d/%d]\n", shm_dump_ports[i].dock_available, shm_dump_ports[i].dock_total);
-        printf("GOODS: [%d/%d/%d]\n", shm_dump_ports[i].good_available, shm_dump_ports[i].good_send, shm_dump_ports[i].good_received);
-        printf("------\n");
+        fprintf(output,"ID: [%d]\tON_SWELL: [%d]\n", i, shm_dump_ports[i].on_swell);
+        fprintf(output,"DOCK: [%d/%d]\n", shm_dump_ports[i].dock_available, shm_dump_ports[i].dock_total);
+        fprintf(output,"GOODS: [%d/%d/%d/%d]\n", shm_dump_ports[i].good_available, shm_dump_ports[i].good_send,
+               shm_dump_ports[i].good_received, shm_dump_ports[i].ton_in_excess);
+        fprintf(output,"------\n");
     }
-    printf("---NAVI---\n");
-    printf("SHIPS: [%d/%d/%d]\n", shm_dump_ships->ships_with_cargo_en_route,
-           shm_dump_ships->ships_without_cargo_en_route, shm_dump_ships->ships_being_loaded_unloaded);
-    printf("SHIPS SLOWED: [%d]\tSHIPS SUNK: [%d]\n", shm_dump_ships->ships_slowed, shm_dump_ships->ships_sunk);
-    printf("----------------------\n");
+    fprintf(output,"---NAVI---\n");
+    fprintf(output,"SHIPS: [%d/%d/%d]\n", shm_dump_ships->with_cargo_en_route,
+           shm_dump_ships->without_cargo_en_route, shm_dump_ships->being_loaded_unloaded);
+    fprintf(output,"SHIPS SLOWED: [%d]\tSHIPS SUNK: [%d]\n", shm_dump_ships->slowed, shm_dump_ships->sunk);
+    fprintf(output,"----------------------\n");
 }
 
 void generate_goods(void) {
@@ -457,7 +467,7 @@ void generate_goods(void) {
 
 void master_sig_handler(int signum) {
     int old_errno = errno;
-    int i;
+    int i, check_port_offers, check_port_request;
 
     switch(signum) {
         case SIGTERM:
@@ -470,16 +480,40 @@ void master_sig_handler(int signum) {
             exit(EXIT_FAILURE);
         /* Still needs to deal with statistics first */
         case SIGALRM:
-            kill(pid_weather, SIGALRM);
+            printf("Day [%d]/[%d].\n", ++shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
 
+            if(shm_cfg->CURRENT_DAY == shm_cfg->SO_DAYS) {
+                for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
+                    kill(abs(shm_pid_array[i]), SIGTERM);
+                }
+                kill(pid_weather, SIGTERM);
+                return;
+            }
+
+            for (i = 0, check_port_offers = 0, check_port_request = 0; i < shm_cfg->SO_PORTI * shm_cfg->SO_MERCI && !(check_port_offers && check_port_request); i++) {
+                if(shm_goods[i] < 0) check_port_request += -shm_goods[i];
+                else if (shm_goods[i] > 0) check_port_offers += shm_goods[i];
+            }
+
+            fprintf(output, "%d\t%d\n", check_port_offers, check_port_request);
+
+            if (!check_port_request || !check_port_offers) {
+                for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
+                    kill(abs(shm_pid_array[i]), SIGTERM);
+                }
+                kill(pid_weather, SIGTERM);
+                if(!check_port_offers) printf("NEI PORTI NON SONO PRESENTI PIU' OFFERTE\n");
+                else printf("NEI PORTI NON SONO PRESENTI PIU' RICHIESTE\n");
+                return;
+            }
+
+            kill(pid_weather, SIGALRM);
             generate_goods();
 
-            shm_cfg->CURRENT_DAY++;
             CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL,
-                                      shm_cfg->SO_PORTI + shm_cfg->SO_NAVI - shm_dump_ships->ships_sunk) < 0,
+                                      shm_cfg->SO_PORTI + shm_cfg->SO_NAVI - shm_dump_ships->sunk) < 0,
                         "[MASTER] Error while setting the semaphore for dump control in SIGALRM")
 
-            printf("Day [%d]/[%d].\n", shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
             for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
                 kill(abs(shm_pid_array[i]), SIGALRM);
             }
@@ -489,22 +523,11 @@ void master_sig_handler(int signum) {
             }
 
             /* Check SO_DAYS against the current day. If they're the same kill everything */
-            if(shm_cfg->CURRENT_DAY == shm_cfg->SO_DAYS) {
-                for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
-                    kill(abs(shm_pid_array[i]), SIGTERM);
-                }
-                kill(pid_weather, SIGTERM);
-                print_dump(); /* dump finale */
-                printf("FINE SIMULAZIONE!\n\n");
-                exit(EXIT_SUCCESS);
-                /* TODO: dump dello stato finale */
-            } else {
-                print_dump();
-                shm_dump_ships->ships_with_cargo_en_route = 0;
-                shm_dump_ships->ships_without_cargo_en_route = 0;
-                shm_dump_ships->ships_being_loaded_unloaded = 0;
-                alarm(shm_cfg->SO_DAY_LENGTH);
-            }
+            print_dump();
+            shm_dump_ships->with_cargo_en_route = 0;
+            shm_dump_ships->without_cargo_en_route = 0;
+            shm_dump_ships->being_loaded_unloaded = 0;
+            alarm(shm_cfg->SO_DAY_LENGTH);
 
             kill(pid_weather, SIGCONT);
             break;
@@ -515,7 +538,7 @@ void master_sig_handler(int signum) {
                 kill(abs(shm_pid_array[i]), SIGTERM);
             }
             print_dump();
-            exit(EXIT_SUCCESS);
+            break;
         default:
             printf("[MASTER] Signal: %s\n", strsignal(signum));
             break;

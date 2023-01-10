@@ -6,7 +6,9 @@
 #define CHECK_ERROR_CHILD(x, str)   if((x)) { \
                                         perror(str); \
                                         exit(EXIT_FAILURE); \
-                                    } else {}\
+                                    } else {} \
+
+#define min(a, b) ((a) > (b) ? (b) : (a))
 
 void print_config(config *cfg);
 void nanosleep_function(double time, char* str);
