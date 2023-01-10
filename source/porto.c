@@ -43,7 +43,6 @@ int main(int argc, char *argv[]) {
     msg_handshake msg;
     roba* r;
     msg_goods msg_g;
-    struct node *cur;
 
     srandom(getpid());
 
@@ -104,35 +103,48 @@ int main(int argc, char *argv[]) {
         }
         printf("[%d] Received message from [%d]\n", getpid(), msg.response_pid);
         msg.mtype = msg.response_pid;
-        r = generate_route();
-        msg.how_many = r->how_many;
-        msg.response_pid = r->port_id;
 
-        ll_print(r->goods_to_send);
-        printf("SIUM1\n");
-        while (msgsnd(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg) - sizeof(long), 0)) {
-            CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message")
+        while (head && head->element->lifespan < shm_cfg->CURRENT_DAY) {
+            /* update dumps */
+            printf("[%d] Port lost good :C\n", getpid());
+            __sync_fetch_and_sub(&shm_goods[id * shm_cfg->SO_MERCI + head->element->id], head->element->quantity);
+            head = ll_pop(head);
         }
 
-        msg_g.mtype = msg.mtype;
+        if (head) {
+            r = generate_route();
+            msg.how_many = r->how_many;
+            msg.response_pid = r->port_id;
 
-        while (r->goods_to_send) {
-            printf("SIUM 3");
-            msg_g.to_add.quantity = r->goods_to_send->element->quantity;
-            msg_g.to_add.id = r->goods_to_send->element->id;
-            msg_g.to_add.lifespan = r->goods_to_send->element->lifespan;
-
-            while (msgsnd(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), 0)) {
-                CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message");
+            ll_print(r->goods_to_send);
+            printf("SIUM1\n");
+            while (msgsnd(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg) - sizeof(long), 0)) {
+                CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message")
             }
 
-            free(r->goods_to_send->element);
-            cur = r->goods_to_send;
-            r->goods_to_send = r->goods_to_send->next;
-            free(cur);
-        }
+            msg_g.mtype = msg.mtype;
 
-        printf("[%d] Ok given to [%ld]\n", getpid(), msg.mtype);
+            while (r->goods_to_send) {
+                printf("SIUM 3");
+                msg_g.to_add.quantity = r->goods_to_send->element->quantity;
+                msg_g.to_add.id = r->goods_to_send->element->id;
+                msg_g.to_add.lifespan = r->goods_to_send->element->lifespan;
+
+                while (msgsnd(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), 0)) {
+                    CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message");
+                }
+                r->goods_to_send = ll_pop(r->goods_to_send);
+            }
+            ll_free(r->goods_to_send);
+            free(r);
+            printf("[%d] Ok given to [%ld]\n", getpid(), msg.mtype);
+        } else {
+            msg.how_many = 0;
+            msg.response_pid = -1;
+            while (msgsnd(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg) - sizeof(long), 0)) {
+                CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message")
+            }
+        }
     }
 }
 
@@ -163,8 +175,6 @@ void generate_goods(void) {
                         to_add.id = i;
                         to_add.quantity = selected_quantity;
                         head = ll_add(head, &to_add);
-                        /*printf("[%d] Sto inserendo = 0 e & 1:[%d/%d]\n", getpid(), to_add.id, to_add.quantity);
-                        /* ll */
                     } else {
                         shm_goods[id * shm_cfg->SO_MERCI + i] = -selected_quantity;
                     }
@@ -174,8 +184,6 @@ void generate_goods(void) {
                     to_add.id = i;
                     to_add.quantity = selected_quantity;
                     head = ll_add(head, &to_add);
-                    /*printf("[%d] Sto inserendo > 0: [%d/%d]\n", getpid(), to_add.id, to_add.quantity);
-                    /* ll */
                 } else {
                     shm_goods[id * shm_cfg->SO_MERCI + i] -= selected_quantity;
                 }
@@ -188,7 +196,7 @@ void generate_goods(void) {
 }
 
 roba* generate_route(void) {
-    int i, j, k, min_val, how_many;
+    int i, j, k, min_val;
     int best_route = -1;
     int best_tons_available = shm_cfg->SO_CAPACITY;
     int ship_tons_available;
@@ -203,14 +211,6 @@ roba* generate_route(void) {
     for(k = 0, i = (int) random() % shm_cfg->SO_PORTI; k < shm_cfg->SO_PORTI && best_tons_available > shm_goods_template[0].tons; k++, i = (i + 1) % shm_cfg->SO_PORTI) {
         if(id == i) continue;
 
-        /* calcolo la quantità minore di merce che posso caricare attualmente,
-             * se la nave ha capienza rimanente minore non ha senso iterare */
-        /*for (j = 0, offset = INT_MAX; j < shm_cfg->SO_MERCI; j++) {
-            if (shm_goods[i * shm_cfg->SO_MERCI + j] < 0 && shm_goods_template[j].tons < offset) {
-                offset = shm_goods_template[j].tons;
-            }
-        }*/
-
         for (j = 0; j < shm_cfg->SO_MERCI && shm_goods[i * shm_cfg->SO_MERCI + j] > 0; j++);
 
         /* se il porto non ha richieste non ha senso iterare */
@@ -219,7 +219,7 @@ roba* generate_route(void) {
 
         memset(tmp_goods_to_get, 0, sizeof(int) * shm_cfg->SO_MERCI);
 
-        for(j = 0, ship_tons_available = shm_cfg->SO_CAPACITY; j < shm_cfg->SO_MERCI && ship_tons_available > offset; j++) {
+        for(j = shm_cfg->SO_MERCI - 1, ship_tons_available = shm_cfg->SO_CAPACITY; j >= 0 && ship_tons_available > offset; j--) {
             if(shm_goods[id * shm_cfg->SO_MERCI + j] > 0 && shm_goods[i * shm_cfg->SO_MERCI + j] < 0 && ship_tons_available / shm_goods_template[j].tons) {
                 /* quantità totale che posso caricare in nave */
                 min_val = min(min(shm_goods[id * shm_cfg->SO_MERCI + j], -shm_goods[i * shm_cfg->SO_MERCI + j]),
@@ -242,10 +242,10 @@ roba* generate_route(void) {
     sublist = NULL;
 
     if(best_tons_available < shm_cfg->SO_CAPACITY) {
+        int how_many;
 
         for (i = 0, how_many = 0; i < shm_cfg->SO_MERCI; i++) {
             if (goods_to_get[i]) {
-
                 /*printf("[%d] Merch id [%d] requested: %d, tons exchanged: %d\n", getpid(), i,
                        goods_to_get[i], (goods_to_get[i] * shm_goods_template[i].tons));
                 /* shm_goods[id + i] -= goods_to_get[i]; */
@@ -266,6 +266,7 @@ roba* generate_route(void) {
                 cur = head;
 
                 while (goods_to_get[i] > 0 && cur) {
+                    /* qui si può controllare anche la fattibilità dell'utilizzare la merce con il calcolo del tempo... */
                     if (cur->element->id == i) {
                         /*printf("PRE: ");
                         ll_print(head); */
@@ -328,7 +329,6 @@ void dump_port_data(void) {
 
 void porto_sig_handler(int signum) {
     int old_errno = errno;
-    int i;
 
     switch (signum) {
         case SIGTERM:
