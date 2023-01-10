@@ -89,8 +89,18 @@ struct node* ll_remove_by_id(struct node *head, int id) {
     return head;
 }
 
+struct node* ll_pop(struct node *head) {
+    struct node *tmp;
+    free(head->element);
+    tmp = head;
+    head = head->next;
+    free(tmp);
+    return head;
+}
+
 void ll_free(struct node *head) {
     struct node *cur;
+
     while (head) {
         free(head->element);
         cur = head;

@@ -3,15 +3,15 @@ SO_NAVI:        10
 SO_PORTI:       4
 SO_MERCI:       5
 SO_SIZE:        5
-SO_MIN_VITA:    50
-SO_MAX_VITA:    50
+SO_MIN_VITA:    1
+SO_MAX_VITA:    10
 SO_LATO:        10
 SO_SPEED:       5
 SO_CAPACITY:    100
-SO_BANCHINE:    2
+SO_BANCHINE:    1
 SO_FILL:        50000
 SO_LOADSPEED:   20
-SO_DAYS:        10
+SO_DAYS:        20
 SO_DAY_LENGTH:  1 # seconds irl
 SO_STORM_DURATION: 24 # hours
 SO_SWELL_DURATION: 24 # hours

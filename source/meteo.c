@@ -1,6 +1,5 @@
 #include "../headers/master.h"
 #include "../headers/utils.h"
-#include "../headers/common_ipcs.h"
 
 void meteo_sig_handler(int);
 
@@ -14,8 +13,6 @@ unsigned int available_ships;
 
 int main(int argc, char** argv) {
     int i;
-    unsigned int index_pid_to_term;
-
     struct sigaction sa;
 
     if(argc != 2) {
@@ -56,10 +53,12 @@ int main(int argc, char** argv) {
     pause();
 
     if(shm_cfg->SO_MAELSTORM > 0) {
+        unsigned int index_pid_to_term;
+
         while (available_ships) {
             nanosleep_function(shm_cfg->SO_MAELSTORM / 24.0 * shm_cfg->SO_DAY_LENGTH, "[METEO] Generic error in nanosleep");
             index_pid_to_term = (unsigned int) random() % available_ships;
-            printf("[METEO] index to kill: %d\n", index_pid_to_term);
+            printf("[METEO] index to kill: %ud\n", index_pid_to_term);
             kill(abs(shm_pid_array[index_pid_status[index_pid_to_term] + shm_cfg->SO_PORTI]), SIGUSR2);
             index_pid_status[index_pid_to_term] = index_pid_status[--available_ships];
         }
@@ -75,7 +74,6 @@ int main(int argc, char** argv) {
 
 void meteo_sig_handler(int signum) {
     int old_errno = errno;
-    unsigned int i, j;
 
     switch (signum) {
         case SIGCONT:
@@ -88,6 +86,7 @@ void meteo_sig_handler(int signum) {
                 kill(abs(shm_pid_array[random() % shm_cfg->SO_PORTI]), SIGUSR1);
             }
             if (shm_cfg->SO_STORM_DURATION > 0) {
+                unsigned int i, j;
                 for(i = 0, j = (int) random() % available_ships; i < shm_cfg->SO_NAVI; i++, j = (j + 1) % available_ships) {
                     if (shm_pid_array[index_pid_status[j] + shm_cfg->SO_PORTI] < 0) {
                         kill(abs(shm_pid_array[index_pid_status[j] + shm_cfg->SO_PORTI]), SIGUSR1);

@@ -35,7 +35,6 @@ struct node *head;
 /* TODO: Attach to message queues */
 int main(int argc, char** argv) {
     int i;
-    int selected_good = 0;
     double rndx;
     double rndy;
     double time_to_sleep = 0;
@@ -44,7 +43,6 @@ int main(int argc, char** argv) {
     struct sembuf sops;
     msg_handshake msg;
     msg_goods msg_g;
-    struct node *cur;
 
     if(argc != 3) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
@@ -143,22 +141,25 @@ int main(int argc, char** argv) {
         /* Getting permission to load/unload */
         /* devo ricevere l'id della mq per le comunicazioni e la quantità di merce da leggere*/
 
-
         /* unloading goods */
         while (head) {
-            nanosleep_function((double) head->element->quantity * shm_goods_template[head->element->id].tons * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
-                               "[NAVE] Generic error while unloading the ship");
-            /* update dumps */
-            free(head->element);
-            cur = head;
-            head = head->next;
-            free(cur);
+            if (head->element->lifespan >= shm_cfg->CURRENT_DAY) {
+                nanosleep_function((double) head->element->quantity * shm_goods_template[head->element->id].tons * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
+                                   "[NAVE] Generic error while unloading the ship");
+                /* update dumps */
+                printf("[%d] Ho scaricato: [%d/%d/%d]\n", getpid(), head->element->id, head->element->quantity, head->element->quantity);
+            } else {
+                /* good lost, update dumps */
+            }
+            head = ll_pop(head);
         }
 
         printf("[%d] Unload operation done!\n", getpid());
 
         msg.mtype = id_actual_port + 1;
         msg.response_pid = getpid();
+        msg.how_many = -1;
+
         while (msgsnd(shm_cfg->mq_id_ports_handshake, &msg, sizeof(msg) - sizeof(long), 0)) {
             CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while sending handshake message")
         }
@@ -170,7 +171,7 @@ int main(int argc, char** argv) {
 
         if (msg.response_pid >= 0) {
             printf("[%d] Sto andando al porto: %d e sto caricando: %d merci\n", getpid(), msg.response_pid, msg.how_many);
-            for (i = 0; i < msg.how_many; i++) {
+            for (i = 0, time_to_sleep = 0; i < msg.how_many; i++) {
                 while (msgrcv(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), getpid(), 0) < 0) {
                     CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while waiting good message")
                 }
@@ -180,10 +181,12 @@ int main(int argc, char** argv) {
                 time_to_sleep += msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons;
             }
 
+            printf("[%d] time_to_sleep: %f\n", getpid(), time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED);
+
             nanosleep_function(time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
                                "[NAVE] Generic error while loading the ship");
 
-            shm_dump_goods[selected_good].state++;
+            /*hm_dump_goods[selected_good].state++; */
 
             printf("[%d] Load operation!\n", getpid());
             /* destinazione delle merci se esiste una tratta*/
@@ -231,38 +234,8 @@ int get_nearest_port(void) {
     } while (i == id_actual_port);
 
     /* Return a random port, no one is good... */
-    /* TODO: possibilitò di tornare al porto di partenza :C */
     return i;
 }
-
-/*int get_nearest_port(void) {
-    /* TODO: ABSOLUTE GARBAGE!!!!!!!! *
-    int i, j, k;
-    int port_index = -1;
-    double distance = DBL_MAX;
-
-    for(k = 0, i = (int) random() % shm_cfg->SO_PORTI; k < shm_cfg->SO_PORTI; k++, i = (i + 1) % shm_cfg->SO_PORTI) {
-        if (i == id_actual_port) continue;
-
-        for (j = 0; j < shm_cfg->SO_MERCI; j++) {
-            if (shm_goods[i * shm_cfg->SO_MERCI + j] > 0 && shm_cfg->SO_CAPACITY / shm_goods_template[j].tons) {
-                double dx = shm_ports_coords[i].x - actual_coordinate.x;
-                double dy = shm_ports_coords[i].y - actual_coordinate.y;
-                double d_tmp = dx * dx + dy * dy;
-
-                if(d_tmp < distance) {
-                    port_index = i;
-                    distance = d_tmp;
-                }
-                break;
-            }
-        }
-    }
-
-    /* Return a random port, no one is good... *
-    /* TODO: possibilitò di tornare al porto di partenza :C *
-    return port_index > 0 ? port_index : (int) random() % shm_cfg->SO_PORTI;
-}*/
 
 void dump_ship_data(void) {
     /* sem_id_dump_mutex[0] is a mutex semaphore utilized for dump ship's cargo*/
@@ -297,6 +270,7 @@ void nave_sig_handler(int signum) {
                  * kill(abs(shm_pid_array[id_actual_port]), SIGUSR2);
                  * */
             }
+            ll_free(head);
             exit(EXIT_SUCCESS);
         case SIGALRM:
             dump_ship_data();
@@ -323,6 +297,7 @@ void nave_sig_handler(int signum) {
             /* shm_dump_ships->sunk++; */
             /* TODO: rimuovere tutti i __sync_fetch_and_xxx */
             __sync_fetch_and_add(&shm_dump_ships->sunk, 1);
+            ll_free(head);
             /* nave affondata, aggiornare i dump della merce persa */
             /* kill(abs(shm_pid_array[id_actual_port]), SIGUSR2); */
             if (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, IPC_NOWAIT)) {
