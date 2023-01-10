@@ -1,5 +1,4 @@
 #include "../headers/utils.h"
-#include "../headers/master.h"
 #include "../headers/common_ipcs.h"
 #include "../headers/linked_list.h"
 
@@ -12,8 +11,6 @@ Funzione per caricare le proprie domande e offerte nelle rispettive MQ
 Funzione/i per la creazione di tratte()
 Funzione/i per la comunicazione con le queue()
 Banchina: gestita come una risorsa condivisa protetta da un semaforo (n_docks)*/
-
-/*L'handler riceve il segnale di creazione delle merci e invoca la funzione designata --> "start_of_goods_generation"*/
 
 typedef struct {
     int how_many;
@@ -60,9 +57,9 @@ int main(int argc, char *argv[]) {
     CHECK_ERROR_CHILD((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1,
                       "[PORTO] Error while trying to attach to configuration shared memory")
     CHECK_ERROR_CHILD((shm_pid_array = shmat(shm_cfg->shm_id_pid_array, NULL, 0)) == (void*) -1,
-                      "[PORTO] Error while trying to attach to pid_array shared memory");
+                      "[PORTO] Error while trying to attach to pid_array shared memory")
     CHECK_ERROR_CHILD((shm_goods = shmat(shm_cfg->shm_id_goods, NULL, 0)) == (void*) -1,
-                      "[PORTO] Error while trying to attach to goods shared memory");
+                      "[PORTO] Error while trying to attach to goods shared memory")
     CHECK_ERROR_CHILD((shm_ports_coords = shmat(shm_cfg->shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1,
                       "[PORTO] Error while trying to attach to ports coordinates shared memory")
     CHECK_ERROR_CHILD((shm_goods_template = shmat(shm_cfg->shm_id_goods_template, NULL, SHM_RDONLY)) == (void*) -1,
@@ -123,7 +120,7 @@ int main(int argc, char *argv[]) {
             msg_g.to_add.lifespan = r->goods_to_send->element->lifespan;
 
             while (msgsnd(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), 0)) {
-                CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message");
+                CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message")
             }
 
             free(r->goods_to_send->element);
@@ -188,7 +185,7 @@ void generate_goods(void) {
 }
 
 roba* generate_route(void) {
-    int i, j, k, min_val, how_many;
+    int i, j, k, min_val;
     int best_route = -1;
     int best_tons_available = shm_cfg->SO_CAPACITY;
     int ship_tons_available;
@@ -242,6 +239,7 @@ roba* generate_route(void) {
     sublist = NULL;
 
     if(best_tons_available < shm_cfg->SO_CAPACITY) {
+        int how_many;
 
         for (i = 0, how_many = 0; i < shm_cfg->SO_MERCI; i++) {
             if (goods_to_get[i]) {
@@ -328,7 +326,6 @@ void dump_port_data(void) {
 
 void porto_sig_handler(int signum) {
     int old_errno = errno;
-    int i;
 
     switch (signum) {
         case SIGTERM:

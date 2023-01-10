@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
     /* create and attach pid shm for the goods tracking offers */
     CHECK_ERROR_MASTER((shm_cfg->shm_id_goods =
                                 shmget(IPC_PRIVATE, sizeof(int) * shm_cfg->SO_PORTI * shm_cfg->SO_MERCI, 0600)) < 0,
-                       "[MASTER] Error while creating goods_tracking shared memory");
+                       "[MASTER] Error while creating goods_tracking shared memory")
     CHECK_ERROR_MASTER((shm_goods = shmat(shm_cfg->shm_id_goods, NULL, 0)) == (void *) -1,
                        "[MASTER] Error while trying to attach to goods_tracking shared memory")
     memset(shm_goods, 0, sizeof(int) * shm_cfg->SO_PORTI * shm_cfg->SO_MERCI);
@@ -123,9 +123,9 @@ int main(int argc, char **argv) {
     CHECK_ERROR_MASTER((shm_cfg->mq_id_ports_handshake = msgget(IPC_PRIVATE, 0600)) < 0,
                 "[MASTER] Error while creating ports_handshake message queue")
     CHECK_ERROR_MASTER((shm_cfg->mq_id_ships_handshake = msgget(IPC_PRIVATE, 0600)) < 0,
-                       "[MASTER] Error while creating ships_handshake message queue");
+                       "[MASTER] Error while creating ships_handshake message queue")
     CHECK_ERROR_MASTER((shm_cfg->mq_id_ships_goods = msgget(IPC_PRIVATE, 0600)) < 0,
-                       "[MASTER] Error while creating ships_goods message queue");
+                       "[MASTER] Error while creating ships_goods message queue")
 
     /* create the semaphore for process generation control and the dump status */
     CHECK_ERROR_MASTER((shm_cfg->sem_id_gen_precedence = semget(IPC_PRIVATE, 1, 0600)) < 0,
@@ -247,6 +247,7 @@ void initialize_so_vars(char* path_cfg_file) {
             break;
         }
 
+        /* TODO: no field width limits can crash with huge input */
         if(sscanf(buffer, "#%s", buffer) == 1 || buffer[0] == '\n') {
             continue;
         }
@@ -287,7 +288,7 @@ void initialize_so_vars(char* path_cfg_file) {
             check |= 1 << 16;
         }
     }
-    CHECK_ERROR_MASTER(fclose(fp), "[MASTER] Error while closing the fp");
+    CHECK_ERROR_MASTER(fclose(fp), "[MASTER] Error while closing the fp")
 
     shm_cfg->CURRENT_DAY = 0;
 

@@ -3,7 +3,6 @@
 #include "../headers/common_ipcs.h"
 #include "../headers/linked_list.h"
 #include <math.h>
-#include <float.h>
 
 /*se una nave non ha banchine e code di attracco libere allora viene gettata in mare*/
 /*nave deve ricordarsi l'ultimo porto di partenza per evitare che ci ritorni quando viene messa in mare */
@@ -65,9 +64,9 @@ int main(int argc, char** argv) {
     CHECK_ERROR_CHILD((shm_ports_coords = shmat(shm_cfg->shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1,
                       "[NAVE] Error while trying to attach to ports coordinates shared memory")
     CHECK_ERROR_CHILD((shm_goods = shmat(shm_cfg->shm_id_goods, NULL, 0)) == (void*) -1,
-                      "[NAVE] Error while trying to attach to goods shared memory");
+                      "[NAVE] Error while trying to attach to goods shared memory")
     CHECK_ERROR_CHILD((shm_pid_array = shmat(shm_cfg->shm_id_pid_array, NULL, 0)) == (void*) -1,
-                      "[NAVE] Error while trying to attach to pid_array shared memory");
+                      "[NAVE] Error while trying to attach to pid_array shared memory")
     CHECK_ERROR_CHILD((shm_goods_template = shmat(shm_cfg->shm_id_goods_template, NULL, SHM_RDONLY)) == (void*) -1,
                       "[NAVE] Error while trying to attach to goods_template shared memory")
     CHECK_ERROR_CHILD((shm_dump_ships = shmat(shm_cfg->shm_id_dump_ships, NULL, 0)) == (void*) -1,
@@ -231,7 +230,7 @@ int get_nearest_port(void) {
         i = (int) random() % shm_cfg->SO_PORTI;
     } while (i == id_actual_port);
 
-    /* Return a random port, no one is good... *
+    /* Return a random port, no one is good... */
     /* TODO: possibilitò di tornare al porto di partenza :C */
     return i;
 }
