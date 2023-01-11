@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
 
     if(argc != 2) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
-        kill(getppid(), SIGINT);
+        CHECK_ERROR_CHILD(kill(getppid(), SIGINT) && (errno != ESRCH), "[METEO] Error while trying kill")
     }
 
     srandom(getpid());

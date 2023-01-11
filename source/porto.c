@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 
     if(argc != 3) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
-        kill(getppid(), SIGINT);
+        CHECK_ERROR_CHILD(kill(getppid(), SIGINT) && (errno != ESRCH), "[PORTO] Error while trying kill")
     }
 
     shm_id_config = string_to_int(argv[1]);
