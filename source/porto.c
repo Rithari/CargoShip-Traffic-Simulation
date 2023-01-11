@@ -1,5 +1,4 @@
 #include "../headers/utils.h"
-#include "../headers/master.h"
 #include "../headers/common_ipcs.h"
 #include "../headers/linked_list.h"
 
@@ -12,8 +11,6 @@ Funzione per caricare le proprie domande e offerte nelle rispettive MQ
 Funzione/i per la creazione di tratte()
 Funzione/i per la comunicazione con le queue()
 Banchina: gestita come una risorsa condivisa protetta da un semaforo (n_docks)*/
-
-/*L'handler riceve il segnale di creazione delle merci e invoca la funzione designata --> "start_of_goods_generation"*/
 
 typedef struct {
     int how_many;
@@ -59,9 +56,9 @@ int main(int argc, char *argv[]) {
     CHECK_ERROR_CHILD((shm_cfg = shmat(shm_id_config, NULL, SHM_RDONLY)) == (void*) -1,
                       "[PORTO] Error while trying to attach to configuration shared memory")
     CHECK_ERROR_CHILD((shm_pid_array = shmat(shm_cfg->shm_id_pid_array, NULL, 0)) == (void*) -1,
-                      "[PORTO] Error while trying to attach to pid_array shared memory");
+                      "[PORTO] Error while trying to attach to pid_array shared memory")
     CHECK_ERROR_CHILD((shm_goods = shmat(shm_cfg->shm_id_goods, NULL, 0)) == (void*) -1,
-                      "[PORTO] Error while trying to attach to goods shared memory");
+                      "[PORTO] Error while trying to attach to goods shared memory")
     CHECK_ERROR_CHILD((shm_ports_coords = shmat(shm_cfg->shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1,
                       "[PORTO] Error while trying to attach to ports coordinates shared memory")
     CHECK_ERROR_CHILD((shm_goods_template = shmat(shm_cfg->shm_id_goods_template, NULL, SHM_RDONLY)) == (void*) -1,
@@ -115,7 +112,6 @@ int main(int argc, char *argv[]) {
             r = generate_route();
             msg.how_many = r->how_many;
             msg.response_pid = r->port_id;
-
             ll_print(r->goods_to_send);
             printf("SIUM1\n");
             while (msgsnd(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg) - sizeof(long), 0)) {

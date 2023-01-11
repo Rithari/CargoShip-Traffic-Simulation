@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     int i;
     double rndx;
     double rndy;
-    double time_to_sleep;
+    double time_to_sleep = 0;
 
     struct sigaction sa;
     struct sembuf sops;
@@ -62,9 +62,9 @@ int main(int argc, char** argv) {
     CHECK_ERROR_CHILD((shm_ports_coords = shmat(shm_cfg->shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1,
                       "[NAVE] Error while trying to attach to ports coordinates shared memory")
     CHECK_ERROR_CHILD((shm_goods = shmat(shm_cfg->shm_id_goods, NULL, 0)) == (void*) -1,
-                      "[NAVE] Error while trying to attach to goods shared memory");
+                      "[NAVE] Error while trying to attach to goods shared memory")
     CHECK_ERROR_CHILD((shm_pid_array = shmat(shm_cfg->shm_id_pid_array, NULL, 0)) == (void*) -1,
-                      "[NAVE] Error while trying to attach to pid_array shared memory");
+                      "[NAVE] Error while trying to attach to pid_array shared memory")
     CHECK_ERROR_CHILD((shm_goods_template = shmat(shm_cfg->shm_id_goods_template, NULL, SHM_RDONLY)) == (void*) -1,
                       "[NAVE] Error while trying to attach to goods_template shared memory")
     CHECK_ERROR_CHILD((shm_dump_ships = shmat(shm_cfg->shm_id_dump_ships, NULL, 0)) == (void*) -1,
