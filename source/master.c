@@ -50,6 +50,9 @@ int main(int argc, char **argv) {
 
     CHECK_ERROR_MASTER(atexit(clear_all), "[MASTER] Error while trying to register clear_all function to atexit")
 
+    /* Check if the file path in argv1 exists */
+    CHECK_ERROR_MASTER(access(argv[1], F_OK), "[MASTER] Error while trying to access the configuration file")
+
     srandom(getpid());
 
     /* create and attach config shared memory segment */
