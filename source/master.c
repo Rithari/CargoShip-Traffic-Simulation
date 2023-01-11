@@ -164,7 +164,8 @@ int main(int argc, char **argv) {
                     "[MASTER] Error while setting the semaphore for ports dump control")
     }
 
-    output = fopen("output.txt", "w");
+    CHECK_ERROR_MASTER(!(output = fopen("output.txt", "w")),
+                       "[MASTER] Error while trying to create/rewrite output.txt")
 
     /* Initialize generation semaphore at the value of SO_PORTI */
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL, shm_cfg->SO_PORTI),
@@ -248,7 +249,7 @@ void initialize_so_vars(char* path_cfg_file) {
             break;
         }
 
-        if(sscanf(buffer, "#%s", buffer) == 1 || buffer[0] == '\n') {
+        if(sscanf(buffer, "#%s", buffer) == 1) {
             continue;
         }
 
@@ -290,8 +291,6 @@ void initialize_so_vars(char* path_cfg_file) {
     }
     CHECK_ERROR_MASTER(fclose(fp), "[MASTER] Error while closing the fp")
 
-    shm_cfg->CURRENT_DAY = 0;
-
     errno = EINVAL;
     CHECK_ERROR_MASTER(check != 0x1FFFF, "[MASTER] Missing config")
     CHECK_ERROR_MASTER(shm_cfg->SO_NAVI < 1, "[MASTER] SO_NAVI is less than 1")
@@ -315,6 +314,8 @@ void initialize_so_vars(char* path_cfg_file) {
     CHECK_ERROR_MASTER(shm_cfg->SO_STORM_DURATION < 0, "[MASTER] SO_STORM_DURATION is less than 0")
     CHECK_ERROR_MASTER(shm_cfg->SO_SWELL_DURATION < 0, "[MASTER] SO_SWELL_DURATION is less than 0")
     CHECK_ERROR_MASTER(shm_cfg->SO_MAELSTORM < 0, "[MASTER] SO_MAELSTORM is less than 0")
+
+    shm_cfg->CURRENT_DAY = 0;
     errno = 0;
 }
 
@@ -434,11 +435,12 @@ void create_weather(void) {
 void print_dump(void) {
     int i;
     fprintf(output, "###### DUMP:\n");
-    /*printf("---MERCI---\n");
+    printf("---MERCI---\n");
     for(i = 0; i < shm_cfg->SO_MERCI; i++) {
-        printf("ID: [%d]\tSTATE: [%d]\n", shm_dump_goods[i].id, shm_dump_goods[i].state);
+        printf("ID: [%d]\tSTATE: [%d/%d/%d/%d/%d]\n", shm_dump_goods[i].id, shm_dump_goods[i].good_delivered,
+               shm_dump_goods[i].good_in_port, shm_dump_goods[i].good_on_ship, shm_dump_goods[i].good_expired_in_port, shm_dump_goods[i].good_expired_on_ship);
         printf("------\n");
-    }*/
+    }
     fprintf(output,"---------------------------------PORTI---------------------------------\n");
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
         fprintf(output,"ID: [%d]\tON_SWELL: [%d]\n", i, shm_dump_ports[i].on_swell);

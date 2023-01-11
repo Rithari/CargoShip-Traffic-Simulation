@@ -16,7 +16,7 @@ typedef struct {
     int how_many;
     struct node *goods_to_send;
     int port_id;
-} route ;
+} route;
 
 void porto_sig_handler(int);
 void generate_goods(void);
@@ -104,7 +104,8 @@ int main(int argc, char *argv[]) {
         while (head && head->element->lifespan < shm_cfg->CURRENT_DAY) {
             /* update dumps */
             printf("[%d] Port lost good :C\n", getpid());
-            __sync_fetch_and_sub(&shm_goods[id * shm_cfg->SO_MERCI + head->element->id], head->element->quantity);
+            __sync_fetch_and_sub(&shm_goods[id * shm_cfg->SO_MERCI + head->element->id], head->element->quantity * shm_goods_template[head->element->id].tons);
+            __sync_fetch_and_sub(&shm_dump_ports[id].good_available, head->element->quantity * shm_goods_template[head->element->id].tons);
             head = ll_pop(head);
         }
 
@@ -118,9 +119,7 @@ int main(int argc, char *argv[]) {
                 CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message")
             }
 
-
             while (r->goods_to_send) {
-                printf("SIUM 3");
                 msg_g.mtype = msg.mtype;
                 msg_g.to_add.quantity = r->goods_to_send->element->quantity;
                 msg_g.to_add.id = r->goods_to_send->element->id;
@@ -129,6 +128,8 @@ int main(int argc, char *argv[]) {
                 while (msgsnd(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), 0)) {
                     CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message");
                 }
+                __sync_fetch_and_add(&shm_dump_ports[id].good_send, msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons);
+                __sync_fetch_and_sub(&shm_dump_ports[id].good_available, msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons);
                 r->goods_to_send = ll_pop(r->goods_to_send);
             }
             ll_free(r->goods_to_send);
@@ -148,18 +149,9 @@ void generate_goods(void) {
     int i;
     int selected_quantity;
     int tons_per_port = shm_cfg->SO_FILL / shm_cfg->SO_DAYS / shm_cfg->GENERATING_PORTS + shm_dump_ports[id].ton_in_excess;
-    int lowest_ton = INT_MAX;
     goods to_add;
-/*
-    for (i = 0; i < shm_cfg->SO_MERCI; i++) {
-        if (shm_goods_template[i].tons < lowest_ton) {
-            lowest_ton = shm_goods_template[i].tons;
-        }
-    }
-*/
-    lowest_ton = shm_goods_template[0].tons;
 
-    for(i = (int) random() % shm_cfg->SO_MERCI; tons_per_port > lowest_ton; i = (i + 1) % shm_cfg->SO_MERCI) {
+    for(i = (int) random() % shm_cfg->SO_MERCI; tons_per_port > shm_goods_template[0].tons; i = (i + 1) % shm_cfg->SO_MERCI) {
         int max_quantity = tons_per_port / shm_goods_template[i].tons;
 
         if (max_quantity) {
@@ -171,6 +163,8 @@ void generate_goods(void) {
                     to_add.lifespan = shm_cfg->CURRENT_DAY + shm_goods_template[i].lifespan;
                     to_add.id = i;
                     to_add.quantity = selected_quantity;
+                    __sync_fetch_and_add(&shm_dump_goods[i].good_in_port, selected_quantity * shm_goods_template[i].tons);
+                    __sync_fetch_and_add(&shm_dump_ports[id].good_available, selected_quantity * shm_goods_template[i].tons);
                     head = ll_add(head, &to_add);
                 } else {
                     shm_goods[id * shm_cfg->SO_MERCI + i] = -selected_quantity;
@@ -180,6 +174,8 @@ void generate_goods(void) {
                 to_add.lifespan = shm_cfg->CURRENT_DAY + shm_goods_template[i].lifespan;
                 to_add.id = i;
                 to_add.quantity = selected_quantity;
+                __sync_fetch_and_add(&shm_dump_goods[i].good_in_port, selected_quantity * shm_goods_template[i].tons);
+                __sync_fetch_and_add(&shm_dump_ports[id].good_available, selected_quantity * shm_goods_template[i].tons);
                 head = ll_add(head, &to_add);
             } else {
                 shm_goods[id * shm_cfg->SO_MERCI + i] -= selected_quantity;
@@ -241,23 +237,6 @@ route* generate_route(void) {
 
         for (i = 0, how_many = 0; i < shm_cfg->SO_MERCI; i++) {
             if (!goods_to_get[i]) continue;
-
-            /*printf("[%d] Merch id [%d] requested: %d, tons exchanged: %d\n", getpid(), i,
-                       goods_to_get[i], (goods_to_get[i] * shm_goods_template[i].tons));
-                /* shm_goods[id + i] -= goods_to_get[i]; */
-            /*printf("[%d] Pre-update: quantity offer [%d], quantity request [%d]\n", getpid(), shm_goods[id * shm_cfg->SO_MERCI + i],
-                   shm_goods[best_route * shm_cfg->SO_MERCI + i]);*/
-            __sync_fetch_and_sub(&shm_goods[id * shm_cfg->SO_MERCI + i], goods_to_get[i]);
-            shm_dump_ports[id].good_send += goods_to_get[i];
-            if (shm_goods[id * shm_cfg->SO_MERCI + i] < 0)
-                printf("\033[31;1m[%d] Qualocsa è andato storto con la merce offerta: %d\033[;0m\n", getpid(), shm_goods[id * shm_cfg->SO_MERCI + i]);
-            __sync_fetch_and_add(&shm_goods[best_route * shm_cfg->SO_MERCI + i], goods_to_get[i]);
-            shm_dump_ports[best_route].good_received += goods_to_get[i];
-            /*printf("[%d] Post-update: quantity offer [%d], quantity request [%d]\n", getpid(), shm_goods[id * shm_cfg->SO_MERCI + i],
-                   shm_goods[best_route * shm_cfg->SO_MERCI + i]);
-            /* shm_goods[best_route + i] += goods_to_get[i]; */
-            if (shm_goods[best_route * shm_cfg->SO_MERCI + i] > 0)
-                printf("\033[31;1m[%d] Qualocsa è andato storto con la merce richiesta: %d\033[;0m\n", getpid(), shm_goods[best_route * shm_cfg->SO_MERCI + i]);
 
             cur = head;
 
