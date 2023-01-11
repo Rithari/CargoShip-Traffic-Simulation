@@ -55,7 +55,11 @@ typedef struct {
 
 typedef struct {
     int     id;
-    int     state;
+    int     good_in_port;
+    int     good_on_ship;
+    int     good_delivered;
+    int     good_expired_in_port;
+    int     good_expired_on_ship;
 } dump_goods;
 
 typedef struct {

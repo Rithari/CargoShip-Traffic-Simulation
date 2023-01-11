@@ -59,6 +59,8 @@ int main(int argc, char **argv) {
     }
     CHECK_ERROR_MASTER((shm_cfg = shmat(shm_id_config, NULL, 0)) == (void *) -1,
                 "[MASTER] Error while trying to attach to configuration shared memory")
+    CHECK_ERROR_MASTER(shmctl(shm_id_config, IPC_RMID, NULL),
+                       "[MASTER] Error while removing config shared memory in clear_all")
     initialize_so_vars(argv[1]);
 
     /* create and attach goods_template shared memory segment */
@@ -67,6 +69,8 @@ int main(int argc, char **argv) {
                 "[MASTER] Error while creating shared memory for goods_template generation")
     CHECK_ERROR_MASTER((shm_goods_template = shmat(shm_cfg->shm_id_goods_template, NULL, 0)) == (void *) -1,
                 "[MASTER] Error while trying to attach to goods template shared memory")
+    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_goods_template, IPC_RMID, NULL),
+                       "[MASTER] Error while removing goods_template template shared memory in clear_all")
 
     /* initialize goods_template array */
     for (i = 0; i < shm_cfg->SO_MERCI; i++) {
@@ -83,6 +87,9 @@ int main(int argc, char **argv) {
     CHECK_ERROR_MASTER((shm_ports_coords = shmat(shm_cfg->shm_id_ports_coords, NULL, 0)) == (void *) -1,
                 "[MASTER] Error while trying to attach to ports coordinates shared memory")
 
+    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_ports_coords, IPC_RMID, NULL),
+                       "[MASTER] Error while removing ports coordinates shared memory in clear_all")
+
     initialize_ports_coords();
 
     /* create and attach pid shm for the children */
@@ -91,6 +98,8 @@ int main(int argc, char **argv) {
                 "[MASTER] Error while creating pid array shared memory")
     CHECK_ERROR_MASTER((shm_pid_array = shmat(shm_cfg->shm_id_pid_array, NULL, 0)) == (void *) -1,
                 "[MASTER] Error while trying to attach to pid array shared memory")
+    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_pid_array, IPC_RMID, NULL),
+                       "[MASTER] Error while removing pid array shared memory in clear_all")
 
     /* create and attach pid shm for the goods tracking offers */
     CHECK_ERROR_MASTER((shm_cfg->shm_id_goods =
@@ -98,6 +107,9 @@ int main(int argc, char **argv) {
                        "[MASTER] Error while creating goods_tracking shared memory")
     CHECK_ERROR_MASTER((shm_goods = shmat(shm_cfg->shm_id_goods, NULL, 0)) == (void *) -1,
                        "[MASTER] Error while trying to attach to goods_tracking shared memory")
+    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_goods, IPC_RMID, NULL),
+                       "[MASTER] Error while removing pid array shared memory in clear_all")
+
     memset(shm_goods, 0, sizeof(int) * shm_cfg->SO_PORTI * shm_cfg->SO_MERCI);
 
     /* create and attach pid shm for dump report */
@@ -105,14 +117,20 @@ int main(int argc, char **argv) {
                 "[MASTER] Error while creating shared memory for log ports data")
     CHECK_ERROR_MASTER((shm_dump_ports = shmat(shm_cfg->shm_id_dump_ports, NULL, 0)) == (void*) -1,
                 "[MASTER] Error while trying to attach to log ports data shared memory")
+    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_dump_ports, IPC_RMID, NULL),
+                       "[MASTER] Error while removing dump simulation shared memory in clear_all")
     CHECK_ERROR_MASTER((shm_cfg->shm_id_dump_ships = shmget(IPC_PRIVATE, sizeof(dump_ships), 0600)) < 0,
                 "[MASTER] Error while creating shared memory for log ships data")
     CHECK_ERROR_MASTER((shm_dump_ships = shmat(shm_cfg->shm_id_dump_ships, NULL, 0)) == (void*) -1,
                 "[MASTER] Error while trying to attach to log ships data shared memory")
+    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_dump_ships, IPC_RMID, NULL),
+                       "[MASTER] Error while removing dump simulation shared memory in clear_all")
     CHECK_ERROR_MASTER((shm_cfg->shm_id_dump_goods = shmget(IPC_PRIVATE, sizeof(dump_goods) * shm_cfg->SO_MERCI, 0600)) < 0,
                 "[MASTER] Error while creating shared memory for log goods_template data")
     CHECK_ERROR_MASTER((shm_dump_goods = shmat(shm_cfg->shm_id_dump_goods, NULL, 0)) == (void*) -1,
                 "[MASTER] Error while trying to attach to log goods_template data shared memory")
+    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_dump_goods, IPC_RMID, NULL),
+                       "[MASTER] Error while removing dump simulation shared memory in clear_all")
 
     /* deletes all the contents of shared memory arrays */
     memset(shm_dump_ports, 0, sizeof(dump_ports) * shm_cfg->SO_PORTI);
@@ -204,22 +222,6 @@ int main(int argc, char **argv) {
 }
 
 void clear_all(void) {
-    CHECK_ERROR_MASTER(shmctl(shm_id_config, IPC_RMID, NULL),
-                "[MASTER] Error while removing config shared memory in clear_all")
-    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_goods_template, IPC_RMID, NULL),
-                "[MASTER] Error while removing goods_template template shared memory in clear_all")
-    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_ports_coords, IPC_RMID, NULL),
-                "[MASTER] Error while removing ports coordinates shared memory in clear_all")
-    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_pid_array, IPC_RMID, NULL),
-                "[MASTER] Error while removing pid array shared memory in clear_all")
-    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_goods, IPC_RMID, NULL),
-                "[MASTER] Error while removing pid array shared memory in clear_all")
-    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_dump_ports, IPC_RMID, NULL),
-                "[MASTER] Error while removing dump simulation shared memory in clear_all")
-    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_dump_ships, IPC_RMID, NULL),
-                "[MASTER] Error while removing dump simulation shared memory in clear_all")
-    CHECK_ERROR_MASTER(shmctl(shm_cfg->shm_id_dump_goods, IPC_RMID, NULL),
-                "[MASTER] Error while removing dump simulation shared memory in clear_all")
     CHECK_ERROR_MASTER(msgctl(shm_cfg->mq_id_ports_handshake, IPC_RMID, NULL),
                 "[MASTER] Error while removing mq_id_ports_handshake message queue in clear_all")
     CHECK_ERROR_MASTER(msgctl(shm_cfg->mq_id_ships_handshake, IPC_RMID, NULL),
@@ -238,9 +240,8 @@ void initialize_so_vars(char* path_cfg_file) {
     FILE *fp;
     char buffer[BUFFER_SIZE];
     int check = 0;
-    fp = fopen(path_cfg_file, "r");
 
-    CHECK_ERROR_MASTER(!fp, "Error during: initialize_so_vars->fopen()")
+    CHECK_ERROR_MASTER(!(fp = fopen(path_cfg_file, "r")), "Error during: initialize_so_vars->fopen()")
 
     while (!feof(fp)) {
         if(fgets(buffer, BUFFER_SIZE, fp) == NULL) {

@@ -146,11 +146,13 @@ int main(int argc, char** argv) {
             if (head->element->lifespan >= shm_cfg->CURRENT_DAY) {
                 nanosleep_function((double) head->element->quantity * shm_goods_template[head->element->id].tons * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
                                    "[NAVE] Generic error while unloading the ship");
-                /* update dumps */
+                __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_delivered, head->element->quantity);
                 printf("[%d] Ho scaricato: [%d/%d/%d]\n", getpid(), head->element->id, head->element->quantity, head->element->quantity);
             } else {
                 /* good lost, update dumps */
+                __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_on_ship, head->element->quantity);
             }
+            __sync_fetch_and_sub(&shm_dump_goods[head->element->id].good_on_ship, head->element->quantity);
             head = ll_pop(head);
         }
 
@@ -186,7 +188,7 @@ int main(int argc, char** argv) {
             nanosleep_function(time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
                                "[NAVE] Generic error while loading the ship");
 
-            /*hm_dump_goods[selected_good].state++; */
+            /*shm_dump_goods[selected_good].state++; */
 
             printf("[%d] Load operation!\n", getpid());
             /* destinazione delle merci se esiste una tratta*/
@@ -259,6 +261,7 @@ void dump_ship_data(void) {
 
 void nave_sig_handler(int signum) {
     int old_errno = errno;
+    struct node *cur;
 
     switch (signum) {
         case SIGCONT:
@@ -273,6 +276,9 @@ void nave_sig_handler(int signum) {
             ll_free(head);
             exit(EXIT_SUCCESS);
         case SIGALRM:
+
+            /*while ()*/
+
             dump_ship_data();
             while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0)) {
                 CHECK_ERROR_CHILD(errno != EINTR,
@@ -294,11 +300,18 @@ void nave_sig_handler(int signum) {
             break;
         case SIGUSR2:
             /* malestorm killed the ship :C*/
-            /* shm_dump_ships->sunk++; */
-            /* TODO: rimuovere tutti i __sync_fetch_and_xxx */
             __sync_fetch_and_add(&shm_dump_ships->sunk, 1);
-            ll_free(head);
             /* nave affondata, aggiornare i dump della merce persa */
+
+            if (head) {
+                cur = head;
+                while (cur) {
+                    /*__sync_fetch_and_add(&shm_dump_goods[cur->element->id].);*/
+                    cur = cur->next;
+               }
+
+               ll_free(head);
+           }
             /* kill(abs(shm_pid_array[id_actual_port]), SIGUSR2); */
             if (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, IPC_NOWAIT)) {
                 CHECK_ERROR_CHILD(errno != EINTR && errno != EAGAIN,

@@ -118,10 +118,10 @@ int main(int argc, char *argv[]) {
                 CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message")
             }
 
-            msg_g.mtype = msg.mtype;
 
             while (r->goods_to_send) {
                 printf("SIUM 3");
+                msg_g.mtype = msg.mtype;
                 msg_g.to_add.quantity = r->goods_to_send->element->quantity;
                 msg_g.to_add.id = r->goods_to_send->element->id;
                 msg_g.to_add.lifespan = r->goods_to_send->element->lifespan;
@@ -207,7 +207,7 @@ roba* generate_route(void) {
     for(k = 0, i = (int) random() % shm_cfg->SO_PORTI; k < shm_cfg->SO_PORTI && best_tons_available > shm_goods_template[0].tons; k++, i = (i + 1) % shm_cfg->SO_PORTI) {
         if(id == i) continue;
 
-        for (j = 0; j < shm_cfg->SO_MERCI && shm_goods[i * shm_cfg->SO_MERCI + j] > 0; j++);
+        for (j = 0; j < shm_cfg->SO_MERCI && shm_goods[i * shm_cfg->SO_MERCI + j] >= 0; j++);
 
         /* se il porto non ha richieste non ha senso iterare */
         if (j == shm_cfg->SO_MERCI) continue;
@@ -215,7 +215,7 @@ roba* generate_route(void) {
 
         memset(tmp_goods_to_get, 0, sizeof(int) * shm_cfg->SO_MERCI);
 
-        for(j = shm_cfg->SO_MERCI - 1, ship_tons_available = shm_cfg->SO_CAPACITY; j >= 0 && ship_tons_available > offset; j--) {
+        for(j = shm_cfg->SO_MERCI - 1, ship_tons_available = shm_cfg->SO_CAPACITY; j >= 0 && ship_tons_available > shm_goods_template[offset].tons; j--) {
             if(shm_goods[id * shm_cfg->SO_MERCI + j] > 0 && shm_goods[i * shm_cfg->SO_MERCI + j] < 0 && ship_tons_available / shm_goods_template[j].tons) {
                 /* quantità totale che posso caricare in nave */
                 min_val = min(min(shm_goods[id * shm_cfg->SO_MERCI + j], -shm_goods[i * shm_cfg->SO_MERCI + j]),
@@ -241,56 +241,56 @@ roba* generate_route(void) {
         int how_many;
 
         for (i = 0, how_many = 0; i < shm_cfg->SO_MERCI; i++) {
-            if (goods_to_get[i]) {
-                /*printf("[%d] Merch id [%d] requested: %d, tons exchanged: %d\n", getpid(), i,
+            if (!goods_to_get[i]) continue;
+
+            /*printf("[%d] Merch id [%d] requested: %d, tons exchanged: %d\n", getpid(), i,
                        goods_to_get[i], (goods_to_get[i] * shm_goods_template[i].tons));
                 /* shm_goods[id + i] -= goods_to_get[i]; */
-                /*printf("[%d] Pre-update: quantity offer [%d], quantity request [%d]\n", getpid(), shm_goods[id * shm_cfg->SO_MERCI + i],
-                       shm_goods[best_route * shm_cfg->SO_MERCI + i]);*/
-                __sync_fetch_and_sub(&shm_goods[id * shm_cfg->SO_MERCI + i], goods_to_get[i]);
-                shm_dump_ports[id].good_send += goods_to_get[i];
-                if (shm_goods[id * shm_cfg->SO_MERCI + i] < 0)
-                    printf("\033[31;1m[%d] Qualocsa è andato storto con la merce offerta: %d\033[;0m\n", getpid(), shm_goods[id * shm_cfg->SO_MERCI + i]);
-                __sync_fetch_and_add(&shm_goods[best_route * shm_cfg->SO_MERCI + i], goods_to_get[i]);
-                shm_dump_ports[best_route].good_received += goods_to_get[i];
-                /*printf("[%d] Post-update: quantity offer [%d], quantity request [%d]\n", getpid(), shm_goods[id * shm_cfg->SO_MERCI + i],
-                       shm_goods[best_route * shm_cfg->SO_MERCI + i]);
-                /* shm_goods[best_route + i] += goods_to_get[i]; */
-                if (shm_goods[best_route * shm_cfg->SO_MERCI + i] > 0)
-                    printf("\033[31;1m[%d] Qualocsa è andato storto con la merce richiesta: %d\033[;0m\n", getpid(), shm_goods[best_route * shm_cfg->SO_MERCI + i]);
+            /*printf("[%d] Pre-update: quantity offer [%d], quantity request [%d]\n", getpid(), shm_goods[id * shm_cfg->SO_MERCI + i],
+                   shm_goods[best_route * shm_cfg->SO_MERCI + i]);*/
+            __sync_fetch_and_sub(&shm_goods[id * shm_cfg->SO_MERCI + i], goods_to_get[i]);
+            shm_dump_ports[id].good_send += goods_to_get[i];
+            if (shm_goods[id * shm_cfg->SO_MERCI + i] < 0)
+                printf("\033[31;1m[%d] Qualocsa è andato storto con la merce offerta: %d\033[;0m\n", getpid(), shm_goods[id * shm_cfg->SO_MERCI + i]);
+            __sync_fetch_and_add(&shm_goods[best_route * shm_cfg->SO_MERCI + i], goods_to_get[i]);
+            shm_dump_ports[best_route].good_received += goods_to_get[i];
+            /*printf("[%d] Post-update: quantity offer [%d], quantity request [%d]\n", getpid(), shm_goods[id * shm_cfg->SO_MERCI + i],
+                   shm_goods[best_route * shm_cfg->SO_MERCI + i]);
+            /* shm_goods[best_route + i] += goods_to_get[i]; */
+            if (shm_goods[best_route * shm_cfg->SO_MERCI + i] > 0)
+                printf("\033[31;1m[%d] Qualocsa è andato storto con la merce richiesta: %d\033[;0m\n", getpid(), shm_goods[best_route * shm_cfg->SO_MERCI + i]);
 
-                cur = head;
+            cur = head;
 
-                while (goods_to_get[i] > 0 && cur) {
-                    /* qui si può controllare anche la fattibilità dell'utilizzare la merce con il calcolo del tempo... */
-                    if (cur->element->id == i) {
-                        /*printf("PRE: ");
-                        ll_print(head); */
-                        to_add.lifespan = cur->element->lifespan;
-                        to_add.id = i;
-                        if (cur->element->quantity > goods_to_get[i]) {
-                            /*printf("SIUM 3\n"); */
-                            to_add.quantity = goods_to_get[i];
-                            cur->element->quantity -= goods_to_get[i];
-                            goods_to_get[i] = 0;
-                            /*printf("SIUM 4\n"); */
-                        } else {
-                            /*printf("SIUM 1\n");*/
-                            to_add.quantity = cur->element->quantity;
-                            head = ll_remove_by_id(head, i);
-                            goods_to_get[i] -= to_add.quantity;
-                            cur = head;
-                            /*printf("SIUM 2\n");*/
-                        }
-                        /*printf("POST: ");
-                        ll_print(head);*/
-                        sublist = ll_add(sublist, &to_add);
-                        /*printf("SUBLIST: ");
-                        ll_print(sublist); */
-                        how_many++;
-                        /*printf("How many: %d\n", how_many);*/
-                    } else cur = cur->next;
-                }
+            while (goods_to_get[i] > 0 && cur) {
+                /* qui si può controllare anche la fattibilità dell'utilizzare la merce con il calcolo del tempo... */
+                if (cur->element->id == i) {
+                    /*printf("PRE: ");
+                    ll_print(head); */
+                    to_add.lifespan = cur->element->lifespan;
+                    to_add.id = i;
+                    if (cur->element->quantity > goods_to_get[i]) {
+                        /*printf("SIUM 3\n"); */
+                        to_add.quantity = goods_to_get[i];
+                        cur->element->quantity -= goods_to_get[i];
+                        goods_to_get[i] = 0;
+                        /*printf("SIUM 4\n"); */
+                    } else {
+                        /*printf("SIUM 1\n");*/
+                        to_add.quantity = cur->element->quantity;
+                        head = ll_remove_by_id(head, i);
+                        goods_to_get[i] -= to_add.quantity;
+                        cur = head;
+                        /*printf("SIUM 2\n");*/
+                    }
+                    /*printf("POST: ");
+                    ll_print(head);*/
+                    sublist = ll_add(sublist, &to_add);
+                    /*printf("SUBLIST: ");
+                    ll_print(sublist); */
+                    how_many++;
+                    /*printf("How many: %d\n", how_many);*/
+                } else cur = cur->next;
             }
         }
 
