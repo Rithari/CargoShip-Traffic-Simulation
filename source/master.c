@@ -197,7 +197,7 @@ int main(int argc, char **argv) {
     sigaction(SIGUSR1, &sa, NULL);
 
     printf("INIZIO SIMULAZIONE!\n");
-    killpg(0, SIGCONT);
+    CHECK_ERROR_MASTER(killpg(0, SIGCONT) && (errno != ESRCH), "[MASTER] Error while trying killpg")
 
     /* day 1 alarm */
     alarm(shm_cfg->SO_DAY_LENGTH);
@@ -475,9 +475,9 @@ void master_sig_handler(int signum) {
         case SIGINT:
             printf("Error has occurred... killing all processes.\n");
             for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
-                kill(abs(shm_pid_array[i]), SIGINT);
+                CHECK_ERROR_MASTER(kill(abs(shm_pid_array[i]), SIGINT) && (errno != ESRCH), "[MASTER] Error fail kill in the shm_pid_array")
             }
-            kill(pid_weather, SIGINT);
+            CHECK_ERROR_MASTER(kill(pid_weather, SIGINT) && (errno != ESRCH), "[MASTER] Error fail kill meteo")
             exit(EXIT_FAILURE);
         /* Still needs to deal with statistics first */
         case SIGALRM:
@@ -485,9 +485,9 @@ void master_sig_handler(int signum) {
 
             if(shm_cfg->CURRENT_DAY == shm_cfg->SO_DAYS) {
                 for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
-                    kill(abs(shm_pid_array[i]), SIGTERM);
+                    CHECK_ERROR_MASTER(kill(abs(shm_pid_array[i]), SIGTERM) && (errno != ESRCH), "[MASTER] Error while sending sigterm to children")
                 }
-                kill(pid_weather, SIGTERM);
+                CHECK_ERROR_MASTER(kill(pid_weather, SIGTERM) && (errno != ESRCH), "[MASTER] Error while sending sigterm to meteo")
                 return;
             }
 
@@ -500,15 +500,15 @@ void master_sig_handler(int signum) {
 
             if (!check_port_request || !check_port_offers) {
                 for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
-                    kill(abs(shm_pid_array[i]), SIGTERM);
+                    CHECK_ERROR_MASTER(kill(abs(shm_pid_array[i]), SIGTERM) && (errno != ESRCH), "[MASTER] Error while sending sigterm to children")
                 }
-                kill(pid_weather, SIGTERM);
+                CHECK_ERROR_MASTER(kill(pid_weather, SIGTERM) && (errno != ESRCH), "[MASTER] Error while sending sigterm to meteo")
                 if(!check_port_offers) printf("NEI PORTI NON SONO PRESENTI PIU' OFFERTE\n");
                 else printf("NEI PORTI NON SONO PRESENTI PIU' RICHIESTE\n");
                 return;
             }
 
-            kill(pid_weather, SIGALRM);
+            CHECK_ERROR_MASTER(kill(pid_weather, SIGALRM) && (errno != ESRCH), "[MASTER] Error while sending sigalarm to meteo")
             generate_goods();
 
             CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL,
@@ -516,7 +516,7 @@ void master_sig_handler(int signum) {
                         "[MASTER] Error while setting the semaphore for dump control in SIGALRM")
 
             for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
-                kill(abs(shm_pid_array[i]), SIGALRM);
+                CHECK_ERROR_MASTER(kill(abs(shm_pid_array[i]), SIGALRM) && (errno != ESRCH), "[MASTER] Error while sending sigalarm to children")
             }
 
             while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, 0, 0)) {
@@ -530,13 +530,13 @@ void master_sig_handler(int signum) {
             shm_dump_ships->being_loaded_unloaded = 0;
             alarm(shm_cfg->SO_DAY_LENGTH);
 
-            kill(pid_weather, SIGCONT);
+            CHECK_ERROR_MASTER(kill(pid_weather, SIGCONT) && (errno != ESRCH), "[MASTER] Error while sending sigcont to meteo")
             break;
         case SIGUSR1:
             printf("ALL SHIPS ARE DEAD :C\n");
             printf("Day [%d]/[%d].\n", shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
             for(i = 0; i < shm_cfg->SO_PORTI; i++) {
-                kill(abs(shm_pid_array[i]), SIGTERM);
+                CHECK_ERROR_MASTER(kill(abs(shm_pid_array[i]), SIGTERM) && (errno != ESRCH), "[MASTER] Error while sending sigterm to children")
             }
             print_dump();
             break;
