@@ -16,11 +16,11 @@ typedef struct {
     int how_many;
     struct node *goods_to_send;
     int port_id;
-} roba ;
+} route ;
 
 void porto_sig_handler(int);
 void generate_goods(void);
-roba* generate_route(void);
+route* generate_route(void);
 void dump_port_data(void);
 
 config  *shm_cfg;
@@ -38,7 +38,7 @@ int     id;
 int main(int argc, char *argv[]) {
     struct sigaction sa;
     msg_handshake msg;
-    roba* r;
+    route* r;
     msg_goods msg_g;
 
     srandom(getpid());
@@ -150,12 +150,14 @@ void generate_goods(void) {
     int tons_per_port = shm_cfg->SO_FILL / shm_cfg->SO_DAYS / shm_cfg->GENERATING_PORTS + shm_dump_ports[id].ton_in_excess;
     int lowest_ton = INT_MAX;
     goods to_add;
-
+/*
     for (i = 0; i < shm_cfg->SO_MERCI; i++) {
         if (shm_goods_template[i].tons < lowest_ton) {
             lowest_ton = shm_goods_template[i].tons;
         }
     }
+*/
+    lowest_ton = shm_goods_template[0].tons;
 
     for(i = (int) random() % shm_cfg->SO_MERCI; tons_per_port > lowest_ton; i = (i + 1) % shm_cfg->SO_MERCI) {
         int max_quantity = tons_per_port / shm_goods_template[i].tons;
@@ -163,35 +165,32 @@ void generate_goods(void) {
         if (max_quantity) {
             selected_quantity = (int) random() % max_quantity + 1;
 
-            if (selected_quantity) {
-                if (shm_goods[id * shm_cfg->SO_MERCI + i] == 0) {
-                    if (random() & 1) {
-                        shm_goods[id * shm_cfg->SO_MERCI + i] = selected_quantity;
-                        to_add.lifespan = shm_cfg->CURRENT_DAY + shm_goods_template[i].lifespan;
-                        to_add.id = i;
-                        to_add.quantity = selected_quantity;
-                        head = ll_add(head, &to_add);
-                    } else {
-                        shm_goods[id * shm_cfg->SO_MERCI + i] = -selected_quantity;
-                    }
-                } else if (shm_goods[id * shm_cfg->SO_MERCI + i] > 0) {
-                    shm_goods[id * shm_cfg->SO_MERCI + i] += selected_quantity;
+            if (shm_goods[id * shm_cfg->SO_MERCI + i] == 0) {
+                if (random() & 1) {
+                    shm_goods[id * shm_cfg->SO_MERCI + i] = selected_quantity;
                     to_add.lifespan = shm_cfg->CURRENT_DAY + shm_goods_template[i].lifespan;
                     to_add.id = i;
                     to_add.quantity = selected_quantity;
                     head = ll_add(head, &to_add);
                 } else {
-                    shm_goods[id * shm_cfg->SO_MERCI + i] -= selected_quantity;
+                    shm_goods[id * shm_cfg->SO_MERCI + i] = -selected_quantity;
                 }
-                /*TODO: ll item*/
-                tons_per_port -= (selected_quantity * shm_goods_template[i].tons);
+            } else if (shm_goods[id * shm_cfg->SO_MERCI + i] > 0) {
+                shm_goods[id * shm_cfg->SO_MERCI + i] += selected_quantity;
+                to_add.lifespan = shm_cfg->CURRENT_DAY + shm_goods_template[i].lifespan;
+                to_add.id = i;
+                to_add.quantity = selected_quantity;
+                head = ll_add(head, &to_add);
+            } else {
+                shm_goods[id * shm_cfg->SO_MERCI + i] -= selected_quantity;
             }
+            tons_per_port -= (selected_quantity * shm_goods_template[i].tons);
         }
     }
     shm_dump_ports[id].ton_in_excess = tons_per_port;
 }
 
-roba* generate_route(void) {
+route* generate_route(void) { 
     int i, j, k, min_val;
     int best_route = -1;
     int best_tons_available = shm_cfg->SO_CAPACITY;
@@ -202,7 +201,7 @@ roba* generate_route(void) {
     struct node *cur;
     struct node *sublist;
     goods to_add;
-    roba *r = malloc(sizeof(roba));
+    route *r = malloc(sizeof(route));
 
     for(k = 0, i = (int) random() % shm_cfg->SO_PORTI; k < shm_cfg->SO_PORTI && best_tons_available > shm_goods_template[0].tons; k++, i = (i + 1) % shm_cfg->SO_PORTI) {
         if(id == i) continue;
