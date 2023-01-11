@@ -206,7 +206,7 @@ route* generate_route(void) {
     for(k = 0, i = (int) random() % shm_cfg->SO_PORTI; k < shm_cfg->SO_PORTI && best_tons_available > shm_goods_template[0].tons; k++, i = (i + 1) % shm_cfg->SO_PORTI) {
         if(id == i) continue;
 
-        for (j = 0; j < shm_cfg->SO_MERCI && shm_goods[i * shm_cfg->SO_MERCI + j] > 0; j++);
+        for (j = 0; j < shm_cfg->SO_MERCI && shm_goods[i * shm_cfg->SO_MERCI + j] >= 0; j++);
 
         /* se il porto non ha richieste non ha senso iterare */
         if (j == shm_cfg->SO_MERCI) continue;
@@ -214,8 +214,8 @@ route* generate_route(void) {
 
         memset(tmp_goods_to_get, 0, sizeof(int) * shm_cfg->SO_MERCI);
 
-        for(j = shm_cfg->SO_MERCI - 1, ship_tons_available = shm_cfg->SO_CAPACITY; j >= 0 && ship_tons_available > offset; j--) {
-            if(shm_goods[id * shm_cfg->SO_MERCI + j] > 0 && shm_goods[i * shm_cfg->SO_MERCI + j] < 0 && ship_tons_available / shm_goods_template[j].tons) {
+        for(j = shm_cfg->SO_MERCI - 1, ship_tons_available = shm_cfg->SO_CAPACITY; j >= 0 && ship_tons_available > shm_goods_template[j].tons; j--) {
+            if(shm_goods[id * shm_cfg->SO_MERCI + j] > 0 && shm_goods[i * shm_cfg->SO_MERCI + j] < 0 && ship_tons_available / shm_goods_template[offset].tons) {
                 /* quantità totale che posso caricare in nave */
                 min_val = min(min(shm_goods[id * shm_cfg->SO_MERCI + j], -shm_goods[i * shm_cfg->SO_MERCI + j]),
                               ship_tons_available / shm_goods_template[j].tons);

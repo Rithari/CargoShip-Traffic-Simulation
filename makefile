@@ -18,7 +18,7 @@ DCFLAGS	= $(CFLAGS) -g -O0 -DDEBUG
 RCFLAGS = $(CFLAGS) -O2 -Wall -Wextra -DNDEBUG
 
 # compiling args
-ARGS 	?= testing config.txt
+ARGS 	?= dense, small ships.txt
 
 # $< is the first prerequisite
 # $@ is the target
