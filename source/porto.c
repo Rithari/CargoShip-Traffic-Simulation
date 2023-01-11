@@ -16,11 +16,11 @@ typedef struct {
     int how_many;
     struct node *goods_to_send;
     int port_id;
-} roba ;
+} route ;
 
 void porto_sig_handler(int);
 void generate_goods(void);
-roba* generate_route(void);
+route* generate_route(void);
 void dump_port_data(void);
 
 config  *shm_cfg;
@@ -38,7 +38,7 @@ int     id;
 int main(int argc, char *argv[]) {
     struct sigaction sa;
     msg_handshake msg;
-    roba* r;
+    route* r;
     msg_goods msg_g;
 
     srandom(getpid());
@@ -190,7 +190,7 @@ void generate_goods(void) {
     shm_dump_ports[id].ton_in_excess = tons_per_port;
 }
 
-roba* generate_route(void) {
+route* generate_route(void) {
     int i, j, k, min_val;
     int best_route = -1;
     int best_tons_available = shm_cfg->SO_CAPACITY;
@@ -201,7 +201,7 @@ roba* generate_route(void) {
     struct node *cur;
     struct node *sublist;
     goods to_add;
-    roba *r = malloc(sizeof(roba));
+    route *r = malloc(sizeof(route));
 
     for(k = 0, i = (int) random() % shm_cfg->SO_PORTI; k < shm_cfg->SO_PORTI && best_tons_available > shm_goods_template[0].tons; k++, i = (i + 1) % shm_cfg->SO_PORTI) {
         if(id == i) continue;
