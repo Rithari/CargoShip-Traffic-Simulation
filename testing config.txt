@@ -1,7 +1,7 @@
 # file di configurazione n.1
 SO_NAVI:        10
 SO_PORTI:       4
-SO_MERCI:       5
+SO_MERCI:       50000
 SO_SIZE:        5
 SO_MIN_VITA:    1
 SO_MAX_VITA:    10
