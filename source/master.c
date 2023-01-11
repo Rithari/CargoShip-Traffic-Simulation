@@ -433,25 +433,25 @@ void create_weather(void) {
 
 void print_dump(void) {
     int i;
-    fprintf(output, "----------------------\n");
+    fprintf(output, "###### DUMP:\n");
     /*printf("---MERCI---\n");
     for(i = 0; i < shm_cfg->SO_MERCI; i++) {
         printf("ID: [%d]\tSTATE: [%d]\n", shm_dump_goods[i].id, shm_dump_goods[i].state);
         printf("------\n");
     }*/
-    fprintf(output,"---PORTI---\n");
+    fprintf(output,"---------------------------------PORTI---------------------------------\n");
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
         fprintf(output,"ID: [%d]\tON_SWELL: [%d]\n", i, shm_dump_ports[i].on_swell);
         fprintf(output,"DOCK: [%d/%d]\n", shm_dump_ports[i].dock_available, shm_dump_ports[i].dock_total);
-        fprintf(output,"GOODS: [%d/%d/%d/%d]\n", shm_dump_ports[i].good_available, shm_dump_ports[i].good_send,
+        fprintf(output,"GOODS: [goods_available: %d  |  good_send: %d  |  good_received: %d  |  ton_in_excess: %d]\n", shm_dump_ports[i].good_available, shm_dump_ports[i].good_send,
                shm_dump_ports[i].good_received, shm_dump_ports[i].ton_in_excess);
-        fprintf(output,"------\n");
+        fprintf(output,"-----------\n");
     }
-    fprintf(output,"---NAVI---\n");
-    fprintf(output,"SHIPS: [%d/%d/%d]\n", shm_dump_ships->with_cargo_en_route,
+    fprintf(output,"---------------------------------NAVI---------------------------------\n");
+    fprintf(output,"SHIPS: [Ship with cargo: %d  |  Ship without cargo: %d  |  Ship loading or unloading: %d]\n", shm_dump_ships->with_cargo_en_route,
            shm_dump_ships->without_cargo_en_route, shm_dump_ships->being_loaded_unloaded);
-    fprintf(output,"SHIPS SLOWED: [%d]\tSHIPS SUNK: [%d]\n", shm_dump_ships->slowed, shm_dump_ships->sunk);
-    fprintf(output,"----------------------\n");
+    fprintf(output,"SHIPS: [SLOWED: %d  |  SUNK: %d]\n", shm_dump_ships->slowed, shm_dump_ships->sunk);
+    fprintf(output,"----------------------------------------------------------------------\n");
 }
 
 void generate_goods(void) {
