@@ -247,7 +247,6 @@ void initialize_so_vars(char* path_cfg_file) {
             break;
         }
 
-        /* TODO: no field width limits can crash with huge input */
         if(sscanf(buffer, "#%s", buffer) == 1 || buffer[0] == '\n') {
             continue;
         }
