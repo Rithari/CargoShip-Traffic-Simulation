@@ -446,7 +446,7 @@ void print_dump(void) {
     fprintf(output, "###### DUMP:\n");
     printf("---MERCI---\n");
     for(i = 0; i < shm_cfg->SO_MERCI; i++) {
-        printf("ID: [%d]\tSTATE: [%d/%d/%d/%d/%d]\n", shm_dump_goods[i].id, shm_dump_goods[i].good_delivered,
+        printf("ID: [%d]\tSTATE: [%d/%d/%d/%d/%d]\n", i, shm_dump_goods[i].good_delivered,
                shm_dump_goods[i].good_in_port, shm_dump_goods[i].good_on_ship, shm_dump_goods[i].good_expired_in_port, shm_dump_goods[i].good_expired_on_ship);
         printf("------\n");
     }
