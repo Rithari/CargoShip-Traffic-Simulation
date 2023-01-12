@@ -209,6 +209,7 @@ int main(int argc, char **argv) {
         }
     }
 
+    final_print();
     printf("FINE SIMULAZIONE!\n\n");
     fclose(output);
 
