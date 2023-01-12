@@ -442,7 +442,7 @@ void create_weather(void) {
 }
 
 void print_dump(void) {
-    int i;
+    int i, sum = 0;
     fprintf(output, "###### DUMP:\n");
     printf("---MERCI---\n");
     for(i = 0; i < shm_cfg->SO_MERCI; i++) {
@@ -463,6 +463,15 @@ void print_dump(void) {
            shm_dump_ships->without_cargo_en_route, shm_dump_ships->being_loaded_unloaded);
     fprintf(output,"SHIPS: [SLOWED: %d  |  SUNK: %d]\n", shm_dump_ships->slowed, shm_dump_ships->sunk);
     fprintf(output,"----------------------------------------------------------------------\n");
+
+    for (i = 0; i < shm_cfg->SO_PORTI; i++) {
+        sum += shm_dump_ports[i].ton_in_excess;
+    }
+
+    for (i = 0; i < shm_cfg->SO_MERCI; i++) {
+        sum += shm_dump_goods[i].good_in_port + shm_dump_goods[i].good_expired_on_ship + shm_dump_goods[i].good_expired_in_port + shm_dump_goods[i].good_on_ship + shm_dump_goods[i].good_delivered;
+    }
+    printf("Total goods: %d\n", sum);
 }
 
 void generate_goods(void) {
