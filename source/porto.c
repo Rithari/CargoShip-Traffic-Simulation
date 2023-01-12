@@ -116,7 +116,6 @@ int main(int argc, char *argv[]) {
             msg.how_many = r->how_many;
             msg.response_pid = r->port_id;
             ll_print(r->goods_to_send);
-            printf("SIUM1\n");
             while (msgsnd(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg) - sizeof(long), 0)) {
                 CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message")
             }
@@ -160,19 +159,7 @@ void generate_goods(void) {
         if (max_quantity) {
             selected_quantity = (int) random() % max_quantity + 1;
 
-            if (shm_goods[id * shm_cfg->SO_MERCI + i] == 0) {
-                if (random() & 1) {
-                    to_add.lifespan = shm_cfg->CURRENT_DAY + shm_goods_template[i].lifespan;
-                    to_add.id = i;
-                    to_add.quantity = selected_quantity;
-                    shm_goods[id * shm_cfg->SO_MERCI + i] = selected_quantity;
-                    __sync_fetch_and_add(&shm_dump_goods[i].good_in_port, selected_quantity * shm_goods_template[i].tons);
-                    __sync_fetch_and_add(&shm_dump_ports[id].good_available, selected_quantity * shm_goods_template[i].tons);
-                    head = ll_add(head, &to_add);
-                } else {
-                    shm_goods[id * shm_cfg->SO_MERCI + i] = -selected_quantity;
-                }
-            } else if (shm_goods[id * shm_cfg->SO_MERCI + i] > 0) {
+            if (random() & 1 && shm_goods[id * shm_cfg->SO_MERCI + i] == 0 || shm_goods[id * shm_cfg->SO_MERCI + i] > 0) {
                 to_add.lifespan = shm_cfg->CURRENT_DAY + shm_goods_template[i].lifespan;
                 to_add.id = i;
                 to_add.quantity = selected_quantity;
@@ -301,7 +288,7 @@ void dump_port_data(void) {
             shm_dump_ports[id].good_available += shm_goods[id * shm_cfg->SO_MERCI + i];
         }
     }
-    shm_dump_ports[id].dock_available = semctl(shm_cfg->sem_id_dock, id, GETVAL);
+    shm_dump_ports[id].dock_available = semctl(shm_cfg->sem_id_dock, id, GETVAL, NULL);
 }
 
 void porto_sig_handler(int signum) {

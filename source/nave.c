@@ -259,6 +259,8 @@ void dump_ship_data(void) {
 void nave_sig_handler(int signum) {
     int old_errno = errno;
     struct node *cur;
+    msg_handshake msg;
+    msg_goods msg_g;
 
     switch (signum) {
         case SIGCONT:
@@ -291,7 +293,6 @@ void nave_sig_handler(int signum) {
             /* malestorm killed the ship :C*/
             __sync_fetch_and_add(&shm_dump_ships->sunk, 1);
             /* nave affondata, aggiornare i dump della merce persa */
-
             if (head) {
                 cur = head;
                 while (cur) {
@@ -299,10 +300,18 @@ void nave_sig_handler(int signum) {
                     __sync_fetch_and_sub(&shm_dump_goods[cur->element->id].good_on_ship, cur->element->quantity * shm_goods_template[cur->element->id].tons);
                     cur = cur->next;
                }
-
                ll_free(head);
             }
             /* kill(abs(shm_pid_array[id_actual_port]), SIGUSR2); */
+
+            while (msgrcv(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), getpid(), IPC_NOWAIT)) {
+                CHECK_ERROR_CHILD(errno != EINTR && errno != EAGAIN, "[NAVE] Error while waiting handshake message")
+            }
+
+            while (msgrcv(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg_handshake) - sizeof(long), getpid(), IPC_NOWAIT)) {
+                CHECK_ERROR_CHILD(errno != EINTR && errno != EAGAIN, "[NAVE] Error while waiting handshake message")
+            }
+
             if (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, IPC_NOWAIT)) {
                 CHECK_ERROR_CHILD(errno != EINTR && errno != EAGAIN,
                                   "[NAVE] Error while trying to release sem_id_gen_precedence")

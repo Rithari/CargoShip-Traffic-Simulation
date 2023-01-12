@@ -68,6 +68,8 @@ typedef struct {
     int     good_received;
     int     dock_total;
     int     dock_available;
+    int     generated_goods_request;
+    int     generated_goods_offers;
     int     on_swell;
     int     ton_in_excess;
 } dump_ports;
