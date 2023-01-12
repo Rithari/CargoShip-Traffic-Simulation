@@ -246,7 +246,7 @@ int get_nearest_port(void) {
 
 void dump_ship_data(void) {
     if (id_actual_port < 0) {
-        if (actual_capacity) {
+        if (head) {
             __sync_fetch_and_add(&shm_dump_ships->with_cargo_en_route, 1);
         } else {
             __sync_fetch_and_add(&shm_dump_ships->without_cargo_en_route, 1);
