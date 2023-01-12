@@ -158,7 +158,7 @@ int main(int argc, char** argv) {
         }
 
         if (msg.response_pid >= 0) {
-            printf("[%d] Sto andando al porto: %d e sto caricando: %d merci\n", getpid(), msg.response_pid, msg.how_many);
+            printf("[%d] Going to port: %d and loading: %d goods\n", getpid(), msg.response_pid, msg.how_many);
             for (i = 0, time_to_sleep = 0; i < msg.how_many; i++) {
                 while (msgrcv(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), getpid(), 0) < 0) {
                     CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while waiting good message")
