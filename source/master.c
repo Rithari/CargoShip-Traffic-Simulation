@@ -210,7 +210,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    print_dump(); /* dump finale */
+    final_print();
     printf("FINE SIMULAZIONE!\n\n");
     fclose(output);
 
@@ -483,7 +483,7 @@ void final_print(void) {
     int i;
     int bestOfferer = INT_MIN;
     int bestReceiver = INT_MIN;
-    printf("-------------FINAL DUMPS-------------");
+    printf("-------------FINAL DUMPS-------------\n");
     printf("Ships at sea at the end of the simulation: %d\n", (shm_dump_ships->with_cargo_en_route + shm_dump_ships->without_cargo_en_route));
     printf("Number of ships still at sea with a cargo on board: %d\n", shm_dump_ships->with_cargo_en_route);
     printf("Number of ships still at sea without a cargo: %d\n", shm_dump_ships->without_cargo_en_route);
@@ -539,7 +539,7 @@ void master_sig_handler(int signum) {
                 else if (shm_goods[i] > 0) check_port_offers += shm_goods[i];
             }
 
-            fprintf(output, "%d\t%d\n", check_port_offers, check_port_request);
+            fprintf(output, "Total port offers: %d\tTotal port requests: %d\n", check_port_offers, check_port_request);
 
             if (!check_port_request || !check_port_offers) {
                 for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
