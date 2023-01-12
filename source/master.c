@@ -3,12 +3,14 @@
 #include "../headers/common_ipcs.h"
 
 #define BUFFER_SIZE 128
+
+/* Macro for error checking an expression. If it evaluates to true the error is printed and the process exits */
 #define CHECK_ERROR_MASTER(x, str)  if ((x)) { \
                                         perror(str); \
                                         raise(SIGINT); \
                                     } else {}\
 
-/* initialize @*cfg with parameters wrote on @*path_cfg_file*/
+/* Initialize @*cfg with parameters written on @*path_cfg_file*/
 void initialize_so_vars(char* path_cfg_file);
 void initialize_ports_coords(void);
 
@@ -16,12 +18,10 @@ void create_ships(void);
 void create_ports(void);
 void create_weather(void);
 
-/* clear all the memory usage */
-void clear_all(void);
+void clear_all(void); /* clear all the memory usage by destroying IPC objects */
 void print_dump(void);
 void generate_goods(void);
 
-/* signal handler */
 void master_sig_handler(int signum);
 
 pid_t   *shm_pid_array;
@@ -34,7 +34,6 @@ dump_ports  *shm_dump_ports;
 dump_ships  *shm_dump_ships;
 dump_goods  *shm_dump_goods;
 FILE *output;
-
 int     shm_id_config;
 
 int main(int argc, char **argv) {
@@ -48,49 +47,54 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
+    /* Make sure clear all is called when master exits to ensure proper IPC removal */
     CHECK_ERROR_MASTER(atexit(clear_all), "[MASTER] Error while trying to register clear_all function to atexit")
 
     /* Check if the file path in argv1 exists */
     CHECK_ERROR_MASTER(access(argv[1], F_OK), "[MASTER] Error while trying to access the configuration file")
 
+    /* Initialize random seed */
     srandom(getpid());
 
-    /* create and attach config shared memory segment */
+    /* CREATE AND ATTACH TO SHARED MEMORY
+     * After every few IPC object creations, a function may be called, which typically remains self-explanatory
+     * and is, if needed, further detailed in its implementation */
     if ((shm_id_config = shmget(IPC_PRIVATE, sizeof(*shm_cfg), 0600)) < 0) {
         perror("[MASTER] Error while creating shared memory for configuration parameters");
         exit(EXIT_FAILURE);
     }
     CHECK_ERROR_MASTER((shm_cfg = shmat(shm_id_config, NULL, 0)) == (void *) -1,
                 "[MASTER] Error while trying to attach to configuration shared memory")
+
+    /* Initialize the configuration parameters */
     initialize_so_vars(argv[1]);
 
-    /* create and attach goods_template shared memory segment */
     CHECK_ERROR_MASTER((shm_cfg->shm_id_goods_template = shmget(IPC_PRIVATE,
                                                                 sizeof(goods) * shm_cfg->SO_MERCI, 0600)) < 0,
                 "[MASTER] Error while creating shared memory for goods_template generation")
     CHECK_ERROR_MASTER((shm_goods_template = shmat(shm_cfg->shm_id_goods_template, NULL, 0)) == (void *) -1,
                 "[MASTER] Error while trying to attach to goods template shared memory")
 
-    /* initialize goods_template array */
+    /* Initialize the goods_template array */
     for (i = 0; i < shm_cfg->SO_MERCI; i++) {
         shm_goods_template[i].tons = (int) random() % shm_cfg->SO_SIZE + 1;
         shm_goods_template[i].lifespan = (int) random() % (shm_cfg->SO_MAX_VITA - shm_cfg->SO_MIN_VITA + 1)
                                          + shm_cfg->SO_MIN_VITA;
     }
+    /* Quicksort based on the structs tons field (using compare_goods_template) */
     qsort(shm_goods_template, shm_cfg->SO_MERCI, sizeof(goods_template), compare_goods_template);
 
-    /* create and attach ports coordinate shared memory segment */
+    /* Also save the port coordinates in shared memory */
     CHECK_ERROR_MASTER((shm_cfg->shm_id_ports_coords = shmget(IPC_PRIVATE,
                                               sizeof(*shm_ports_coords) * shm_cfg->SO_PORTI, 0600)) < 0,
                 "[MASTER] Error while creating shared memory for ports coordinates")
     CHECK_ERROR_MASTER((shm_ports_coords = shmat(shm_cfg->shm_id_ports_coords, NULL, 0)) == (void *) -1,
                 "[MASTER] Error while trying to attach to ports coordinates shared memory")
 
-
-
+    /* Initialize the ports coordinates array */
     initialize_ports_coords();
 
-    /* create and attach pid shm for the children */
+    /* Create and attach the PID array of the children (which will be populated in the subsequent forks) */
     CHECK_ERROR_MASTER((shm_cfg->shm_id_pid_array =
             shmget(IPC_PRIVATE, sizeof(pid_t) * (shm_cfg->SO_PORTI + shm_cfg->SO_NAVI), 0600)) < 0,
                 "[MASTER] Error while creating pid array shared memory")
@@ -98,17 +102,17 @@ int main(int argc, char **argv) {
                 "[MASTER] Error while trying to attach to pid array shared memory")
 
 
-    /* create and attach pid shm for the goods tracking offers */
+    /* Create and attach the PID array of goods tracked as offers */
     CHECK_ERROR_MASTER((shm_cfg->shm_id_goods =
                                 shmget(IPC_PRIVATE, sizeof(int) * shm_cfg->SO_PORTI * shm_cfg->SO_MERCI, 0600)) < 0,
                        "[MASTER] Error while creating goods_tracking shared memory")
     CHECK_ERROR_MASTER((shm_goods = shmat(shm_cfg->shm_id_goods, NULL, 0)) == (void *) -1,
                        "[MASTER] Error while trying to attach to goods_tracking shared memory")
 
-
+    /* Initialize the goods array at 0 */
     memset(shm_goods, 0, sizeof(int) * shm_cfg->SO_PORTI * shm_cfg->SO_MERCI);
 
-    /* create and attach pid shm for dump report */
+    /* Create and attach the PID array of dump reports */
     CHECK_ERROR_MASTER((shm_cfg->shm_id_dump_ports = shmget(IPC_PRIVATE, sizeof(dump_ports) * shm_cfg->SO_PORTI, 0600)) < 0,
                 "[MASTER] Error while creating shared memory for log ports data")
     CHECK_ERROR_MASTER((shm_dump_ports = shmat(shm_cfg->shm_id_dump_ports, NULL, 0)) == (void*) -1,
@@ -125,12 +129,12 @@ int main(int argc, char **argv) {
                 "[MASTER] Error while trying to attach to log goods_template data shared memory")
 
 
-    /* deletes all the contents of shared memory arrays */
+    /* Deletes all the contents of shared memory arrays */
     memset(shm_dump_ports, 0, sizeof(dump_ports) * shm_cfg->SO_PORTI);
     memset(shm_dump_ships, 0, sizeof(dump_ships));
     memset(shm_dump_goods, 0, sizeof(dump_goods) * shm_cfg->SO_MERCI);
 
-    /* creates the messages queues for the handshake between ports and ships of the ports */
+    /* Creates the messages queues for the handshake between ports and ships */
     CHECK_ERROR_MASTER((shm_cfg->mq_id_ports_handshake = msgget(IPC_PRIVATE, 0600)) < 0,
                 "[MASTER] Error while creating ports_handshake message queue")
     CHECK_ERROR_MASTER((shm_cfg->mq_id_ships_handshake = msgget(IPC_PRIVATE, 0600)) < 0,
@@ -138,14 +142,15 @@ int main(int argc, char **argv) {
     CHECK_ERROR_MASTER((shm_cfg->mq_id_ships_goods = msgget(IPC_PRIVATE, 0600)) < 0,
                        "[MASTER] Error while creating ships_goods message queue")
 
-    /* create the semaphore for process generation control and the dump status */
+    /* Create the semaphore for process generation control and the dump status */
     CHECK_ERROR_MASTER((shm_cfg->sem_id_gen_precedence = semget(IPC_PRIVATE, 1, 0600)) < 0,
                 "[MASTER] Error while creating semaphore for generation order control")
 
-    /* create the semaphore for dock generation control and the dump status */
+    /* Create the semaphore for dock generation control and the dump status */
     CHECK_ERROR_MASTER((shm_cfg->sem_id_dock = semget(IPC_PRIVATE, shm_cfg->SO_PORTI, 0600)) < 0,
                        "[MASTER] Error while creating semaphore for docks control")
 
+    /* TODO: Look into this */
     /* WIP: create the semaphore for process generation control and the dump status, 7 is a test number */
     CHECK_ERROR_MASTER((shm_cfg->sem_id_dump_mutex = semget(IPC_PRIVATE, 7, 0600)) < 0,
                 "[MASTER] Error while creating semaphore for dump control")
@@ -157,6 +162,7 @@ int main(int argc, char **argv) {
                     "[MASTER] Error while setting the semaphore for ports dump control")
     }
 
+    /* Write dumps to output.txt */
     output = fopen("output.txt", "w");
 
     /* Initialize generation semaphore at the value of SO_PORTI */
@@ -189,12 +195,13 @@ int main(int argc, char **argv) {
     sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGUSR1, &sa, NULL);
 
-    printf("INIZIO SIMULAZIONE!\n");
-    killpg(0, SIGCONT);
+    printf("SIMULATION START\n");
+    killpg(0, SIGCONT); /* Send SIGCONT to all processes in the group (foreground process group)*/
 
-    /* day 1 alarm */
+    /* Day 1 Alarm */
     alarm(shm_cfg->SO_DAY_LENGTH);
 
+    /* Handle any extra signals, especially if they're the kind that terminates a process */
     while((p_wait = waitpid(-1, &wstatus, 0)) > 0) {
         if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus) != 0) {
             printf("[MASTER] Child [%d] exit with status: %d. Quitting...\n", p_wait, WEXITSTATUS(wstatus));
@@ -207,8 +214,8 @@ int main(int argc, char **argv) {
         }
     }
 
-    print_dump(); /* dump finale */
-    printf("FINE SIMULAZIONE!\n\n");
+    print_dump(); /* final dump */
+    printf("SIMULATION ENDED\n\n");
     fclose(output);
 
     return 0;
@@ -261,6 +268,7 @@ void initialize_so_vars(char* path_cfg_file) {
             continue;
         }
 
+        /* TODO: Explain why sscanf is used and what the bitwise operations do, in depth */
         if (sscanf(buffer, "SO_NAVI: %d", &shm_cfg->SO_NAVI) == 1) {
             check |= 1;
         } else if (sscanf(buffer, "SO_PORTI: %d", &shm_cfg->SO_PORTI) == 1) {
@@ -301,6 +309,7 @@ void initialize_so_vars(char* path_cfg_file) {
 
     shm_cfg->CURRENT_DAY = 0;
 
+    /* Checks the validity of the variables. By setting EINVAL, if an error occurs we know it's due to invalid args */
     errno = EINVAL;
     CHECK_ERROR_MASTER(check != 0x1FFFF, "[MASTER] Missing config")
     CHECK_ERROR_MASTER(shm_cfg->SO_NAVI < 1, "[MASTER] SO_NAVI is less than 1")
@@ -344,6 +353,7 @@ void initialize_ports_coords(void) {
         double rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
         double rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
 
+        /* Check if the coordinates are already used */
         for(j = 0; j < i && !(shm_ports_coords[j].x == rndx && shm_ports_coords[j].y == rndy); j++);
 
         if(j == i) {
@@ -380,7 +390,7 @@ void create_ports(void) {
                 break;
         }
     }
-    /* Clear up the memory allocated for the arguments */
+    /* Clear up the memory allocated by asprintf for the first argument */
     free(args[1]);
 }
 
@@ -412,7 +422,7 @@ void create_ships(void) {
         }
     }
 
-    /* Clear up the memory allocated for the arguments */
+    /* Clear up the memory allocated by asprintf for the first argument */
     free(args[1]);
 }
 
@@ -436,10 +446,11 @@ void create_weather(void) {
             break;
     }
 
-    /* Clear up the memory allocated for the arguments */
+    /* Clear up the memory allocated by asprintf for the first argument */
     free(args[1]);
 }
 
+/* TODO: pull from updated dumps */
 void print_dump(void) {
     int i;
     fprintf(output, "----------------------\n");
@@ -466,17 +477,19 @@ void print_dump(void) {
 void generate_goods(void) {
     int i;
     shm_cfg->GENERATING_PORTS = (int) random() % shm_cfg->SO_PORTI;
+    /* this variable indicates the randomly chosen number of ports that will be marked to generate goods on this day*/
 
+    /* Go through the chosen amount of ports and mark a random index to be generating goods */
     for (i = 0; i < shm_cfg->GENERATING_PORTS; i++) {
         int index = (int) random() % shm_cfg->SO_PORTI;
-        shm_pid_array[index] = -shm_pid_array[index];
+        shm_pid_array[index] = -shm_pid_array[index]; /* This is a flag to indicate that this port is generating goods */
     }
 
     printf("[MASTER] GENERATING_PORTS: [%d]\n", shm_cfg->GENERATING_PORTS);
 }
 
 void master_sig_handler(int signum) {
-    int old_errno = errno;
+    int old_errno = errno; /* Save errno to restore it after the signal handler returns */
     int i, check_port_offers, check_port_request;
 
     switch(signum) {
@@ -488,10 +501,10 @@ void master_sig_handler(int signum) {
             }
             kill(pid_weather, SIGINT);
             exit(EXIT_FAILURE);
-        /* Still needs to deal with statistics first */
         case SIGALRM:
             printf("Day [%d]/[%d].\n", ++shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
 
+            /* Simulation has reached its end */
             if(shm_cfg->CURRENT_DAY == shm_cfg->SO_DAYS) {
                 for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
                     kill(abs(shm_pid_array[i]), SIGTERM);
@@ -500,6 +513,7 @@ void master_sig_handler(int signum) {
                 return;
             }
 
+            /* Counts how many requests and offers there are */
             for (i = 0, check_port_offers = 0, check_port_request = 0; i < shm_cfg->SO_PORTI * shm_cfg->SO_MERCI && !(check_port_offers && check_port_request); i++) {
                 if(shm_goods[i] < 0) check_port_request += -shm_goods[i];
                 else if (shm_goods[i] > 0) check_port_offers += shm_goods[i];
@@ -512,18 +526,20 @@ void master_sig_handler(int signum) {
                     kill(abs(shm_pid_array[i]), SIGTERM);
                 }
                 kill(pid_weather, SIGTERM);
-                if(!check_port_offers) printf("NEI PORTI NON SONO PRESENTI PIU' OFFERTE\n");
-                else printf("NEI PORTI NON SONO PRESENTI PIU' RICHIESTE\n");
+                if(!check_port_offers) printf("No more offers are available \n");
+                else printf("No more requests are available \n");
                 return;
             }
 
+
             kill(pid_weather, SIGALRM);
-            generate_goods();
+            generate_goods(); /* Generate goods for the next day */
 
             CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL,
                                       shm_cfg->SO_PORTI + shm_cfg->SO_NAVI - shm_dump_ships->sunk) < 0,
                         "[MASTER] Error while setting the semaphore for dump control in SIGALRM")
 
+            /* Tell all processes that a day has passed (is about to pass) */
             for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {
                 kill(abs(shm_pid_array[i]), SIGALRM);
             }
@@ -532,17 +548,17 @@ void master_sig_handler(int signum) {
                 CHECK_ERROR_MASTER(errno != EINTR, "[MASTER] Error while waiting the semaphore for dump control in SIGALRM")
             }
 
-            /* Check SO_DAYS against the current day. If they're the same kill everything */
             print_dump();
             shm_dump_ships->with_cargo_en_route = 0;
             shm_dump_ships->without_cargo_en_route = 0;
             shm_dump_ships->being_loaded_unloaded = 0;
             alarm(shm_cfg->SO_DAY_LENGTH);
 
+            /* Weather is automatically frozen after it completes its task inside SIGALRM */
             kill(pid_weather, SIGCONT);
             break;
         case SIGUSR1:
-            printf("ALL SHIPS ARE DEAD :C\n");
+            printf("All ships have sunk\n");
             printf("Day [%d]/[%d].\n", shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
             for(i = 0; i < shm_cfg->SO_PORTI; i++) {
                 kill(abs(shm_pid_array[i]), SIGTERM);

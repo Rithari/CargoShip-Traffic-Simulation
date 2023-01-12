@@ -8,7 +8,6 @@
 /*nave deve ricordarsi l'ultimo porto di partenza per evitare che ci ritorni quando viene messa in mare */
 /*una nave in mare cerca sempre una coda di attracco libera (BUSY WAITING!!)*/
 
-/*TODO: GUI!*/
 
 void move(int);
 int get_nearest_port(void);
@@ -31,13 +30,11 @@ int     id_actual_port;
 int     id_destination_port;
 struct node *head;
 
-
-/* TODO: Attach to message queues */
 int main(int argc, char** argv) {
     int i;
     double rndx;
     double rndy;
-    double time_to_sleep = 0;
+    double time_to_sleep;
 
     struct sigaction sa;
     struct sembuf sops;
@@ -144,8 +141,9 @@ int main(int argc, char** argv) {
         /* unloading goods */
         while (head) {
             if (head->element->lifespan >= shm_cfg->CURRENT_DAY) {
-                nanosleep_function((double) head->element->quantity * shm_goods_template[head->element->id].tons * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
-                                   "[NAVE] Generic error while unloading the ship");
+                sleep_ns((double) head->element->quantity * shm_goods_template[head->element->id].tons *
+                         shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
+                         "[NAVE] Generic error while unloading the ship");
                 __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_delivered, head->element->quantity);
                 printf("[%d] Ho scaricato: [%d/%d/%d]\n", getpid(), head->element->id, head->element->quantity, head->element->quantity);
             } else {
@@ -185,8 +183,8 @@ int main(int argc, char** argv) {
 
             printf("[%d] time_to_sleep: %f\n", getpid(), time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED);
 
-            nanosleep_function(time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
-                               "[NAVE] Generic error while loading the ship");
+            sleep_ns(time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
+                     "[NAVE] Generic error while loading the ship");
 
             /*shm_dump_goods[selected_good].state++; */
 
@@ -209,14 +207,13 @@ void move(int id_destination) {
     double navigation_time = sqrt(dx * dx + dy * dy) / shm_cfg->SO_SPEED * shm_cfg->SO_DAY_LENGTH;
 
     shm_pid_array[id + shm_cfg->SO_PORTI] = -shm_pid_array[id + shm_cfg->SO_PORTI];
-    nanosleep_function(navigation_time, "[NAVE] Generic error while moving");
+    sleep_ns(navigation_time, "[NAVE] Generic error while moving");
     shm_pid_array[id + shm_cfg->SO_PORTI] = -shm_pid_array[id + shm_cfg->SO_PORTI];
 
     printf("[%d] Arrived in port no: [%d]\tNavigation time: %f\n", getpid(), id_destination, navigation_time);
     fflush(stdout);
     actual_coordinate = shm_ports_coords[id_destination];
 }
-
 
 int get_nearest_port(void) {
     int i, j, k;
@@ -295,8 +292,8 @@ void nave_sig_handler(int signum) {
             while (sem_cmd(shm_cfg->sem_id_dump_mutex, 1, 1, 0)) {
                 CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while trying to release sem_id_dump_mutex[0]")
             }
-            nanosleep_function(shm_cfg->SO_STORM_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH,
-                               "[NAVE] Generic error while sleeping because of the storm");
+            sleep_ns(shm_cfg->SO_STORM_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH,
+                     "[NAVE] Generic error while sleeping because of the storm");
             break;
         case SIGUSR2:
             /* malestorm killed the ship :C*/

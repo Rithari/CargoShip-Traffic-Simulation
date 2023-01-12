@@ -1,6 +1,7 @@
 #include "../headers/utils.h"
 #include "math.h"
 
+/* Will probably be deleted as anprintf is used in its place */
 char* int_to_string(int number) {
     char* s;
     int s_len;
@@ -16,6 +17,7 @@ char* int_to_string(int number) {
     return s;
 }
 
+
 int string_to_int(char *s) {
     char *endptr;
     int val = (int) strtol(s, &endptr, 10);
@@ -27,7 +29,7 @@ int string_to_int(char *s) {
 }
 
 /* TODO: find a better name lmao */
-void nanosleep_function(double time, char* str) {
+void sleep_ns(double time, char* str) {
     struct timespec t, rem;
     double d;
     t.tv_nsec = (long) (modf(time, &d) * 1e9);
@@ -45,7 +47,10 @@ void nanosleep_function(double time, char* str) {
     }
 }
 
-/* ordina in base al peso la merce */
+/* Returns -1: first element's tons are smaller than the second's
+ * Returns 0: the tons are the same
+ * Returns 1: second element's tons are larger than the first
+*/
 int compare_goods_template(const void *g, const void *g1) {
     goods_template *s_g = (goods_template*) g;
     goods_template *s_g1 = (goods_template*) g1;

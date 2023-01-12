@@ -1,12 +1,15 @@
 #include "../headers/linked_list.h"
 
+/* Compares and returns the result of the comparison of two integers */
 int compare_goods(goods *a, goods *b) {
     return a->id == b->id && a->quantity == b->quantity && a->lifespan == b->lifespan;
 }
 
+/* Add a node to the end of the list with the given data */
 struct node* ll_add(struct node *head, goods *to_add) {
     struct node *new_node;
     struct node *cur;
+
 
     if(head == NULL) {
         new_node = (struct node*) malloc(sizeof(struct node));

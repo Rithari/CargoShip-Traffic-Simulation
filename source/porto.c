@@ -2,16 +2,6 @@
 #include "../headers/common_ipcs.h"
 #include "../headers/linked_list.h"
 
-/*
-Richiesta di merci[] | MQ di richieste universale tra processi: (dobbiamo sapere il tipo, la quantità e il porto di appartenenza)
-Int Lifespan -1 per le richieste perché non scadono e sono l’unico elemento che distingue le due MQ oltre a essere due MQ diverse
-Array / struct di tratte disponibili (caricata dalla funzione apposita)
-dump
-Funzione per caricare le proprie domande e offerte nelle rispettive MQ
-Funzione/i per la creazione di tratte()
-Funzione/i per la comunicazione con le queue()
-Banchina: gestita come una risorsa condivisa protetta da un semaforo (n_docks)*/
-
 typedef struct {
     int how_many;
     struct node *goods_to_send;
@@ -127,7 +117,7 @@ int main(int argc, char *argv[]) {
                 msg_g.to_add.lifespan = r->goods_to_send->element->lifespan;
 
                 while (msgsnd(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), 0)) {
-                    CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message");
+                    CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending the struct of goods to add")
                 }
                 r->goods_to_send = ll_pop(r->goods_to_send);
             }
@@ -356,8 +346,8 @@ void porto_sig_handler(int signum) {
             /* swell occurred */
             printf("[PORTO] SWELL: %d\n", getpid());
             shm_dump_ports[id].on_swell = 1;
-            nanosleep_function(shm_cfg->SO_SWELL_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH,
-                               "Generic error while sleeping because of the swell");
+            sleep_ns(shm_cfg->SO_SWELL_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH,
+                     "Generic error while sleeping because of the swell");
             shm_dump_ports[id].on_swell = 0;
             printf("[PORTO] END SWELL: %d\n", getpid());
             break;
