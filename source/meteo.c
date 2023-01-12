@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
         while (available_ships) {
             nanosleep_function(shm_cfg->SO_MAELSTORM / 24.0 * shm_cfg->SO_DAY_LENGTH, "[METEO] Generic error in nanosleep");
             index_pid_to_term = (unsigned int) random() % available_ships;
-            printf("[METEO] index to kill: %u\n", index_pid_to_term);
+            /*printf("[METEO] index to kill: %u\n", index_pid_to_term);*/
             kill(abs(shm_pid_array[index_pid_status[index_pid_to_term] + shm_cfg->SO_PORTI]), SIGUSR2);
             index_pid_status[index_pid_to_term] = index_pid_status[--available_ships];
         }
@@ -100,7 +100,7 @@ void meteo_sig_handler(int signum) {
             free(index_pid_status);
             exit(EXIT_SUCCESS);
         default:
-            printf("[METEO] Signal: %s\n", strsignal(signum));
+            /*printf("[METEO] Signal: %s\n", strsignal(signum));*/
             break;
     }
     errno = old_errno;

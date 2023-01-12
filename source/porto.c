@@ -98,12 +98,12 @@ int main(int argc, char *argv[]) {
         while (msgrcv(shm_cfg->mq_id_ports_handshake, &msg, sizeof(msg) - sizeof(long), id + 1, 0) < 0) {
             CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while waiting handshake message")
         }
-        printf("[%d] Received message from [%d]\n", getpid(), msg.response_pid);
+        /*printf("[%d] Received message from [%d]\n", getpid(), msg.response_pid);*/
         msg.mtype = msg.response_pid;
 
         while (head && head->element->lifespan < shm_cfg->CURRENT_DAY) {
             /* update dumps */
-            printf("[%d] Port lost good :C\n", getpid());
+            /*printf("[%d] Port lost good :C\n", getpid());*/
             __sync_fetch_and_sub(&shm_goods[id * shm_cfg->SO_MERCI + head->element->id], head->element->quantity);
             __sync_fetch_and_sub(&shm_dump_ports[id].good_available, head->element->quantity * shm_goods_template[head->element->id].tons);
             __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_in_port, head->element->quantity * shm_goods_template[head->element->id].tons);
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
             msg.how_many = r->how_many;
             msg.response_pid = r->port_id;
             ll_print(r->goods_to_send);
-            printf("SIUM1\n");
+            /*printf("SIUM1\n");*/
             while (msgsnd(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg) - sizeof(long), 0)) {
                 CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message")
             }
@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
             }
             ll_free(r->goods_to_send);
             free(r);
-            printf("[%d] Ok given to [%ld]\n", getpid(), msg.mtype);
+            /*printf("[%d] Ok given to [%ld]\n", getpid(), msg.mtype);*/
         } else {
             msg.how_many = 0;
             msg.response_pid = -1;
@@ -275,12 +275,12 @@ route* generate_route(void) {
             }
         }
 
-        printf("[%d] ", getpid());
+        /*printf("[%d] ", getpid());*/
         ll_print(sublist);
         r->how_many = how_many;
         r->port_id = best_route;
         r->goods_to_send = sublist;
-        printf("Route found: from %d to %d with %d tons available to exchange\n", id, best_route, (shm_cfg->SO_CAPACITY - best_tons_available));
+        /*printf("Route found: from %d to %d with %d tons available to exchange\n", id, best_route, (shm_cfg->SO_CAPACITY - best_tons_available));*/
     } else {
         r->how_many = 0;
         r->goods_to_send = NULL;
@@ -336,17 +336,17 @@ void porto_sig_handler(int signum) {
             break;
         case SIGUSR1:
             /* swell occurred */
-            printf("[PORTO] SWELL: %d\n", getpid());
+            /*printf("[PORTO] SWELL: %d\n", getpid());*/
             shm_dump_ports[id].on_swell = 1;
             nanosleep_function(shm_cfg->SO_SWELL_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH,
                                "Generic error while sleeping because of the swell");
             shm_dump_ports[id].on_swell = 0;
-            printf("[PORTO] END SWELL: %d\n", getpid());
+            /*printf("[PORTO] END SWELL: %d\n", getpid());*/
             break;
         case SIGUSR2:
             break;
         default:
-            printf("[PORTO] Signal: %s\n", strsignal(signum));
+            /*printf("[PORTO] Signal: %s\n", strsignal(signum));*/
             break;
     }
 

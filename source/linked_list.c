@@ -47,18 +47,18 @@ void ll_print(struct node *head) {
     struct node *cur;
 
     if(!head) {
-        printf("[0/0/0]\n");
+        /*printf("[0/0/0]\n");*/
         return;
     }
 
     cur = head;
 
     while(cur->next) {
-        printf("[%d, %d, %d] -> ", cur->element->id, cur->element->quantity, cur->element->lifespan);
+        /*printf("[%d, %d, %d] -> ", cur->element->id, cur->element->quantity, cur->element->lifespan);*/
         cur = cur->next;
     }
 
-    printf("[%d, %d, %d].\n", cur->element->id, cur->element->quantity, cur->element->lifespan);
+    /*printf("[%d, %d, %d].\n", cur->element->id, cur->element->quantity, cur->element->lifespan);*/
 }
 
 

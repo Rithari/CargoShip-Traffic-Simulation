@@ -153,7 +153,7 @@ int main(int argc, char** argv) {
                                    "[NAVE] Generic error while unloading the ship");
                 __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_delivered, head->element->quantity * shm_goods_template[head->element->id].tons);
                 __sync_fetch_and_add(&shm_dump_ports[sender_port].good_send, head->element->quantity * shm_goods_template[head->element->id].tons);
-                printf("[%d] Ho scaricato: [%d/%d/%d]\n", getpid(), head->element->id, head->element->quantity, head->element->quantity);
+                /*printf("[%d] Ho scaricato: [%d/%d/%d]\n", getpid(), head->element->id, head->element->quantity, head->element->quantity);*/
             } else {
                 /* good lost, update dumps */
                 __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_on_ship, head->element->quantity * shm_goods_template[head->element->id].tons);
@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
             head = ll_pop(head);
         }
 
-        printf("[%d] Unload operation done!\n", getpid());
+        /*printf("[%d] Unload operation done!\n", getpid());*/
 
         msg.mtype = id_actual_port + 1;
         msg.response_pid = getpid();
@@ -176,34 +176,34 @@ int main(int argc, char** argv) {
         }
 
         if (msg.response_pid >= 0) {
-            printf("[%d] Sto andando al porto: %d e sto caricando: %d merci\n", getpid(), msg.response_pid, msg.how_many);
+            /*printf("[%d] Sto andando al porto: %d e sto caricando: %d merci\n", getpid(), msg.response_pid, msg.how_many);*/
             for (i = 0, time_to_sleep = 0; i < msg.how_many; i++) {
                 while (msgrcv(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), getpid(), 0) < 0) {
                     CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while waiting good message")
                 }
-                printf("[%d] [%d/%d/%d]\n ", getpid(), msg_g.to_add.id, msg_g.to_add.quantity, msg_g.to_add.lifespan);
+                /*printf("[%d] [%d/%d/%d]\n ", getpid(), msg_g.to_add.id, msg_g.to_add.quantity, msg_g.to_add.lifespan);*/
                 __sync_fetch_and_add(&shm_dump_goods[msg_g.to_add.id].good_on_ship, msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons);
                 head = ll_add(head, &msg_g.to_add);
                 ll_print(head);
                 time_to_sleep += msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons;
             }
 
-            printf("[%d] time_to_sleep: %f\n", getpid(), time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED);
+            /*printf("[%d] time_to_sleep: %f\n", getpid(), time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED);*/
 
             nanosleep_function(time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
                                "[NAVE] Generic error while loading the ship");
 
             /*shm_dump_goods[selected_good].state++; */
 
-            printf("[%d] Load operation!\n", getpid());
+            /*printf("[%d] Load operation!\n", getpid());*/
             /* destinazione delle merci se esiste una tratta*/
             id_destination_port = msg.response_pid;
 
-            printf("[%d] Choose port no: [%d] from [%d]\n", getpid(), id_destination_port, id_actual_port);
+            /*printf("[%d] Choose port no: [%d] from [%d]\n", getpid(), id_destination_port, id_actual_port);*/
         } else {
             /* destinazione delle merci se non esiste una tratta*/
             id_destination_port = get_nearest_port();
-            printf("[%d] No route found, ship will go in port [%d] :C\n", getpid(), id_destination_port);
+            /*printf("[%d] No route found, ship will go in port [%d] :C\n", getpid(), id_destination_port);*/
         }
     }
 }
@@ -217,7 +217,7 @@ void move(int id_destination) {
     nanosleep_function(navigation_time, "[NAVE] Generic error while moving");
     shm_pid_array[id + shm_cfg->SO_PORTI] = -shm_pid_array[id + shm_cfg->SO_PORTI];
 
-    printf("[%d] Arrived in port no: [%d]\tNavigation time: %f\n", getpid(), id_destination, navigation_time);
+    /*printf("[%d] Arrived in port no: [%d]\tNavigation time: %f\n", getpid(), id_destination, navigation_time);*/
     fflush(stdout);
     actual_coordinate = shm_ports_coords[id_destination];
 }
@@ -276,7 +276,7 @@ void nave_sig_handler(int signum) {
             break;
         case SIGUSR1:
             /* storm occurred */
-            printf("[NAVE] STORM: %d\n", getpid());
+            /*printf("[NAVE] STORM: %d\n", getpid());*/
             while (sem_cmd(shm_cfg->sem_id_dump_mutex, 1, -1, 0)) {
                 CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while trying to release sem_id_dump_mutex[0]")
             }
@@ -309,7 +309,7 @@ void nave_sig_handler(int signum) {
             }
             exit(EXIT_SUCCESS);
         default:
-            printf("[NAVE] Signal: %s\n", strsignal(signum));
+            /*printf("[NAVE] Signal: %s\n", strsignal(signum));*/
             break;
     }
 
