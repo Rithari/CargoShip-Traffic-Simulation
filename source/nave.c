@@ -156,9 +156,9 @@ int main(int argc, char** argv) {
                 printf("[%d] Ho scaricato: [%d/%d/%d]\n", getpid(), head->element->id, head->element->quantity, head->element->quantity);
             } else {
                 /* good lost, update dumps */
-                __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_on_ship, head->element->quantity);
+                __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_on_ship, head->element->quantity * shm_goods_template[head->element->id].tons);
             }
-            __sync_fetch_and_sub(&shm_dump_goods[head->element->id].good_on_ship, head->element->quantity);
+            __sync_fetch_and_sub(&shm_dump_goods[head->element->id].good_on_ship, head->element->quantity * shm_goods_template[head->element->id].tons);
             head = ll_pop(head);
         }
 
@@ -182,7 +182,7 @@ int main(int argc, char** argv) {
                     CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while waiting good message")
                 }
                 printf("[%d] [%d/%d/%d]\n ", getpid(), msg_g.to_add.id, msg_g.to_add.quantity, msg_g.to_add.lifespan);
-                __sync_fetch_and_add(&shm_dump_goods[msg_g.to_add.id].good_on_ship, msg_g.to_add.quantity);
+                __sync_fetch_and_add(&shm_dump_goods[msg_g.to_add.id].good_on_ship, msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons);
                 head = ll_add(head, &msg_g.to_add);
                 ll_print(head);
                 time_to_sleep += msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons;
@@ -295,8 +295,8 @@ void nave_sig_handler(int signum) {
             if (head) {
                 cur = head;
                 while (cur) {
-                    __sync_fetch_and_add(&shm_dump_goods[cur->element->id].good_expired_on_ship, cur->element->quantity);
-                    __sync_fetch_and_sub(&shm_dump_goods[cur->element->id].good_on_ship, cur->element->quantity);
+                    __sync_fetch_and_add(&shm_dump_goods[cur->element->id].good_expired_on_ship, cur->element->quantity * shm_goods_template[cur->element->id].tons);
+                    __sync_fetch_and_sub(&shm_dump_goods[cur->element->id].good_on_ship, cur->element->quantity * shm_goods_template[cur->element->id].tons);
                     cur = cur->next;
                }
 
