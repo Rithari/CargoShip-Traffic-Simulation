@@ -68,8 +68,8 @@ typedef struct {
     int     good_received;
     int     dock_total;
     int     dock_available;
-    int     generated_goods_request;
-    int     generated_goods_offers;
+    int     total_goods_requested;
+    int     total_goods_offers;
     int     on_swell;
     int     ton_in_excess;
 } dump_ports;
@@ -113,6 +113,8 @@ typedef struct {
     int     SO_SWELL_DURATION;
     int     SO_MAELSTORM;
     int     GENERATING_PORTS;
+    int     SO_PRINT_PORTS;
+    int     SO_PRINT_GOODS;
     int     shm_id_goods_template;
     int     shm_id_ports_coords;
     int     shm_id_pid_array;

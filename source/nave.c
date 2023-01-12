@@ -27,7 +27,6 @@ int     shm_id_config;
 int     id;
 
 coord   actual_coordinate;
-unsigned int     actual_capacity;
 int     id_actual_port;
 int     id_destination_port;
 struct node *head;
@@ -48,8 +47,19 @@ int main(int argc, char** argv) {
 
     if(argc != 3) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
-        CHECK_ERROR_CHILD(kill(getppid(), SIGINT) && (errno != ESRCH), "[NAVE] Error while trying kill")
+        exit(EXIT_FAILURE);
     }
+
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = nave_sig_handler;
+    sigaction(SIGCONT, &sa, NULL);
+    sigaction(SIGUSR2, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+    sa.sa_flags |= SA_NODEFER;
+    sigaction(SIGUSR1, &sa, NULL);
+    sigaddset(&sa.sa_mask, SIGUSR1);
+    sigaddset(&sa.sa_mask, SIGTERM);
+    sigaction(SIGALRM, &sa, NULL);
 
     srandom(getpid());
     head = NULL;
@@ -90,21 +100,8 @@ int main(int argc, char** argv) {
 
     actual_coordinate.x = rndx;
     actual_coordinate.y = rndy;
-    actual_capacity = 0;
     id_actual_port = -1;
     id_destination_port = -1; /* ship in sea */
-
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = nave_sig_handler;
-    sigaction(SIGCONT, &sa, NULL);
-    sigaction(SIGUSR2, &sa, NULL);
-    sigaction(SIGTERM, &sa, NULL);
-    sa.sa_flags |= SA_NODEFER;
-    sigaction(SIGUSR1, &sa, NULL);
-    sigaddset(&sa.sa_mask, SIGUSR1);
-    sigaddset(&sa.sa_mask, SIGTERM);
-    sigaction(SIGALRM, &sa, NULL);
-
 
     CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
                       "[NAVE] Error while trying to release sem_id_gen_precedence")
@@ -246,7 +243,7 @@ int get_nearest_port(void) {
 
 void dump_ship_data(void) {
     if (id_actual_port < 0) {
-        if (actual_capacity) {
+        if (head) {
             __sync_fetch_and_add(&shm_dump_ships->with_cargo_en_route, 1);
         } else {
             __sync_fetch_and_add(&shm_dump_ships->without_cargo_en_route, 1);

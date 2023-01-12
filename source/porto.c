@@ -41,12 +41,24 @@ int main(int argc, char *argv[]) {
     route* r;
     msg_goods msg_g;
 
-    srandom(getpid());
-
     if(argc != 3) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
-        CHECK_ERROR_CHILD(kill(getppid(), SIGINT) && (errno != ESRCH), "[PORTO] Error while trying kill")
+        exit(EXIT_FAILURE);
     }
+
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = porto_sig_handler;
+
+    sigaction(SIGCONT, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGUSR2, &sa, NULL);
+    sa.sa_flags |= SA_NODEFER;
+    sigaction(SIGUSR1, &sa, NULL);
+    sigaddset(&sa.sa_mask, SIGUSR1);
+    sigaction(SIGALRM, &sa, NULL);
+
+    srandom(getpid());
 
     shm_id_config = string_to_int(argv[1]);
     CHECK_ERROR_CHILD(errno, "[PORTO] Error while trying to convert shm_id_config")
@@ -76,18 +88,6 @@ int main(int argc, char *argv[]) {
 
     head = NULL;
 
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = porto_sig_handler;
-
-    sigaction(SIGCONT, &sa, NULL);
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGTERM, &sa, NULL);
-    sigaction(SIGUSR2, &sa, NULL);
-    sa.sa_flags |= SA_NODEFER;
-    sigaction(SIGUSR1, &sa, NULL);
-    sigaddset(&sa.sa_mask, SIGUSR1);
-    sigaction(SIGALRM, &sa, NULL);
-
     CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
                       "[PORTO] Error while trying to release sem_id_gen_precedence")
 
@@ -115,8 +115,7 @@ int main(int argc, char *argv[]) {
             r = generate_route();
             msg.how_many = r->how_many;
             msg.response_pid = r->port_id;
-            ll_print(r->goods_to_send);
-            printf("SIUM1\n");
+            /*ll_print(r->goods_to_send);*/
             while (msgsnd(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg) - sizeof(long), 0)) {
                 CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message")
             }
@@ -137,7 +136,7 @@ int main(int argc, char *argv[]) {
             }
             ll_free(r->goods_to_send);
             free(r);
-            printf("[%d] Ok given to [%ld]\n", getpid(), msg.mtype);
+            /*printf("[%d] Ok given to [%ld]\n", getpid(), msg.mtype);*/
         } else {
             msg.how_many = 0;
             msg.response_pid = -1;
@@ -151,11 +150,16 @@ int main(int argc, char *argv[]) {
 void generate_goods(void) {
     int i;
     int selected_quantity;
-    int tons_per_port = shm_cfg->SO_FILL / shm_cfg->SO_DAYS / shm_cfg->GENERATING_PORTS + shm_dump_ports[id].ton_in_excess;
+    int tons_per_port_offers = shm_cfg->SO_FILL / shm_cfg->SO_DAYS / shm_cfg->GENERATING_PORTS;
+    int tons_per_port_request = tons_per_port_offers;
     goods to_add;
 
-    for(i = (int) random() % shm_cfg->SO_MERCI; tons_per_port > shm_goods_template[0].tons; i = (i + 1) % shm_cfg->SO_MERCI) {
-        int max_quantity = tons_per_port / shm_goods_template[i].tons;
+    tons_per_port_offers += shm_dump_ports[id].ton_in_excess;
+    shm_dump_ports[id].total_goods_offers += tons_per_port_offers;
+    shm_dump_ports[id].total_goods_requested += tons_per_port_request;
+
+    for(i = (int) random() % shm_cfg->SO_MERCI; tons_per_port_offers > shm_goods_template[0].tons; i = (i + 1) % shm_cfg->SO_MERCI) {
+        int max_quantity = tons_per_port_offers / shm_goods_template[i].tons;
 
         if (max_quantity) {
             selected_quantity = (int) random() % max_quantity + 1;
@@ -171,10 +175,10 @@ void generate_goods(void) {
             } else {
                 shm_goods[id * shm_cfg->SO_MERCI + i] -= selected_quantity;
             }
-            tons_per_port -= (selected_quantity * shm_goods_template[i].tons);
+            tons_per_port_offers -= (selected_quantity * shm_goods_template[i].tons);
         }
     }
-    shm_dump_ports[id].ton_in_excess = tons_per_port;
+    shm_dump_ports[id].ton_in_excess = tons_per_port_offers;
 }
 
 route* generate_route(void) {

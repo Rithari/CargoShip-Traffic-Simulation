@@ -16,3 +16,5 @@ SO_DAY_LENGTH:      1
 SO_STORM_DURATION:  12 # hours
 SO_SWELL_DURATION:  10 # hours
 SO_MAELSTORM:       1 # hours
+SO_PRINT_PORTS:     3
+SO_PRINT_GOODS:     3

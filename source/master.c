@@ -49,10 +49,22 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    CHECK_ERROR_MASTER(atexit(clear_all), "[MASTER] Error while trying to register clear_all function to atexit")
-
     /* Check if the file path in argv1 exists */
-    CHECK_ERROR_MASTER(access(argv[1], F_OK), "[MASTER] Error while trying to access the configuration file")
+    if (access(argv[1], F_OK | R_OK)) {
+        perror("[MASTER] Error while trying to access the configuration file");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Initialize sigaction struct */
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = master_sig_handler;
+    sa.sa_flags = SA_RESTART;
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGALRM, &sa, NULL);
+    sigaction(SIGUSR1, &sa, NULL);
+
+    CHECK_ERROR_MASTER(atexit(clear_all), "[MASTER] Error while trying to register clear_all function to atexit")
 
     srandom(getpid());
 
@@ -86,8 +98,6 @@ int main(int argc, char **argv) {
                 "[MASTER] Error while creating shared memory for ports coordinates")
     CHECK_ERROR_MASTER((shm_ports_coords = shmat(shm_cfg->shm_id_ports_coords, NULL, 0)) == (void *) -1,
                 "[MASTER] Error while trying to attach to ports coordinates shared memory")
-
-
 
     initialize_ports_coords();
 
@@ -181,15 +191,6 @@ int main(int argc, char **argv) {
                 "[MASTER] Error while waiting for ships generation")
 
     create_weather();
-
-    /* Initialize sigaction struct */
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = master_sig_handler;
-    sa.sa_flags = SA_RESTART;
-    sigaction(SIGTERM, &sa, NULL);
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGALRM, &sa, NULL);
-    sigaction(SIGUSR1, &sa, NULL);
 
     printf("INIZIO SIMULAZIONE!\n");
     CHECK_ERROR_MASTER(killpg(0, SIGCONT) && (errno != ESRCH), "[MASTER] Error while trying killpg")
@@ -297,16 +298,18 @@ void initialize_so_vars(char* path_cfg_file) {
             check |= 1 << 15;
         } else if (sscanf(buffer, "SO_MAELSTORM: %d", &shm_cfg->SO_MAELSTORM) == 1) {
             check |= 1 << 16;
+        } else if (sscanf(buffer, "SO_PRINT_PORTS: %d", &shm_cfg->SO_PRINT_PORTS) == 1) {
+            check |= 1 << 17;
+        } else if (sscanf(buffer, "SO_PRINT_GOODS: %d", &shm_cfg->SO_PRINT_GOODS) == 1) {
+            check |= 1 << 18;
         }
     }
     CHECK_ERROR_MASTER(fclose(fp), "[MASTER] Error while closing the fp")
 
     errno = EINVAL;
-    CHECK_ERROR_MASTER(check != 0x1FFFF, "[MASTER] Missing config")
+    CHECK_ERROR_MASTER(check != 0x7FFFF, "[MASTER] Missing config")
     CHECK_ERROR_MASTER(shm_cfg->SO_NAVI < 1, "[MASTER] SO_NAVI is less than 1")
     CHECK_ERROR_MASTER(shm_cfg->SO_PORTI < 4, "[MASTER] SO_PORTI is less than 4")
-    CHECK_ERROR_MASTER(shm_cfg->SO_PORTI + shm_cfg->SO_NAVI > USHRT_MAX,
-                       "[MASTER] Too many processes than the sem_val limit")
     CHECK_ERROR_MASTER(shm_cfg->SO_PORTI + shm_cfg->SO_NAVI + 1 > sysconf(_SC_CHILD_MAX),
                        "[MASTER] Too many processes than the _SC_CHILD_MAX limit")
     CHECK_ERROR_MASTER(shm_cfg->SO_MERCI <= 0, "[MASTER] SO_MERCI is less or equal than 0")
@@ -316,7 +319,6 @@ void initialize_so_vars(char* path_cfg_file) {
     CHECK_ERROR_MASTER(shm_cfg->SO_SPEED <= 0, "[MASTER] SO_SPEED is less or equal than 0")
     CHECK_ERROR_MASTER(shm_cfg->SO_CAPACITY <= 0, "[MASTER] SO_CAPACITY is less or equal than 0")
     CHECK_ERROR_MASTER(shm_cfg->SO_BANCHINE <= 0, "[MASTER] SO_BANCHINE is less or equal than 0")
-    CHECK_ERROR_MASTER(shm_cfg->SO_BANCHINE > USHRT_MAX, "SO_BANCHINE is greater than the sem_val limit")
     CHECK_ERROR_MASTER(shm_cfg->SO_FILL <= 0, "[MASTER] SO_FILL is less or equal than 0")
     CHECK_ERROR_MASTER(shm_cfg->SO_LOADSPEED <= 0, "[MASTER] SO_LOADSPEED is less or equal than 0")
     CHECK_ERROR_MASTER(shm_cfg->SO_DAYS <= 0, "[MASTER] SO_DAYS is less or equal than 0")
@@ -324,6 +326,8 @@ void initialize_so_vars(char* path_cfg_file) {
     CHECK_ERROR_MASTER(shm_cfg->SO_STORM_DURATION < 0, "[MASTER] SO_STORM_DURATION is less than 0")
     CHECK_ERROR_MASTER(shm_cfg->SO_SWELL_DURATION < 0, "[MASTER] SO_SWELL_DURATION is less than 0")
     CHECK_ERROR_MASTER(shm_cfg->SO_MAELSTORM < 0, "[MASTER] SO_MAELSTORM is less than 0")
+    CHECK_ERROR_MASTER(shm_cfg->SO_PRINT_PORTS < 0, "[MASTER] SO_PRINT_PORTS is less than 0")
+    CHECK_ERROR_MASTER(shm_cfg->SO_PRINT_GOODS < 0, "[MASTER] SO_PRINT_GOODS is less than 0")
 
     shm_cfg->CURRENT_DAY = 0;
     errno = 0;
@@ -475,7 +479,7 @@ void print_dump(void) {
     printf("Total goods: %d\n", sum);
 }
 
-void  final_print(void) {
+void final_print(void) {
     int i;
     int bestOfferer = INT_MIN;
     int bestReceiver = INT_MIN;
@@ -577,8 +581,7 @@ void master_sig_handler(int signum) {
             for(i = 0; i < shm_cfg->SO_PORTI; i++) {
                 CHECK_ERROR_MASTER(kill(abs(shm_pid_array[i]), SIGTERM) && (errno != ESRCH), "[MASTER] Error while sending sigterm to children")
             }
-            print_dump();
-            break;
+            return;
         default:
             printf("[MASTER] Signal: %s\n", strsignal(signum));
             break;

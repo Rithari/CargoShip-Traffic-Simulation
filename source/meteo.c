@@ -17,8 +17,17 @@ int main(int argc, char** argv) {
 
     if(argc != 2) {
         printf("Incorrect number of parameters [%d]. Exiting...\n", argc);
-        CHECK_ERROR_CHILD(kill(getppid(), SIGINT) && (errno != ESRCH), "[METEO] Error while trying kill")
+        exit(EXIT_FAILURE);
     }
+
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = meteo_sig_handler;
+    sa.sa_flags = SA_RESTART;
+
+    sigaction(SIGALRM, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGCONT, &sa, NULL);
 
     srandom(getpid());
 
@@ -40,15 +49,6 @@ int main(int argc, char** argv) {
     for(i = 0; i < shm_cfg->SO_NAVI; i++) {
         index_pid_status[i] = i;
     }
-
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = meteo_sig_handler;
-    sa.sa_flags = SA_RESTART;
-
-    sigaction(SIGALRM, &sa, NULL);
-    sigaction(SIGTERM, &sa, NULL);
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGCONT, &sa, NULL);
 
     pause();
 
