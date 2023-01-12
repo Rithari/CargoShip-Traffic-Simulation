@@ -11,6 +11,7 @@
 /* initialize @*cfg with parameters wrote on @*path_cfg_file*/
 void initialize_so_vars(char* path_cfg_file);
 void initialize_ports_coords(void);
+void final_print(void);
 
 void create_ships(void);
 void create_ports(void);
@@ -446,7 +447,7 @@ void print_dump(void) {
     fprintf(output, "###### DUMP:\n");
     printf("---MERCI---\n");
     for(i = 0; i < shm_cfg->SO_MERCI; i++) {
-        printf("ID: [%d]\tSTATE: [%d/%d/%d/%d/%d]\n", shm_dump_goods[i].id, shm_dump_goods[i].good_delivered,
+        printf("ID: [%d]\tSTATE: [good_delivered: %d  |  good_in_port: %d  |  good_on_ship: %d  |  good_expired_in_port: %d  |  good_expired_on_ship: %d]\n", i, shm_dump_goods[i].good_delivered,
                shm_dump_goods[i].good_in_port, shm_dump_goods[i].good_on_ship, shm_dump_goods[i].good_expired_in_port, shm_dump_goods[i].good_expired_on_ship);
         printf("------\n");
     }
@@ -472,6 +473,24 @@ void print_dump(void) {
         sum += shm_dump_goods[i].good_in_port + shm_dump_goods[i].good_expired_on_ship + shm_dump_goods[i].good_expired_in_port + shm_dump_goods[i].good_on_ship + shm_dump_goods[i].good_delivered;
     }
     printf("Total goods: %d\n", sum);
+}
+
+void  final_print(void) {
+    int i;
+    int bestOfferer = INT_MIN;
+    int bestReceiver = INT_MIN;
+    printf("-------------FINAL DUMPS-------------");
+    printf("Ships at sea at the end of the simulation: %d\n", (shm_dump_ships->with_cargo_en_route + shm_dump_ships->without_cargo_en_route));
+    printf("Number of ships still at sea with a cargo on board: %d\n", shm_dump_ships->with_cargo_en_route);
+    printf("Number of ships still at sea without a cargo: %d\n", shm_dump_ships->without_cargo_en_route);
+    printf("Number of ships occupying a dock: %d\n", shm_dump_ships->being_loaded_unloaded);
+    printf("---Final status of goods:\n");
+    for(i = 0; i < shm_cfg->SO_MERCI; i++) {
+        printf("ID: [%d]\tSTATE: [good_delivered: %d  |  good_in_port: %d  |  good_on_ship: %d  |  good_expired_in_port: %d  |  good_expired_on_ship: %d]\n", i, shm_dump_goods[i].good_delivered,
+               shm_dump_goods[i].good_in_port, shm_dump_goods[i].good_on_ship, shm_dump_goods[i].good_expired_in_port, shm_dump_goods[i].good_expired_on_ship);
+    }
+    printf("---The best port for generated supply and generated demand: \n");
+    /*un for che scorre per ogni porto la quantità totale di merce generata e la quantita totale di merci generate*/
 }
 
 void generate_goods(void) {
