@@ -181,16 +181,13 @@ int main(int argc, char** argv) {
                 /*printf("[%d] [%d/%d/%d]\n ", getpid(), msg_g.to_add.id, msg_g.to_add.quantity, msg_g.to_add.lifespan);*/
                 __sync_fetch_and_add(&shm_dump_goods[msg_g.to_add.id].good_on_ship, msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons);
                 head = ll_add(head, &msg_g.to_add);
-                ll_print(head);
+                /* ll_print(head); */
                 time_to_sleep += msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons;
             }
 
-            /*printf("[%d] time_to_sleep: %f\n", getpid(), time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED);*/
-
+            /* printf("[%d] time_to_sleep: %f\n", getpid(), time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED); */
             nanosleep_function(time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
                                "[NAVE] Generic error while loading the ship");
-
-            /*shm_dump_goods[selected_good].state++; */
 
             /*printf("[%d] Load operation!\n", getpid());*/
             /* destinazione delle merci se esiste una tratta*/
@@ -219,7 +216,7 @@ void move(int id_destination) {
     actual_coordinate = shm_ports_coords[id_destination];
 }
 
-
+/* TODO: need improvement */
 int get_nearest_port(void) {
     int i, j, k;
 
@@ -301,13 +298,8 @@ void nave_sig_handler(int signum) {
             }
             /* kill(abs(shm_pid_array[id_actual_port]), SIGUSR2); */
 
-            while (msgrcv(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), getpid(), IPC_NOWAIT)) {
-                CHECK_ERROR_CHILD(errno != EINTR && errno != EAGAIN, "[NAVE] Error while waiting handshake message")
-            }
-
-            while (msgrcv(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg_handshake) - sizeof(long), getpid(), IPC_NOWAIT)) {
-                CHECK_ERROR_CHILD(errno != EINTR && errno != EAGAIN, "[NAVE] Error while waiting handshake message")
-            }
+            while (msgrcv(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), getpid(), IPC_NOWAIT) && errno != ENOMSG);
+            while (msgrcv(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg_handshake) - sizeof(long), getpid(), IPC_NOWAIT) && errno != ENOMSG);
 
             if (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, IPC_NOWAIT)) {
                 CHECK_ERROR_CHILD(errno != EINTR && errno != EAGAIN,

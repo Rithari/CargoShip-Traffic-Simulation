@@ -101,16 +101,6 @@ int main(int argc, char *argv[]) {
         /*printf("[%d] Received message from [%d]\n", getpid(), msg.response_pid);*/
         msg.mtype = msg.response_pid;
 
-        while (head && head->element->lifespan < shm_cfg->CURRENT_DAY) {
-            /* update dumps */
-            /*printf("[%d] Port lost good :C\n", getpid());*/
-            __sync_fetch_and_sub(&shm_goods[id * shm_cfg->SO_MERCI + head->element->id], head->element->quantity);
-            __sync_fetch_and_sub(&shm_dump_ports[id].good_available, head->element->quantity * shm_goods_template[head->element->id].tons);
-            __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_in_port, head->element->quantity * shm_goods_template[head->element->id].tons);
-
-            head = ll_pop(head);
-        }
-
         if (head) {
             r = generate_route();
             msg.how_many = r->how_many;
@@ -164,7 +154,7 @@ void generate_goods(void) {
         if (max_quantity) {
             selected_quantity = (int) random() % max_quantity + 1;
 
-            if (random() & 1 && shm_goods[id * shm_cfg->SO_MERCI + i] == 0 || shm_goods[id * shm_cfg->SO_MERCI + i] > 0) {
+            if ((random() & 1) && shm_goods[id * shm_cfg->SO_MERCI + i] == 0 || shm_goods[id * shm_cfg->SO_MERCI + i] > 0) {
                 to_add.lifespan = shm_cfg->CURRENT_DAY + shm_goods_template[i].lifespan;
                 to_add.id = i;
                 to_add.quantity = selected_quantity;
@@ -230,6 +220,16 @@ route* generate_route(void) {
     if(best_tons_available < shm_cfg->SO_CAPACITY) {
         int how_many;
 
+        while (head && head->element->lifespan < shm_cfg->CURRENT_DAY) {
+            /* update dumps */
+            /*printf("[%d] Port lost good :C\n", getpid());*/
+            __sync_fetch_and_sub(&shm_goods[id * shm_cfg->SO_MERCI + head->element->id], head->element->quantity);
+            __sync_fetch_and_sub(&shm_dump_ports[id].good_available, head->element->quantity * shm_goods_template[head->element->id].tons);
+            __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_in_port, head->element->quantity * shm_goods_template[head->element->id].tons);
+
+            head = ll_pop(head);
+        }
+
         for (i = 0, how_many = 0; i < shm_cfg->SO_MERCI; i++) {
             if (!goods_to_get[i]) continue;
 
@@ -237,6 +237,7 @@ route* generate_route(void) {
 
             while (goods_to_get[i] > 0 && cur) {
                 /* qui si può controllare anche la fattibilità dell'utilizzare la merce con il calcolo del tempo... */
+
                 if (cur->element->id == i) {
                     /*printf("PRE: ");
                     ll_print(head); */
@@ -266,9 +267,6 @@ route* generate_route(void) {
                 } else cur = cur->next;
             }
         }
-
-        /*printf("[%d] ", getpid());*/
-        ll_print(sublist);
         r->how_many = how_many;
         r->port_id = best_route;
         r->goods_to_send = sublist;
@@ -278,7 +276,6 @@ route* generate_route(void) {
         r->goods_to_send = NULL;
         r->port_id = -1;
     }
-
     free(goods_to_get);
     free(tmp_goods_to_get);
 

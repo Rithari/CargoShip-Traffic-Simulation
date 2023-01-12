@@ -86,7 +86,7 @@ void meteo_sig_handler(int signum) {
                 kill(abs(shm_pid_array[random() % shm_cfg->SO_PORTI]), SIGUSR1);
             }
             if (shm_cfg->SO_STORM_DURATION > 0) {
-                unsigned int i, j;
+                int i, j;
                 for(i = 0, j = (int) random() % available_ships; i < shm_cfg->SO_NAVI; i++, j = (j + 1) % available_ships) {
                     if (shm_pid_array[index_pid_status[j] + shm_cfg->SO_PORTI] < 0) {
                         kill(abs(shm_pid_array[index_pid_status[j] + shm_cfg->SO_PORTI]), SIGUSR1);
