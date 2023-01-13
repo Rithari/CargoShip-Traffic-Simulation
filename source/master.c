@@ -495,6 +495,16 @@ void final_print(void) {
     }
     printf("---The best port for generated supply and generated demand: \n");
     /*un for che scorre per ogni porto la quantità totale di merce generata e la quantita totale di merci generate*/
+    for(i = 0; i < shm_cfg->SO_PORTI; i++){
+        if(shm_dump_ports[i].total_goods_offers > bestOfferer) {
+            bestOfferer = i;
+        }
+        if(shm_dump_ports[i].total_goods_requested > bestReceiver) {
+            bestReceiver = i;
+        }
+    }
+    printf("Best port for the generated offer: %d  --> %d", bestOfferer, shm_dump_ports[bestOfferer].total_goods_offers);
+    printf("Best port for the generated request: %d --> %d", bestReceiver, shm_dump_ports[bestReceiver].total_goods_requested);
 }
 
 void generate_goods(void) {
