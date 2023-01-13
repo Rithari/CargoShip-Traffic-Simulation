@@ -460,9 +460,10 @@ void print_dump(void) {
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
         fprintf(output,"ID: [%d]\tON_SWELL: [%d]\n", i, shm_dump_ports[i].on_swell);
         fprintf(output,"DOCK: [%d/%d]\n", shm_dump_ports[i].dock_available, shm_dump_ports[i].dock_total);
-        fprintf(output,"GOODS: [goods_available: %d  |  good_send: %d  |  good_received: %d  |  ton_in_excess: %d]\n", shm_dump_ports[i].good_available, shm_dump_ports[i].good_send,
-               shm_dump_ports[i].good_received, shm_dump_ports[i].ton_in_excess);
-        fprintf(output,"---------------------------\n");
+        fprintf(output,"GOODS: [goods_available: %d  |  good_send: %d  |  good_received: %d  |  ton_in_excess_offers: %d |  ton_in_excess_request: %d]\n",
+                shm_dump_ports[i].good_available, shm_dump_ports[i].good_send,
+               shm_dump_ports[i].good_received, shm_dump_ports[i].ton_in_excess_offers, shm_dump_ports[i].ton_in_excess_request);
+        fprintf(output,"-----------\n");
     }
     fprintf(output,"---------------------------------NAVI---------------------------------\n");
     fprintf(output,"SHIPS: [Ship with cargo: %d  |  Ship without cargo: %d  |  Ship loading or unloading: %d]\n", shm_dump_ships->with_cargo_en_route,
@@ -471,12 +472,9 @@ void print_dump(void) {
     fprintf(output,"----------------------------------------------------------------------\n");
 
     for (i = 0; i < shm_cfg->SO_PORTI; i++) {
-        sum += shm_dump_ports[i].ton_in_excess;
+        sum += shm_dump_ports[i].ton_in_excess_offers + shm_dump_ports[i].total_goods_offers;
     }
 
-    for (i = 0; i < shm_cfg->SO_MERCI; i++) {
-        sum += shm_dump_goods[i].good_in_port + shm_dump_goods[i].good_expired_on_ship + shm_dump_goods[i].good_expired_in_port + shm_dump_goods[i].good_on_ship + shm_dump_goods[i].good_delivered;
-    }
     printf("Total goods: %d\n", sum);
     selected_prints();
 }
@@ -486,17 +484,17 @@ void selected_prints(void) {
     int rng;
     printf("-----------------------------------------------------------------Stampa di %d PORTI: \n", shm_cfg->SO_PRINT_PORTS);
     for(i = 0; i < shm_cfg->SO_PRINT_PORTS; i++) {
-        rng = random()%shm_cfg->SO_PORTI;
+        rng = (int) random()%shm_cfg->SO_PORTI;
         printf("ID: [%d]\tON_SWELL: [%d]\n", rng, shm_dump_ports[rng].on_swell);
         printf("DOCK: [%d/%d]\n", shm_dump_ports[rng].dock_available, shm_dump_ports[rng].dock_total);
-        printf("GOODS: [goods_available: %d  |  good_send: %d  |  good_received: %d  |  ton_in_excess: %d]\n",
+        printf("GOODS: [goods_available: %d  |  good_send: %d  |  good_received: %d  |  ton_in_excess_offers: %d |  ton_in_excess_request: %d]\n",
                shm_dump_ports[rng].good_available, shm_dump_ports[rng].good_send,
-               shm_dump_ports[rng].good_received, shm_dump_ports[rng].ton_in_excess);
+               shm_dump_ports[rng].good_received, shm_dump_ports[rng].ton_in_excess_offers, shm_dump_ports[rng].ton_in_excess_request);
         printf("----------------------------------------------\n");
     }
     printf("-----------------------------------------------------------------Stampa di %d MERCI: \n", shm_cfg->SO_PRINT_GOODS);
     for (i = 0; i < shm_cfg->SO_PRINT_GOODS ; i++) {
-        rng = random()%shm_cfg->SO_MERCI;
+        rng = (int) random()%shm_cfg->SO_MERCI;
         printf("ID: [%d]\tSTATE: [good_delivered: %d  |  good_in_port: %d  |  good_on_ship: %d  |  good_expired_in_port: %d  |  good_expired_on_ship: %d]\n", rng, shm_dump_goods[rng].good_delivered,
                shm_dump_goods[rng].good_in_port, shm_dump_goods[rng].good_on_ship, shm_dump_goods[rng].good_expired_in_port, shm_dump_goods[rng].good_expired_on_ship);
         printf("----------------------------------------------\n");
@@ -549,7 +547,10 @@ void generate_goods(void) {
     shm_cfg->GENERATING_PORTS = (int) random() % shm_cfg->SO_PORTI;
 
     for (i = 0; i < shm_cfg->GENERATING_PORTS; i++) {
-        int index = (int) random() % shm_cfg->SO_PORTI;
+        int index;
+
+        while ((index = (int) random() % shm_cfg->SO_PORTI) && shm_pid_array[index] < 0);
+
         shm_pid_array[index] = -shm_pid_array[index];
     }
 
@@ -571,9 +572,7 @@ void master_sig_handler(int signum) {
             exit(EXIT_FAILURE);
         /* Still needs to deal with statistics first */
         case SIGALRM:
-
             printf("\x1b[32m Day [%d]/[%d].\x1b[0m\n", ++shm_cfg->CURRENT_DAY, shm_cfg->SO_DAYS);
-
 
             if(shm_cfg->CURRENT_DAY == shm_cfg->SO_DAYS) {
                 for(i = 0; i < shm_cfg->SO_PORTI + shm_cfg->SO_NAVI; i++) {

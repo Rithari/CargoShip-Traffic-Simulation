@@ -71,7 +71,8 @@ typedef struct {
     int     total_goods_requested;
     int     total_goods_offers;
     int     on_swell;
-    int     ton_in_excess;
+    int     ton_in_excess_offers;
+    int     ton_in_excess_request;
 } dump_ports;
 
 typedef struct {
