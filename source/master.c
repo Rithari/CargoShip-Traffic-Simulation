@@ -489,11 +489,20 @@ void final_print(void) {
     printf("Number of ships still at sea without a cargo: %d\n", shm_dump_ships->without_cargo_en_route);
     printf("Number of ships occupying a dock: %d\n", shm_dump_ships->being_loaded_unloaded);
     printf("---Final status of goods:\n");
+    fprintf(output,"-------------FINAL DUMPS-------------\n");
+    fprintf(output,"Ships at sea at the end of the simulation: %d\n", (shm_dump_ships->with_cargo_en_route + shm_dump_ships->without_cargo_en_route));
+    fprintf(output,"Number of ships still at sea with a cargo on board: %d\n", shm_dump_ships->with_cargo_en_route);
+    fprintf(output,"Number of ships still at sea without a cargo: %d\n", shm_dump_ships->without_cargo_en_route);
+    fprintf(output,"Number of ships occupying a dock: %d\n", shm_dump_ships->being_loaded_unloaded);
+    fprintf(output,"---Final status of goods:\n");
     for(i = 0; i < shm_cfg->SO_MERCI; i++) {
         printf("ID: [%d]\tSTATE: [good_delivered: %d  |  good_in_port: %d  |  good_on_ship: %d  |  good_expired_in_port: %d  |  good_expired_on_ship: %d]\n", i, shm_dump_goods[i].good_delivered,
                shm_dump_goods[i].good_in_port, shm_dump_goods[i].good_on_ship, shm_dump_goods[i].good_expired_in_port, shm_dump_goods[i].good_expired_on_ship);
+        fprintf(output,"ID: [%d]\tSTATE: [good_delivered: %d  |  good_in_port: %d  |  good_on_ship: %d  |  good_expired_in_port: %d  |  good_expired_on_ship: %d]\n", i, shm_dump_goods[i].good_delivered,
+               shm_dump_goods[i].good_in_port, shm_dump_goods[i].good_on_ship, shm_dump_goods[i].good_expired_in_port, shm_dump_goods[i].good_expired_on_ship);
     }
     printf("---The best port for generated supply and generated demand: \n");
+    fprintf(output, "---The best port for generated supply and generated demand: \n");
     /*un for che scorre per ogni porto la bestquantità totale di merce generata e la quantita totale di merci generate*/
     for(i = 0; i < shm_cfg->SO_PORTI; i++){
         if(shm_dump_ports[i].total_goods_offers > bestOfferer) {
@@ -505,6 +514,8 @@ void final_print(void) {
     }
     printf("Best port for the generated offer: %d  --> %d\n", bestOfferer, shm_dump_ports[bestOfferer].total_goods_offers);
     printf("Best port for the generated request: %d --> %d\n", bestReceiver, shm_dump_ports[bestReceiver].total_goods_requested);
+    fprintf(output,"Best port for the generated offer: %d  --> %d\n", bestOfferer, shm_dump_ports[bestOfferer].total_goods_offers);
+    fprintf(output,"Best port for the generated request: %d --> %d\n", bestReceiver, shm_dump_ports[bestReceiver].total_goods_requested);
 }
 
 void generate_goods(void) {
