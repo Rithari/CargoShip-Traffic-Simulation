@@ -329,6 +329,8 @@ void initialize_so_vars(char* path_cfg_file) {
     CHECK_ERROR_MASTER(shm_cfg->SO_MAELSTORM < 0, "[MASTER] SO_MAELSTORM is less than 0")
     CHECK_ERROR_MASTER(shm_cfg->SO_PRINT_PORTS < 0, "[MASTER] SO_PRINT_PORTS is less than 0")
     CHECK_ERROR_MASTER(shm_cfg->SO_PRINT_GOODS < 0, "[MASTER] SO_PRINT_GOODS is less than 0")
+    CHECK_ERROR_MASTER(shm_cfg->SO_PRINT_PORTS > shm_cfg->SO_PORTI, "[MASTER] SO_PRINT_PORTS is more than SO_PORTI")
+    CHECK_ERROR_MASTER(shm_cfg->SO_PRINT_GOODS > shm_cfg->SO_MERCI, "[MASTER] SO_PRINT_GOODS is more than SO_merci")
 
     shm_cfg->CURRENT_DAY = 0;
     errno = 0;
@@ -502,6 +504,7 @@ void selected_prints(void) {
 }
 
 void final_print(void) {
+    int sum = 0;
     int i;
     int bestOfferer = INT_MIN;
     int bestReceiver = INT_MIN;
@@ -512,6 +515,10 @@ void final_print(void) {
     printf("Number of ships occupying a dock: %d\n", shm_dump_ships->being_loaded_unloaded);
     printf("Number of ships sunk: %d\n", shm_dump_ships->sunk);
     printf("---Final status of goods:\n");
+    for (i = 0; i < shm_cfg->SO_PORTI; i++) {
+        sum += shm_dump_ports[i].ton_in_excess_offers + shm_dump_ports[i].total_goods_offers;
+    }
+    printf("Total goods: %d\n", sum);
     fprintf(output,"-------------FINAL DUMPS-------------\n");
     fprintf(output,"Ships at sea at the end of the simulation: %d\n", (shm_dump_ships->with_cargo_en_route + shm_dump_ships->without_cargo_en_route));
     fprintf(output,"Number of ships still at sea with a cargo on board: %d\n", shm_dump_ships->with_cargo_en_route);
@@ -600,6 +607,7 @@ void master_sig_handler(int signum) {
             }
 
             CHECK_ERROR_MASTER(kill(pid_weather, SIGALRM) && (errno != ESRCH), "[MASTER] Error while sending sigalarm to meteo")
+            print_dump();
             generate_goods();
 
             CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL,
@@ -615,7 +623,6 @@ void master_sig_handler(int signum) {
             }
 
             /* Check SO_DAYS against the current day. If they're the same kill everything */
-            print_dump();
             shm_dump_ships->with_cargo_en_route = 0;
             shm_dump_ships->without_cargo_en_route = 0;
             shm_dump_ships->being_loaded_unloaded = 0;
