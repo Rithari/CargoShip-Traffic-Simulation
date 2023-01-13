@@ -512,12 +512,14 @@ void final_print(void) {
     printf("Number of ships still at sea with a cargo on board: %d\n", shm_dump_ships->with_cargo_en_route);
     printf("Number of ships still at sea without a cargo: %d\n", shm_dump_ships->without_cargo_en_route);
     printf("Number of ships occupying a dock: %d\n", shm_dump_ships->being_loaded_unloaded);
+    printf("Number of ships sunk: %d\n", shm_dump_ships->sunk);
     printf("---Final status of goods:\n");
     fprintf(output,"-------------FINAL DUMPS-------------\n");
     fprintf(output,"Ships at sea at the end of the simulation: %d\n", (shm_dump_ships->with_cargo_en_route + shm_dump_ships->without_cargo_en_route));
     fprintf(output,"Number of ships still at sea with a cargo on board: %d\n", shm_dump_ships->with_cargo_en_route);
     fprintf(output,"Number of ships still at sea without a cargo: %d\n", shm_dump_ships->without_cargo_en_route);
     fprintf(output,"Number of ships occupying a dock: %d\n", shm_dump_ships->being_loaded_unloaded);
+    fprintf(output,"Number of ships sunk: %d\n", shm_dump_ships->sunk);
     fprintf(output,"---Final status of goods:\n");
     for(i = 0; i < shm_cfg->SO_MERCI; i++) {
         printf("ID: [%d]\tSTATE: [good_delivered: %d  |  good_in_port: %d  |  good_on_ship: %d  |  good_expired_in_port: %d  |  good_expired_on_ship: %d]\n", i, shm_dump_goods[i].good_delivered,
