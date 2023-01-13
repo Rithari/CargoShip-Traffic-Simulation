@@ -142,7 +142,7 @@ void generate_goods(void) {
     int selected_quantity;
     int tons_per_port_offers = shm_cfg->SO_FILL / shm_cfg->SO_DAYS / shm_cfg->GENERATING_PORTS;
     int tons_per_port_request = tons_per_port_offers;
-    int is_requesting;
+    int is_offering;
     goods to_add;
 
     tons_per_port_offers += shm_dump_ports[id].ton_in_excess_offers;
@@ -152,29 +152,31 @@ void generate_goods(void) {
 
     for(i = 0; i < shm_cfg->SO_MERCI; i++) {
         int max_quantity;
+
         if ((random() & 1) && shm_goods[id * shm_cfg->SO_MERCI + i] == 0 || shm_goods[id * shm_cfg->SO_MERCI + i] > 0) {
             max_quantity = tons_per_port_offers / shm_goods_template[i].tons;
-            is_requesting = 1;
+            is_offering = 1;
         } else {
             max_quantity = tons_per_port_request / shm_goods_template[i].tons;
-            is_requesting = 0;
+            is_offering = 0;
         }
 
-        if (max_quantity) {
-            selected_quantity = (int) random() % max_quantity + 1;
+        if (max_quantity == 0) continue;
 
-            if (is_requesting) {
-                to_add.lifespan = shm_cfg->CURRENT_DAY + shm_goods_template[i].lifespan;
-                to_add.id = i;
-                to_add.quantity = selected_quantity;
-                shm_goods[id * shm_cfg->SO_MERCI + i] += selected_quantity;
-                __sync_fetch_and_add(&shm_dump_goods[i].good_in_port, selected_quantity * shm_goods_template[i].tons);
-                __sync_fetch_and_add(&shm_dump_ports[id].good_available, selected_quantity * shm_goods_template[i].tons);
-                tons_per_port_offers -= (selected_quantity * shm_goods_template[i].tons);
-                head = ll_add(head, &to_add);
-            } else {
-                shm_goods[id * shm_cfg->SO_MERCI + i] -= selected_quantity;
-            }
+        selected_quantity = (int) random() % max_quantity + 1;
+
+        if (is_offering) {
+            to_add.lifespan = shm_cfg->CURRENT_DAY + shm_goods_template[i].lifespan;
+            to_add.id = i;
+            to_add.quantity = selected_quantity;
+            shm_goods[id * shm_cfg->SO_MERCI + i] += selected_quantity;
+            __sync_fetch_and_add(&shm_dump_goods[i].good_in_port, selected_quantity * shm_goods_template[i].tons);
+            __sync_fetch_and_add(&shm_dump_ports[id].good_available, selected_quantity * shm_goods_template[i].tons);
+            tons_per_port_offers -= (selected_quantity * shm_goods_template[i].tons);
+            head = ll_add(head, &to_add);
+        } else {
+            shm_goods[id * shm_cfg->SO_MERCI + i] -= selected_quantity;
+            tons_per_port_request -= (selected_quantity * shm_goods_template[i].tons);
         }
     }
     shm_dump_ports[id].ton_in_excess_offers = tons_per_port_offers;
