@@ -459,8 +459,9 @@ void print_dump(void) {
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
         fprintf(output,"ID: [%d]\tON_SWELL: [%d]\n", i, shm_dump_ports[i].on_swell);
         fprintf(output,"DOCK: [%d/%d]\n", shm_dump_ports[i].dock_available, shm_dump_ports[i].dock_total);
-        fprintf(output,"GOODS: [goods_available: %d  |  good_send: %d  |  good_received: %d  |  ton_in_excess: %d]\n", shm_dump_ports[i].good_available, shm_dump_ports[i].good_send,
-               shm_dump_ports[i].good_received, shm_dump_ports[i].ton_in_excess);
+        fprintf(output,"GOODS: [goods_available: %d  |  good_send: %d  |  good_received: %d  |  ton_in_excess_offers: %d |  ton_in_excess_request: %d]\n",
+                shm_dump_ports[i].good_available, shm_dump_ports[i].good_send,
+               shm_dump_ports[i].good_received, shm_dump_ports[i].ton_in_excess_offers, shm_dump_ports[i].ton_in_excess_request);
         fprintf(output,"-----------\n");
     }
     fprintf(output,"---------------------------------NAVI---------------------------------\n");
@@ -470,12 +471,9 @@ void print_dump(void) {
     fprintf(output,"----------------------------------------------------------------------\n");
 
     for (i = 0; i < shm_cfg->SO_PORTI; i++) {
-        sum += shm_dump_ports[i].ton_in_excess;
+        sum += shm_dump_ports[i].ton_in_excess_offers + shm_dump_ports[i].total_goods_offers;
     }
 
-    for (i = 0; i < shm_cfg->SO_MERCI; i++) {
-        sum += shm_dump_goods[i].good_in_port + shm_dump_goods[i].good_expired_on_ship + shm_dump_goods[i].good_expired_in_port + shm_dump_goods[i].good_on_ship + shm_dump_goods[i].good_delivered;
-    }
     printf("Total goods: %d\n", sum);
 }
 
@@ -502,7 +500,10 @@ void generate_goods(void) {
     shm_cfg->GENERATING_PORTS = (int) random() % shm_cfg->SO_PORTI;
 
     for (i = 0; i < shm_cfg->GENERATING_PORTS; i++) {
-        int index = (int) random() % shm_cfg->SO_PORTI;
+        int index;
+
+        while ((index = (int) random() % shm_cfg->SO_PORTI) && shm_pid_array[index] < 0);
+
         shm_pid_array[index] = -shm_pid_array[index];
     }
 
