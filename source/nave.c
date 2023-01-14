@@ -149,7 +149,7 @@ int main(int argc, char** argv) {
             CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while unlocking sem_id_check_request[id_actual_port] semaphore")
         }
         while (head) {
-            if (head->element->lifespan >= shm_cfg->CURRENT_DAY && (shm_goods[id * shm_cfg->SO_MERCI + head->element->id] < 0)) {
+            if (head->element->lifespan >= shm_cfg->CURRENT_DAY && (shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id] < 0)) {
 
                 if(head->element->quantity <= -shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id]) {
                     printf("time to sleep: %f\n",(double) head->element->quantity * shm_goods_template[head->element->id].tons *
