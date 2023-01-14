@@ -1,5 +1,7 @@
 #include "../headers/common_ipcs.h"
 
+/* Semaphore operations */
+
 int sem_cmd(int s_id, unsigned short sem_num, short sem_op, short sem_flg) {
     struct sembuf sops;
     sops.sem_flg = sem_flg;

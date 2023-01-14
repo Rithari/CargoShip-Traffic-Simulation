@@ -31,6 +31,7 @@ int main(int argc, char** argv) {
 
     srandom(getpid());
 
+    /* Attach to the shared memory config by the ID passed as args and attach to all needed variables */
     shm_id_config = string_to_int(argv[1]);
     CHECK_ERROR_CHILD(errno, "[METEO] Error while trying to convert shm_id_config")
 
@@ -46,6 +47,7 @@ int main(int argc, char** argv) {
     available_ships = shm_cfg->SO_NAVI;
     index_pid_status = malloc(sizeof(int) * shm_cfg->SO_NAVI);
 
+    /* Initialize the index_pid_status array. Index corresponds to the position in the PID array */
     for(i = 0; i < shm_cfg->SO_NAVI; i++) {
         index_pid_status[i] = i;
     }
@@ -55,14 +57,15 @@ int main(int argc, char** argv) {
     if(shm_cfg->SO_MAELSTORM > 0) {
         unsigned int index_pid_to_term;
 
+        /* Select a random index from the index_pid_status array and send SIGUSR2 to it*/
         while (available_ships) {
-            nanosleep_function(shm_cfg->SO_MAELSTORM / 24.0 * shm_cfg->SO_DAY_LENGTH, "[METEO] Generic error in nanosleep");
+            sleep_ns(shm_cfg->SO_MAELSTORM / 24.0 * shm_cfg->SO_DAY_LENGTH, "[METEO] Generic error in sleep_ns");
             index_pid_to_term = (unsigned int) random() % available_ships;
             /*printf("[METEO] index to kill: %u\n", index_pid_to_term);*/
             kill(abs(shm_pid_array[index_pid_status[index_pid_to_term] + shm_cfg->SO_PORTI]), SIGUSR2);
             index_pid_status[index_pid_to_term] = index_pid_status[--available_ships];
         }
-    } else {
+    } else { /* If no maelstroms are specified to occur, we still want this process to hang around */
         while (1) {
             pause();
         }

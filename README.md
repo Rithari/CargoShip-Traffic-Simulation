@@ -24,7 +24,7 @@ There are no real requirements other than a machine running macOS or Linux, supp
 
 ## Configuration (WIP)
 
-Currently no configuration is needed. WIP to add a few cycle-depending variables such as the seconds for a day to pass etc.
+Currently, no configuration is needed. WIP to add a few cycle-depending variables such as the seconds for a day to pass etc.
 
 
 ## Tests (WIP)

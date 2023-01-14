@@ -51,9 +51,11 @@ int main(int argc, char** argv) {
     sigaddset(&sa.sa_mask, SIGTERM);
     sigaction(SIGALRM, &sa, NULL);
 
+    /* Initialize random seed */
     srandom(getpid());
     head = NULL;
 
+    /* Attach to the shared memory config by the ID passed as args and attach to all needed variables */
     shm_id_config = string_to_int(argv[1]);
     CHECK_ERROR_CHILD(errno, "[NAVE] Error while trying to convert shm_id_config")
     id = string_to_int(argv[2]);
@@ -76,31 +78,32 @@ int main(int argc, char** argv) {
     CHECK_ERROR_CHILD((shm_dump_ports = shmat(shm_cfg->shm_id_dump_ports, NULL, 0)) == (void*) -1,
                       "[NAVE] Error while trying to attach to dump shm_dump_ports shared memory")
 
+    /* Represents the random position of a ship */
     actual_coordinate.x = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
     actual_coordinate.y = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
 
     /* Avoid placing the ship at the same coordinates of a port */
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
-        if(shm_ports_coords[i].x == actual_coordinate.x && actual_coordinate.y) {
+        if(shm_ports_coords[i].x == actual_coordinate.x && shm_ports_coords[i].y == actual_coordinate.y) {
             i = -1;
-            actual_coordinate.x = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
-            actual_coordinate.y = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+            rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+            rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
         }
     }
 
-    id_actual_port = -1;
-    id_destination_port = -1; /* ship in sea */
+    id_actual_port = -1; /* -1 means that the ship is not in a port */
+    id_destination_port = -1; /* ship at sea */
 
     CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
                       "[NAVE] Error while trying to release sem_id_gen_precedence")
 
+    /* Wait until everyone is ready (master will send SIGCONT) */
     pause();
 
-    /* now ship have a dock */
     while (1) {
-        if(id_actual_port == -1) {
+        if(id_actual_port == -1) { /* I'm at sea */
             id_destination_port = get_nearest_port();
-        } else {
+        } else { /* Getting a lock on a port's semaphore */
             sops.sem_num = id_actual_port;
             sops.sem_op =  1;
             sops.sem_flg = SEM_UNDO;
@@ -112,6 +115,7 @@ int main(int argc, char** argv) {
             id_actual_port = -1;
         }
 
+        /* TODO: semcmd */
         sops.sem_num = id_destination_port;
         sops.sem_op = -1;
         sops.sem_flg = SEM_UNDO;
@@ -123,49 +127,56 @@ int main(int argc, char** argv) {
         }
         id_actual_port = id_destination_port;
 
-        if (head) {
-            while (sem_cmd(shm_cfg->sem_id_check_request, id_actual_port, -1, SEM_UNDO)) {
-                CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while unlocking sem_id_check_request[id_actual_port] semaphore")
-            }
-            while (head) {
-                if (head->element->lifespan >= shm_cfg->CURRENT_DAY && (shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id] < 0)) {
-
-                    if(head->element->quantity <= -shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id]) {
-                        nanosleep_function((double) head->element->quantity * shm_goods_template[head->element->id].tons *
-                                           shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
-                                           "[NAVE] Generic error while unloading the ship2");
-                        __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_delivered,
-                                             head->element->quantity * shm_goods_template[head->element->id].tons);
-                        __sync_fetch_and_add(&shm_dump_ports[sender_port].good_send,
-                                             head->element->quantity * shm_goods_template[head->element->id].tons);
-
-                    }else{
-                        __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_on_ship, ((head->element->quantity) - abs(shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id])) * shm_goods_template[head->element->id].tons);
-                        __sync_fetch_and_sub(&shm_dump_goods[head->element->id].good_on_ship, ((head->element->quantity) - abs(shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id])) * shm_goods_template[head->element->id].tons);
-                        head->element->quantity = head->element->quantity - ((head->element->quantity) - abs(shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id]));
-
-                        nanosleep_function((double) head->element->quantity * shm_goods_template[head->element->id].tons *
-                                           shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
-                                           "[NAVE] Generic error while unloading the ship1");
-                        __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_delivered,
-                                             head->element->quantity * shm_goods_template[head->element->id].tons);
-                        __sync_fetch_and_add(&shm_dump_ports[sender_port].good_send,
-                                             head->element->quantity * shm_goods_template[head->element->id].tons);
-                    }
-
-                } else {
-                    /* good lost, update dumps */
-                    __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_on_ship, head->element->quantity * shm_goods_template[head->element->id].tons);
-                }
-                __sync_fetch_and_sub(&shm_dump_goods[head->element->id].good_on_ship, head->element->quantity * shm_goods_template[head->element->id].tons);
-                head = ll_pop(head);
-            }
-
-            /* increment sem_id_check_request of the port im unloading to */
-            while (sem_cmd(shm_cfg->sem_id_check_request, id_actual_port, 1, SEM_UNDO)) {
-                CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while unlocking sem_id_check_request[id_actual_port] semaphore")
-            }
+        /* unloading goods */
+        /* TODO: ADD COMMENTS */
+        /* decrement sem_id_check_request of the port im unloading to */
+        while (sem_cmd(shm_cfg->sem_id_check_request, id_actual_port, -1, SEM_UNDO)) {
+            CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while unlocking sem_id_check_request[id_actual_port] semaphore")
         }
+        while (head) {
+            if (head->element->lifespan >= shm_cfg->CURRENT_DAY && (shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id] < 0)) {
+
+                if(head->element->quantity <= -shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id]) {
+                    /*printf("time to sleep: %f\n",(double) head->element->quantity * shm_goods_template[head->element->id].tons *
+                                                 shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED );*/
+
+                    nanosleep_function((double) head->element->quantity * shm_goods_template[head->element->id].tons *
+                                       shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
+                                       "[NAVE] Generic error while unloading the ship2");
+                    __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_delivered,
+                                         head->element->quantity * shm_goods_template[head->element->id].tons);
+                    __sync_fetch_and_add(&shm_dump_ports[sender_port].good_send,
+                                         head->element->quantity * shm_goods_template[head->element->id].tons);
+                    /*printf("[%d] Ho scaricato: [%d/%d/%d]\n", getpid(), head->element->id, head->element->quantity, head->element->quantity);*/
+
+                }else{
+                    __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_on_ship, ((head->element->quantity) - abs(shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id])) * shm_goods_template[head->element->id].tons);
+                    __sync_fetch_and_sub(&shm_dump_goods[head->element->id].good_on_ship, ((head->element->quantity) - abs(shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id])) * shm_goods_template[head->element->id].tons);
+                    head->element->quantity = head->element->quantity - ((head->element->quantity) - abs(shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id]));
+
+                    nanosleep_function((double) head->element->quantity * shm_goods_template[head->element->id].tons *
+                                       shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
+                                       "[NAVE] Generic error while unloading the ship1");
+                    __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_delivered,
+                                         head->element->quantity * shm_goods_template[head->element->id].tons);
+                    __sync_fetch_and_add(&shm_dump_ports[sender_port].good_send,
+                                         head->element->quantity * shm_goods_template[head->element->id].tons);
+                }
+
+            } else {
+                /* good lost, update dumps */
+                __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_on_ship, head->element->quantity * shm_goods_template[head->element->id].tons);
+            }
+            __sync_fetch_and_sub(&shm_dump_goods[head->element->id].good_on_ship, head->element->quantity * shm_goods_template[head->element->id].tons);
+            head = ll_pop(head);
+        }
+
+        /* increment sem_id_check_request of the port im unloading to */
+        while (sem_cmd(shm_cfg->sem_id_check_request, id_actual_port, 1, SEM_UNDO)) {
+            CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while unlocking sem_id_check_request[id_actual_port] semaphore")
+        }
+
+        /*printf("[%d] Unload operation done!\n", getpid());*/
 
         msg.mtype = id_actual_port + 1;
         msg.response_pid = getpid();
@@ -183,18 +194,25 @@ int main(int argc, char** argv) {
                 while (msgrcv(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), getpid(), 0) < 0) {
                     CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while waiting good message")
                 }
+                /*printf("[%d] [%d/%d/%d]\n ", getpid(), msg_g.to_add.id, msg_g.to_add.quantity, msg_g.to_add.lifespan);*/
                 __sync_fetch_and_add(&shm_dump_goods[msg_g.to_add.id].good_on_ship, msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons);
                 head = ll_add(head, &msg_g.to_add);
+                /* ll_print(head); */
                 time_to_sleep += msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons;
             }
 
+            /* printf("[%d] time_to_sleep: %f\n", getpid(), time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED); */
             nanosleep_function(time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
                                "[NAVE] Generic error while loading the ship");
 
+            /*printf("[%d] Load operation!\n", getpid());*/
+            /* destination of the goods, if it exists */
             id_destination_port = msg.response_pid;
+            /*printf("[%d] Choose port no: [%d] from [%d]\n", getpid(), id_destination_port, id_actual_port);*/
         } else {
-            /* destinazione delle merci se non esiste una tratta*/
+            /* destination of the goods if a route doesn't exist */
             id_destination_port = get_nearest_port();
+            /*printf("[%d] No route found, ship will go in port [%d] :C\n", getpid(), id_destination_port);*/
         }
     }
 }
@@ -205,9 +223,10 @@ void move(int id_destination) {
     double navigation_time = sqrt(dx * dx + dy * dy) / shm_cfg->SO_SPEED * shm_cfg->SO_DAY_LENGTH;
 
     shm_pid_array[id + shm_cfg->SO_PORTI] = -shm_pid_array[id + shm_cfg->SO_PORTI];
-    nanosleep_function(navigation_time, "[NAVE] Generic error while moving");
+    sleep_ns(navigation_time, "[NAVE] Generic error while moving");
     shm_pid_array[id + shm_cfg->SO_PORTI] = -shm_pid_array[id + shm_cfg->SO_PORTI];
 
+    /*printf("[%d] Arrived in port no: [%d]\tNavigation time: %f\n", getpid(), id_destination, navigation_time);*/
     fflush(stdout);
     actual_coordinate = shm_ports_coords[id_destination];
 }
@@ -235,9 +254,14 @@ int get_nearest_port(void) {
 
 void dump_ship_data(void) {
     if (id_actual_port < 0) {
-        if (head)  __sync_fetch_and_add(&shm_dump_ships->with_cargo_en_route, 1);
-        else __sync_fetch_and_add(&shm_dump_ships->without_cargo_en_route, 1);
-    } else __sync_fetch_and_add(&shm_dump_ships->being_loaded_unloaded, 1);
+        if (head) {
+            __sync_fetch_and_add(&shm_dump_ships->with_cargo_en_route, 1);
+        } else {
+            __sync_fetch_and_add(&shm_dump_ships->without_cargo_en_route, 1);
+        }
+    } else {
+        __sync_fetch_and_add(&shm_dump_ships->being_loaded_unloaded, 1);
+    }
 }
 
 void nave_sig_handler(int signum) {
@@ -262,13 +286,22 @@ void nave_sig_handler(int signum) {
             break;
         case SIGUSR1:
             /* storm occurred */
-            __sync_fetch_and_add(&shm_dump_ships->slowed, 1);
-            nanosleep_function(shm_cfg->SO_STORM_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH,
-                               "[NAVE] Generic error while sleeping because of the storm");
+            /*printf("[NAVE] STORM: %d\n", getpid());*/
+            while (sem_cmd(shm_cfg->sem_id_dump_mutex, 1, -1, 0)) {
+                CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while trying to release sem_id_dump_mutex[0]")
+            }
+            shm_dump_ships->slowed++;
+            while (sem_cmd(shm_cfg->sem_id_dump_mutex, 1, 1, 0)) {
+                CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while trying to release sem_id_dump_mutex[0]")
+            }
+            sleep_ns(shm_cfg->SO_STORM_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH,
+                     "[NAVE] Generic error while sleeping because of the storm");
             break;
         case SIGUSR2:
             /* malestorm killed the ship */
             __sync_fetch_and_add(&shm_dump_ships->sunk, 1);
+            /* ship dead, updating the dumps for lost goods */
+
             if (head) {
                 cur = head;
                 while (cur) {
@@ -288,7 +321,6 @@ void nave_sig_handler(int signum) {
             }
             exit(EXIT_SUCCESS);
         default:
-            /*printf("[NAVE] Signal: %s\n", strsignal(signum));*/
             break;
     }
 

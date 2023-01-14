@@ -2,16 +2,6 @@
 #include "../headers/common_ipcs.h"
 #include "../headers/linked_list.h"
 
-/*
-Richiesta di merci[] | MQ di richieste universale tra processi: (dobbiamo sapere il tipo, la quantità e il porto di appartenenza)
-Int Lifespan -1 per le richieste perché non scadono e sono l’unico elemento che distingue le due MQ oltre a essere due MQ diverse
-Array / struct di tratte disponibili (caricata dalla funzione apposita)
-dump
-Funzione per caricare le proprie domande e offerte nelle rispettive MQ
-Funzione/i per la creazione di tratte()
-Funzione/i per la comunicazione con le queue()
-Banchina: gestita come una risorsa condivisa protetta da un semaforo (n_docks)*/
-
 typedef struct {
     int how_many;
     struct node *goods_to_send;
@@ -60,6 +50,7 @@ int main(int argc, char *argv[]) {
 
     srandom(getpid());
 
+    /* Attach to the shared memory config by the ID passed as args and attach to all needed variables */
     shm_id_config = string_to_int(argv[1]);
     CHECK_ERROR_CHILD(errno, "[PORTO] Error while trying to convert shm_id_config")
     id = string_to_int(argv[2]);
@@ -84,17 +75,14 @@ int main(int argc, char *argv[]) {
     CHECK_ERROR_CHILD(semctl(shm_cfg->sem_id_dock, id, SETVAL, shm_dump_ports[id].dock_total),
                       "[PORTO] Error while generating dock semaphore")
 
-    /* printf("[%d] coord.x: %f\tcoord.y: %f\n", getpid(), shm_ports_coords[id].x, shm_ports_coords[id].y); */
-
-    head = NULL;
-
     CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
                       "[PORTO] Error while trying to release sem_id_gen_precedence")
 
+    head = NULL;
     pause();
 
     while (1) {
-        /* Codice del porto da eseguire */
+        /* Waiting for an initial handshake message from ships. Once it gets one, it starts the response proceedings */
         while (msgrcv(shm_cfg->mq_id_ports_handshake, &msg, sizeof(msg) - sizeof(long), id + 1, 0) < 0) {
             CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while waiting handshake message")
         }
@@ -117,17 +105,19 @@ int main(int argc, char *argv[]) {
                 msg_g.to_add.lifespan = r->goods_to_send->element->lifespan;
 
                 while (msgsnd(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), 0)) {
-                    CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending handshake message");
+                    CHECK_ERROR_CHILD(errno != EINTR, "[PORTO] Error while sending the struct of goods to add")
                 }
                 __sync_fetch_and_sub(&shm_goods[id * shm_cfg->SO_MERCI + msg_g.to_add.id], msg_g.to_add.quantity);
                 __sync_fetch_and_add(&shm_dump_ports[id].good_send, msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons);
                 __sync_fetch_and_sub(&shm_dump_ports[id].good_available, msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons);
                 r->goods_to_send = ll_pop(r->goods_to_send);
             }
+            /* Free up the memory allocated */
             ll_free(r->goods_to_send);
             free(r);
             /*printf("[%d] Ok given to [%ld]\n", getpid(), msg.mtype);*/
         } else {
+            /* If there are no goods to send, send a message to the ship to tell it to go away */
             msg.how_many = 0;
             msg.response_pid = -1;
             while (msgsnd(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg) - sizeof(long), 0)) {
@@ -137,6 +127,7 @@ int main(int argc, char *argv[]) {
     }
 }
 
+/* Generate goods and add them to al inked list */
 void generate_goods(void) {
     int i;
     int selected_quantity;
@@ -185,6 +176,10 @@ void generate_goods(void) {
     shm_dump_ports[id].total_goods_requested -= tons_per_port_request;
 }
 
+/* Generate a route for a ship by selecting a random port
+ * as a starting point, then iterating through all other ports to find the best route based on the goods available
+ * in each port, and the goods that the ship currently has and wants to trade.
+*/
 route* generate_route(void) {
     int i, j, k, min_val;
     int best_route = -1;
@@ -203,7 +198,7 @@ route* generate_route(void) {
 
         for (j = 0; j < shm_cfg->SO_MERCI && shm_goods[i * shm_cfg->SO_MERCI + j] >= 0; j++);
 
-        /* se il porto non ha richieste non ha senso iterare */
+        /* If there are no requests do not iterate */
         if (j == shm_cfg->SO_MERCI) continue;
         else offset = j;
 
@@ -211,7 +206,7 @@ route* generate_route(void) {
 
         for(j = shm_cfg->SO_MERCI - 1, ship_tons_available = shm_cfg->SO_CAPACITY; j >= 0 && ship_tons_available > shm_goods_template[offset].tons; j--) {
             if(shm_goods[id * shm_cfg->SO_MERCI + j] > 0 && shm_goods[i * shm_cfg->SO_MERCI + j] < 0 && ship_tons_available / shm_goods_template[j].tons) {
-                /* quantità totale che posso caricare in nave */
+                /* Total amount one can fit inside the ship */
                 min_val = min(min(shm_goods[id * shm_cfg->SO_MERCI + j], -shm_goods[i * shm_cfg->SO_MERCI + j]),
                               ship_tons_available / shm_goods_template[j].tons);
 
@@ -228,7 +223,12 @@ route* generate_route(void) {
             memcpy(goods_to_get, tmp_goods_to_get, sizeof(int) * shm_cfg->SO_MERCI);
         }
     }
-
+    /* Selects a random starting port and iterates through all other ports. For each port, it checks if the
+     * port has any goods that the ship wants and the ship has any goods that the port wants. If so, it calculates
+     * the total amount of goods that can fit in the ship and adds it to the temporary array of goods to get.
+     * It then compares the total amount of goods that can be transported by the ship with the current best route
+     * and updates the best route and goods to get if the current route is better.
+    */
     sublist = NULL;
 
     if(best_tons_available < shm_cfg->SO_CAPACITY) {
@@ -250,34 +250,22 @@ route* generate_route(void) {
             cur = head;
 
             while (goods_to_get[i] > 0 && cur) {
-                /* qui si può controllare anche la fattibilità dell'utilizzare la merce con il calcolo del tempo... */
 
                 if (cur->element->id == i) {
-                    /*printf("PRE: ");
-                    ll_print(head); */
                     to_add.lifespan = cur->element->lifespan;
                     to_add.id = i;
                     if (cur->element->quantity > goods_to_get[i]) {
-                        /*printf("SIUM 3\n"); */
                         to_add.quantity = goods_to_get[i];
                         cur->element->quantity -= goods_to_get[i];
                         goods_to_get[i] = 0;
-                        /*printf("SIUM 4\n"); */
                     } else {
-                        /*printf("SIUM 1\n");*/
                         to_add.quantity = cur->element->quantity;
                         head = ll_remove_by_id(head, i);
                         goods_to_get[i] -= to_add.quantity;
                         cur = head;
-                        /*printf("SIUM 2\n");*/
                     }
-                    /*printf("POST: ");
-                    ll_print(head);*/
                     sublist = ll_add(sublist, &to_add);
-                    /*printf("SUBLIST: ");
-                    ll_print(sublist); */
                     how_many++;
-                    /*printf("How many: %d\n", how_many);*/
                 } else cur = cur->next;
             }
         }
@@ -294,6 +282,14 @@ route* generate_route(void) {
     free(tmp_goods_to_get);
 
     return r;
+
+    /*
+     * If the best route is found and there is a better amount of goods that can be transported than
+     * the ship's capacity, the function updates the shared memory for the goods in the ports, creating a
+     * linked list of goods to send and populating a route structure with the destination port, the amount of goods
+     * to be transported, and the linked list of goods. It then frees the memory used for the temporary arrays
+     * and returns the route structure.
+     */
 }
 
 void dump_port_data(void) {
@@ -334,8 +330,8 @@ void porto_sig_handler(int signum) {
             /* swell occurred */
             /*printf("[PORTO] SWELL: %d\n", getpid());*/
             shm_dump_ports[id].on_swell = 1;
-            nanosleep_function(shm_cfg->SO_SWELL_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH,
-                               "Generic error while sleeping because of the swell");
+            sleep_ns(shm_cfg->SO_SWELL_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH,
+                     "Generic error while sleeping because of the swell");
             shm_dump_ports[id].on_swell = 0;
             /*printf("[PORTO] END SWELL: %d\n", getpid());*/
             break;

@@ -3,6 +3,8 @@
 
 #include "master.h"
 
+/* Linked-List definition */
+
 struct node{
     goods *element;
     struct node *next;
