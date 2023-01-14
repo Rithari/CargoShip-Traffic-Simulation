@@ -552,7 +552,7 @@ void final_print(void) {
     printf("---Final status of goods:\n");
     for (i = 0; i < shm_cfg->SO_PORTI; i++) {
         sum += shm_dump_ports[i].ton_in_excess_offers + shm_dump_ports[i].total_goods_offers;
-        total_goods = shm_dump_ports[i].total_goods_offers;
+        total_goods += shm_dump_ports[i].total_goods_offers;
     }
     printf("Total goods: %d\n", sum);
     fprintf(output,"-------------FINAL DUMPS-------------\n");
@@ -570,6 +570,9 @@ void final_print(void) {
         delivered_goods += shm_dump_goods[i].good_delivered;
         lost_goods += shm_dump_goods[i].good_expired_in_port + shm_dump_goods[i].good_expired_on_ship;
     }
+    printf("Total delivered goods: %f\n", delivered_goods);
+    printf("Total lost goods: %f\n", lost_goods);
+    printf("Total goods: %f\n", total_goods);
     printf("---The best port for generated supply and generated demand: \n");
     fprintf(output, "---The best port for generated supply and generated demand: \n");
     /*un for che scorre per ogni porto la best quantità totale di merce generata e la quantita totale di merci generate*/
@@ -582,8 +585,8 @@ void final_print(void) {
     }
     /*lost goods, delivered goods sunk/expected */
     printf("Actual sunk / expected sunk: \t[%f%%]\n", (100 * shm_dump_ships->sunk / (24.0 / shm_cfg->SO_MAELSTORM * shm_cfg->SO_DAYS)));
-    printf("Delivered goods: \t[%f%%]\n", (delivered_goods / total_goods));
-    printf("Lost goods: \t[%f%%]\n", (lost_goods / total_goods));
+    printf("Delivered goods: \t[%f%%]\n", (100 * delivered_goods / total_goods));
+    printf("Lost goods: \t[%f%%]\n", (100 * lost_goods / total_goods));
     printf("Best port for the generated offer id: %d  --> %d\n", bestOfferer, shm_dump_ports[bestOfferer].total_goods_offers);
     printf("Best port for the generated request id: %d --> %d\n", bestReceiver, shm_dump_ports[bestReceiver].total_goods_requested);
     fprintf(output,"Best port for the generated offer id: %d  --> %d\n", bestOfferer, shm_dump_ports[bestOfferer].total_goods_offers);
