@@ -159,7 +159,6 @@ int main(int argc, char** argv) {
                     /*printf("[%d] Ho scaricato: [%d/%d/%d]\n", getpid(), head->element->id, head->element->quantity, head->element->quantity);*/
 
                 }else{
-
                     __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_on_ship, ((head->element->quantity) - abs(shm_goods[id * shm_cfg->SO_MERCI + head->element->id])) * shm_goods_template[head->element->id].tons);
                     head->element->quantity = head->element->quantity - ((head->element->quantity) - abs(shm_goods[id * shm_cfg->SO_MERCI + head->element->id]));
 

@@ -153,7 +153,7 @@ void generate_goods(void) {
     for(i = 0; i < shm_cfg->SO_MERCI; i++) {
         int max_quantity;
 
-        if ((random() & 1) && shm_goods[id * shm_cfg->SO_MERCI + i] == 0 || shm_goods[id * shm_cfg->SO_MERCI + i] > 0) {
+        if (((random() & 1) && shm_goods[id * shm_cfg->SO_MERCI + i] == 0) || shm_goods[id * shm_cfg->SO_MERCI + i] > 0) {
             max_quantity = tons_per_port_offers / shm_goods_template[i].tons;
             is_offering = 1;
         } else {
