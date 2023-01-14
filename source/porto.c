@@ -297,13 +297,6 @@ route* generate_route(void) {
 }
 
 void dump_port_data(void) {
-    int i;
-
-    for (i = 0, shm_dump_ports[id].good_available = 0; i < shm_cfg->SO_MERCI; i++) {
-        if (shm_goods[id * shm_cfg->SO_MERCI + i] > 0) {
-            shm_dump_ports[id].good_available += shm_goods[id * shm_cfg->SO_MERCI + i];
-        }
-    }
     shm_dump_ports[id].dock_available = semctl(shm_cfg->sem_id_dock, id, GETVAL);
 }
 
