@@ -495,25 +495,58 @@ void print_dump(void) {
 }
 
 void selected_prints(void) {
-    int i;
-    int rng;
+    int *arraySelected = calloc(shm_cfg->SO_PRINT_PORTS-1, sizeof(int));
+    int *arraySelectedGoods = calloc(shm_cfg->SO_PRINT_GOODS-1, sizeof(int));
+    int i , j, rng;
+    int aus = 0;
     printf("-----------------------------------------------------------------Stampa di %d PORTI: \n", shm_cfg->SO_PRINT_PORTS);
-    for(i = 0; i < shm_cfg->SO_PRINT_PORTS; i++) {
+
+    for (i = 0; i < shm_cfg->SO_PRINT_PORTS ; i++) {
         rng = (int) random()%shm_cfg->SO_PORTI;
-        printf("ID: [%d]\tON_SWELL: [%d]\n", rng, shm_dump_ports[rng].on_swell);
-        printf("DOCK: [%d/%d]\n", shm_dump_ports[rng].dock_available, shm_dump_ports[rng].dock_total);
+        for (j = 0; j < i; j++) {
+            if(arraySelected[j] == rng) {
+                break;
+            }
+        }
+        if (i == j) {
+            arraySelected[i] = rng;
+            fprintf(stderr, "arraySelected: %d\n", arraySelected[i]);
+        }else{
+            i--;
+        }
+    }
+
+    for (i = 0; i < shm_cfg->SO_PRINT_GOODS ; i++) {
+        rng = (int) random()%shm_cfg->SO_MERCI;
+        for (j = 0; j < i; j++) {
+            if(arraySelectedGoods[j] == rng) {
+                break;
+            }
+        }
+        if (i == j) {
+            arraySelectedGoods[i] = rng;
+            fprintf(stderr, "arraySelectedGoods: %d\n", arraySelectedGoods[i]);
+        }else{
+            i--;
+        }
+    }
+
+    for(i = 0; i < shm_cfg->SO_PRINT_PORTS; i++) {
+        printf("ID: [%d]\tON_SWELL: [%d]\n", arraySelected[i], shm_dump_ports[arraySelected[i]].on_swell);
+        printf("DOCK: [%d/%d]\n", shm_dump_ports[arraySelected[i]].dock_available, shm_dump_ports[arraySelected[i]].dock_total);
         printf("GOODS: [goods_available: %d  |  good_send: %d  |  good_received: %d  |  ton_in_excess_offers: %d |  ton_in_excess_request: %d]\n",
-               shm_dump_ports[rng].good_available, shm_dump_ports[rng].good_send,
-               shm_dump_ports[rng].good_received, shm_dump_ports[rng].ton_in_excess_offers, shm_dump_ports[rng].ton_in_excess_request);
+               shm_dump_ports[arraySelected[i]].good_available, shm_dump_ports[arraySelected[i]].good_send,
+               shm_dump_ports[arraySelected[i]].good_received, shm_dump_ports[arraySelected[i]].ton_in_excess_offers, shm_dump_ports[arraySelected[i]].ton_in_excess_request);
         printf("----------------------------------------------\n");
     }
     printf("-----------------------------------------------------------------Stampa di %d MERCI: \n", shm_cfg->SO_PRINT_GOODS);
     for (i = 0; i < shm_cfg->SO_PRINT_GOODS ; i++) {
-        rng = (int) random()%shm_cfg->SO_MERCI;
-        printf("ID: [%d]\tSTATE: [good_delivered: %d  |  good_in_port: %d  |  good_on_ship: %d  |  good_expired_in_port: %d  |  good_expired_on_ship: %d]\n", rng, shm_dump_goods[rng].good_delivered,
-               shm_dump_goods[rng].good_in_port, shm_dump_goods[rng].good_on_ship, shm_dump_goods[rng].good_expired_in_port, shm_dump_goods[rng].good_expired_on_ship);
+        printf("ID: [%d]\tSTATE: [good_delivered: %d  |  good_in_port: %d  |  good_on_ship: %d  |  good_expired_in_port: %d  |  good_expired_on_ship: %d]\n", arraySelectedGoods[i], shm_dump_goods[arraySelectedGoods[i]].good_delivered,
+               shm_dump_goods[arraySelectedGoods[i]].good_in_port, shm_dump_goods[arraySelectedGoods[i]].good_on_ship, shm_dump_goods[arraySelectedGoods[i]].good_expired_in_port, shm_dump_goods[arraySelectedGoods[i]].good_expired_on_ship);
         printf("----------------------------------------------\n");
     }
+    free(arraySelected);
+    free(arraySelectedGoods);
 }
 
 void final_print(void) {

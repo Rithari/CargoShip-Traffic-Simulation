@@ -152,8 +152,8 @@ int main(int argc, char** argv) {
             if (head->element->lifespan >= shm_cfg->CURRENT_DAY && (shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id] < 0)) {
 
                 if(head->element->quantity <= -shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id]) {
-                    printf("time to sleep: %f\n",(double) head->element->quantity * shm_goods_template[head->element->id].tons *
-                                                 shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED );
+                    /*printf("time to sleep: %f\n",(double) head->element->quantity * shm_goods_template[head->element->id].tons *
+                                                 shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED );*/
 
                     nanosleep_function((double) head->element->quantity * shm_goods_template[head->element->id].tons *
                                        shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
