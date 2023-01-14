@@ -506,9 +506,8 @@ void selected_prints(void) {
 void final_print(void) {
     int sum = 0;
     int i;
-    int bestOfferer;
-    int bestReceiver;
-
+    int bestOfferer = INT_MIN;
+    int bestReceiver = INT_MIN;
     printf("-------------FINAL DUMPS-------------\n");
     printf("Ships at sea at the end of the simulation: %d\n", (shm_dump_ships->with_cargo_en_route + shm_dump_ships->without_cargo_en_route));
     printf("Number of ships still at sea with a cargo on board: %d\n", shm_dump_ships->with_cargo_en_route);
