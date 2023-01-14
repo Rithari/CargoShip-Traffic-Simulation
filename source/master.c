@@ -543,10 +543,10 @@ void final_print(void) {
             bestReceiver = i;
         }
     }
-    printf("Best port for the generated offer: %d  --> %d\n", bestOfferer, shm_dump_ports[bestOfferer].total_goods_offers);
-    printf("Best port for the generated request: %d --> %d\n", bestReceiver, shm_dump_ports[bestReceiver].total_goods_requested);
-    fprintf(output,"Best port for the generated offer: %d  --> %d\n", bestOfferer, shm_dump_ports[bestOfferer].total_goods_offers);
-    fprintf(output,"Best port for the generated request: %d --> %d\n", bestReceiver, shm_dump_ports[bestReceiver].total_goods_requested);
+    printf("Best port for the generated offer id: %d  --> %d\n", bestOfferer, shm_dump_ports[bestOfferer].total_goods_offers);
+    printf("Best port for the generated request id: %d --> %d\n", bestReceiver, shm_dump_ports[bestReceiver].total_goods_requested);
+    fprintf(output,"Best port for the generated offer id: %d  --> %d\n", bestOfferer, shm_dump_ports[bestOfferer].total_goods_offers);
+    fprintf(output,"Best port for the generated request id: %d --> %d\n", bestReceiver, shm_dump_ports[bestReceiver].total_goods_requested);
 }
 
 void generate_goods(void) {
