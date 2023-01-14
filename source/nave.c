@@ -5,7 +5,7 @@
 #include <math.h>
 
 void move(int);
-int get_nearest_port(void);
+int get_viable_port(void);
 void nave_sig_handler(int);
 
 config  *shm_cfg;
@@ -97,68 +97,52 @@ int main(int argc, char** argv) {
     CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
                       "[NAVE] Error while trying to release sem_id_gen_precedence")
 
+    /* Wait for all processes to be ready */
     pause();
 
-
     while (1) {
-        if(id_actual_port == -1) {
-            id_destination_port = get_nearest_port();
+        if(id_actual_port == -1) { /* ship at sea */
+            id_destination_port = get_viable_port();
         } else { /* Getting a lock on a port's semaphore */
-            sops.sem_num = id_actual_port;
-            sops.sem_op =  1;
-            sops.sem_flg = SEM_UNDO;
 
-            while (semop(shm_cfg->sem_id_dock, &sops, 1)) {
-                CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while freeing sem_id_dock[id_actual_port] semaphore")
+            while(sem_cmd(shm_cfg->sem_id_dock, id_actual_port, 1, SEM_UNDO)) {
+                CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while locking sem_id_dock[id_actual_port] semaphore")
             }
             sender_port = id_actual_port;
             id_actual_port = -1;
         }
 
-        /* TODO: semcmd */
-        sops.sem_num = id_destination_port;
-        sops.sem_op = -1;
-        sops.sem_flg = SEM_UNDO;
-
         move(id_destination_port);
 
-        while (semop(shm_cfg->sem_id_dock, &sops, 1)) {
+        while(sem_cmd(shm_cfg->sem_id_dock, id_destination_port, -1, SEM_UNDO)) {
             CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while locking sem_id_dock[id_destination_port] semaphore")
         }
         id_actual_port = id_destination_port;
 
+        /* There are goods present onboard */
         if (head) {
             while (sem_cmd(shm_cfg->sem_id_check_request, id_actual_port, -1, SEM_UNDO)) {
                 CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while unlocking sem_id_check_request[id_actual_port] semaphore")
             }
             while (head) {
+                /* Make sure the goods haven't expired and that there is still a valid request for them */
                 if (head->element->lifespan >= shm_cfg->CURRENT_DAY && (shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id] < 0)) {
-
-                    if(head->element->quantity <= -shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id]) {
-                        sleep_ns((double) head->element->quantity * shm_goods_template[head->element->id].tons *
-                                           shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
-                                           "[NAVE] Generic error while unloading the ship2");
-                        __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_delivered,
-                                             head->element->quantity * shm_goods_template[head->element->id].tons);
-                        __sync_fetch_and_add(&shm_dump_ports[sender_port].good_send,
-                                             head->element->quantity * shm_goods_template[head->element->id].tons);
-
-                    }else{
+                    /* If the ship's goods are more than the port's request needs, get rid of the excess */
+                    if(head->element->quantity > -shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id]) {
                         __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_on_ship, ((head->element->quantity) - abs(shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id])) * shm_goods_template[head->element->id].tons);
                         __sync_fetch_and_sub(&shm_dump_goods[head->element->id].good_on_ship, ((head->element->quantity) - abs(shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id])) * shm_goods_template[head->element->id].tons);
                         head->element->quantity = head->element->quantity - ((head->element->quantity) - abs(shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id]));
-
-                        sleep_ns((double) head->element->quantity * shm_goods_template[head->element->id].tons *
-                                           shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
-                                           "[NAVE] Generic error while unloading the ship1");
-                        __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_delivered,
-                                             head->element->quantity * shm_goods_template[head->element->id].tons);
-                        __sync_fetch_and_add(&shm_dump_ports[sender_port].good_send,
-                                             head->element->quantity * shm_goods_template[head->element->id].tons);
                     }
-
+                    /* Sleep for the time it takes to unload the goods */
+                    sleep_ns((double) head->element->quantity * shm_goods_template[head->element->id].tons *
+                             shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
+                             "[NAVE] Generic error while unloading the ship1");
+                    __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_delivered,
+                                         head->element->quantity * shm_goods_template[head->element->id].tons);
+                    __sync_fetch_and_add(&shm_dump_ports[sender_port].good_send,
+                                         head->element->quantity * shm_goods_template[head->element->id].tons);
                 } else {
-                    /* good lost, update dumps */
+                    /* goods lost, updating dumps */
                     __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_on_ship, head->element->quantity * shm_goods_template[head->element->id].tons);
                 }
                 __sync_fetch_and_sub(&shm_dump_goods[head->element->id].good_on_ship, head->element->quantity * shm_goods_template[head->element->id].tons);
@@ -175,13 +159,16 @@ int main(int argc, char** argv) {
         msg.response_pid = getpid();
         msg.how_many = -1;
 
+        /* Send a handshake */
         while (msgsnd(shm_cfg->mq_id_ports_handshake, &msg, sizeof(msg) - sizeof(long), 0)) {
             CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while sending handshake message")
         }
+        /* Wait for a reply */
         while (msgrcv(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg) - sizeof(long), getpid(), 0) < 0) {
             CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while waiting handshake message")
         }
 
+        /* The response pid equals the next destination port */
         if (msg.response_pid >= 0) {
             for (i = 0, time_to_sleep = 0; i < msg.how_many; i++) {
                 while (msgrcv(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), getpid(), 0) < 0) {
@@ -198,7 +185,7 @@ int main(int argc, char** argv) {
             id_destination_port = msg.response_pid;
         } else {
             /* destinazione delle merci se non esiste una tratta*/
-            id_destination_port = get_nearest_port();
+            id_destination_port = get_viable_port();
         }
     }
 }
@@ -216,7 +203,8 @@ void move(int id_destination) {
     actual_coordinate = shm_ports_coords[id_destination];
 }
 
-int get_nearest_port(void) {
+/* Randomly pick ports and hope it has requests */
+int get_viable_port(void) {
     int i, j, k;
 
     for(k = 0, i = (int) random() % shm_cfg->SO_PORTI; k < shm_cfg->SO_PORTI; k++, i = (i + 1) % shm_cfg->SO_PORTI) {
@@ -233,7 +221,7 @@ int get_nearest_port(void) {
         i = (int) random() % shm_cfg->SO_PORTI;
     } while (i == id_actual_port);
 
-    /* Return a random port, no one is good... */
+    /* No viable port found, return a random one */
     return i;
 }
 
