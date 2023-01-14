@@ -510,7 +510,7 @@ void selected_prints(void) {
         }
         if (i == j) {
             arraySelected[i] = rng;
-            fprintf(stderr, "arraySelected: %d\n", arraySelected[i]);
+            /*fprintf(stderr, "arraySelected: %d\n", arraySelected[i]);*/
         }else{
             i--;
         }
@@ -525,7 +525,7 @@ void selected_prints(void) {
         }
         if (i == j) {
             arraySelectedGoods[i] = rng;
-            fprintf(stderr, "arraySelectedGoods: %d\n", arraySelectedGoods[i]);
+            /*fprintf(stderr, "arraySelectedGoods: %d\n", arraySelectedGoods[i]);*/
         }else{
             i--;
         }
