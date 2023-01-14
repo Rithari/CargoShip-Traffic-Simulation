@@ -144,6 +144,10 @@ int main(int argc, char** argv) {
         /* devo ricevere l'id della mq per le comunicazioni e la quantità di merce da leggere*/
 
         /* unloading goods */
+        /* decrement sem_id_check_request of the port im unloading to */
+        while (sem_cmd(shm_cfg->sem_id_check_request, id_actual_port, -1, SEM_UNDO)) {
+            CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while unlocking sem_id_check_request[id_actual_port] semaphore")
+        }
         while (head) {
             if (head->element->lifespan >= shm_cfg->CURRENT_DAY && (shm_goods[id * shm_cfg->SO_MERCI + head->element->id] < 0)) {
 
@@ -177,6 +181,11 @@ int main(int argc, char** argv) {
             }
             __sync_fetch_and_sub(&shm_dump_goods[head->element->id].good_on_ship, head->element->quantity * shm_goods_template[head->element->id].tons);
             head = ll_pop(head);
+        }
+
+        /* increment sem_id_check_request of the port im unloading to */
+        while (sem_cmd(shm_cfg->sem_id_check_request, id_actual_port, 1, SEM_UNDO)) {
+            CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while unlocking sem_id_check_request[id_actual_port] semaphore")
         }
 
         /*printf("[%d] Unload operation done!\n", getpid());*/

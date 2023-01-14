@@ -129,6 +129,7 @@ typedef struct {
     int     sem_id_gen_precedence; /* semaphore used to manage the general precedence */
     int     sem_id_dock;
     int     sem_id_dump_mutex;
+    int     sem_id_check_request; /* lock read/write to goods' status as a request */
 } config;
 
 #endif /*PROGETTOSO_MASTER_H*/

@@ -150,6 +150,10 @@ int main(int argc, char **argv) {
     CHECK_ERROR_MASTER((shm_cfg->mq_id_ships_goods = msgget(IPC_PRIVATE, 0600)) < 0,
                        "[MASTER] Error while creating ships_goods message queue")
 
+   /* create the semaphore array to control access to current requests */
+    CHECK_ERROR_MASTER((shm_cfg->sem_id_check_request = semget(IPC_PRIVATE, shm_cfg->SO_PORTI, 0600)) < 0,
+                "[MASTER] Error while creating semaphore array for requests")
+
     /* create the semaphore for process generation control and the dump status */
     CHECK_ERROR_MASTER((shm_cfg->sem_id_gen_precedence = semget(IPC_PRIVATE, 1, 0600)) < 0,
                 "[MASTER] Error while creating semaphore for generation order control")
@@ -175,6 +179,12 @@ int main(int argc, char **argv) {
     /* Initialize generation semaphore at the value of SO_PORTI */
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL, shm_cfg->SO_PORTI),
                 "[MASTER] Error while setting the semaphore for ports generation control")
+
+    /* Initialize requests check semaphore at the value of 1 */
+    for (i = 0; i < shm_cfg->SO_PORTI; i++) {
+        CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_check_request, i, SETVAL, 1),
+                    "[MASTER] Error while setting the semaphore for requests control")
+    }
 
     create_ports();
 
@@ -247,6 +257,9 @@ void clear_all(void) {
                 "[MASTER] Error while removing semaphore for docks control in clear_all")
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_dump_mutex, 0, IPC_RMID, 0),
                 "[MASTER] Error while removing semaphore for dump control in clear_all")
+
+    CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_check_request, 0, IPC_RMID, 0),
+                "[MASTER] Error while removing semaphore for check request control in clear_all")
 }
 
 void initialize_so_vars(char* path_cfg_file) {
