@@ -503,8 +503,9 @@ void selected_prints(void) {
 
 void final_print(void) {
     int i;
-    int bestOfferer = INT_MIN;
-    int bestReceiver = INT_MIN;
+    int bestOfferer;
+    int bestReceiver;
+
     printf("-------------FINAL DUMPS-------------\n");
     printf("Ships at sea at the end of the simulation: %d\n", (shm_dump_ships->with_cargo_en_route + shm_dump_ships->without_cargo_en_route));
     printf("Number of ships still at sea with a cargo on board: %d\n", shm_dump_ships->with_cargo_en_route);
@@ -527,12 +528,11 @@ void final_print(void) {
     }
     printf("---The best port for generated supply and generated demand: \n");
     fprintf(output, "---The best port for generated supply and generated demand: \n");
-    /*un for che scorre per ogni porto la bestquantità totale di merce generata e la quantita totale di merci generate*/
-    for(i = 0; i < shm_cfg->SO_PORTI; i++){
-        if(shm_dump_ports[i].total_goods_offers > bestOfferer) {
+    /*un for che scorre per ogni porto la best quantità totale di merce generata e la quantita totale di merci generate*/
+    for(i = 1, bestOfferer = bestReceiver = 0; i < shm_cfg->SO_PORTI; i++){
+        if(shm_dump_ports[i].total_goods_offers > shm_dump_ports[bestOfferer].total_goods_offers) {
             bestOfferer = i;
-        }
-        if(shm_dump_ports[i].total_goods_requested > bestReceiver) {
+        } else if(shm_dump_ports[i].total_goods_requested > shm_dump_ports[bestReceiver].total_goods_requested) {
             bestReceiver = i;
         }
     }
