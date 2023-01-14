@@ -26,7 +26,6 @@ int string_to_int(char *s) {
     return val;
 }
 
-/* TODO: find a better name lmao */
 void nanosleep_function(double time, char* str) {
     struct timespec t, rem;
     double d;

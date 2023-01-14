@@ -128,7 +128,6 @@ typedef struct {
     int     mq_id_ships_goods;
     int     sem_id_gen_precedence; /* semaphore used to manage the general precedence */
     int     sem_id_dock;
-    int     sem_id_dump_mutex;
     int     sem_id_check_request; /* lock read/write to goods' status as a request */
 } config;
 

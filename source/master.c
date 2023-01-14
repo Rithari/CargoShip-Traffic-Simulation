@@ -10,6 +10,7 @@
 
 /* initialize @*cfg with parameters wrote on @*path_cfg_file*/
 void initialize_so_vars(char* path_cfg_file);
+void initialize_goods_template(void);
 void initialize_ports_coords(void);
 void selected_prints(void);
 void final_print(void);
@@ -40,19 +41,12 @@ FILE *output;
 int     shm_id_config;
 
 int main(int argc, char **argv) {
-    int i;
     int wstatus;
     pid_t p_wait;
     struct sigaction sa;
 
     if(argc != 2) {
         printf("[MASTER] Incorrect number of parameters [%d]. Re-execute with: {configuration file}\n", argc);
-        exit(EXIT_FAILURE);
-    }
-
-    /* Check if the file path in argv1 exists */
-    if (access(argv[1], F_OK | R_OK)) {
-        perror("[MASTER] Error while trying to access the configuration file");
         exit(EXIT_FAILURE);
     }
 
@@ -65,42 +59,15 @@ int main(int argc, char **argv) {
     sigaction(SIGALRM, &sa, NULL);
     sigaction(SIGUSR1, &sa, NULL);
 
-    CHECK_ERROR_MASTER(atexit(clear_all), "[MASTER] Error while trying to register clear_all function to atexit")
-
     srandom(getpid());
 
-    /* create and attach config shared memory segment */
-    if ((shm_id_config = shmget(IPC_PRIVATE, sizeof(*shm_cfg), 0600)) < 0) {
-        perror("[MASTER] Error while creating shared memory for configuration parameters");
-        exit(EXIT_FAILURE);
-    }
-    CHECK_ERROR_MASTER((shm_cfg = shmat(shm_id_config, NULL, 0)) == (void *) -1,
-                "[MASTER] Error while trying to attach to configuration shared memory")
+    CHECK_ERROR_MASTER(atexit(clear_all), "[MASTER] Error while trying to register clear_all function to atexit")
+
     initialize_so_vars(argv[1]);
+    initialize_goods_template();
 
-    /* create and attach goods_template shared memory segment */
-    CHECK_ERROR_MASTER((shm_cfg->shm_id_goods_template = shmget(IPC_PRIVATE,
-                                                                sizeof(goods) * shm_cfg->SO_MERCI, 0600)) < 0,
-                "[MASTER] Error while creating shared memory for goods_template generation")
-    CHECK_ERROR_MASTER((shm_goods_template = shmat(shm_cfg->shm_id_goods_template, NULL, 0)) == (void *) -1,
-                "[MASTER] Error while trying to attach to goods template shared memory")
-
-    /* initialize goods_template array */
-    for (i = 0; i < shm_cfg->SO_MERCI; i++) {
-        shm_goods_template[i].tons = (int) random() % shm_cfg->SO_SIZE + 1;
-        shm_goods_template[i].lifespan = (int) random() % (shm_cfg->SO_MAX_VITA - shm_cfg->SO_MIN_VITA + 1)
-                                         + shm_cfg->SO_MIN_VITA;
-    }
-    qsort(shm_goods_template, shm_cfg->SO_MERCI, sizeof(goods_template), compare_goods_template);
-
-    /* create and attach ports coordinate shared memory segment */
-    CHECK_ERROR_MASTER((shm_cfg->shm_id_ports_coords = shmget(IPC_PRIVATE,
-                                              sizeof(*shm_ports_coords) * shm_cfg->SO_PORTI, 0600)) < 0,
-                "[MASTER] Error while creating shared memory for ports coordinates")
-    CHECK_ERROR_MASTER((shm_ports_coords = shmat(shm_cfg->shm_id_ports_coords, NULL, 0)) == (void *) -1,
-                "[MASTER] Error while trying to attach to ports coordinates shared memory")
-
-    initialize_ports_coords();
+    CHECK_ERROR_MASTER(!(output = fopen("output.txt", "w")),
+                       "[MASTER] Error while trying to create/rewrite output.txt")
 
     /* create and attach pid shm for the children */
     CHECK_ERROR_MASTER((shm_cfg->shm_id_pid_array =
@@ -116,8 +83,6 @@ int main(int argc, char **argv) {
                        "[MASTER] Error while creating goods_tracking shared memory")
     CHECK_ERROR_MASTER((shm_goods = shmat(shm_cfg->shm_id_goods, NULL, 0)) == (void *) -1,
                        "[MASTER] Error while trying to attach to goods_tracking shared memory")
-
-
     memset(shm_goods, 0, sizeof(int) * shm_cfg->SO_PORTI * shm_cfg->SO_MERCI);
 
     /* create and attach pid shm for dump report */
@@ -125,18 +90,14 @@ int main(int argc, char **argv) {
                 "[MASTER] Error while creating shared memory for log ports data")
     CHECK_ERROR_MASTER((shm_dump_ports = shmat(shm_cfg->shm_id_dump_ports, NULL, 0)) == (void*) -1,
                 "[MASTER] Error while trying to attach to log ports data shared memory")
-
     CHECK_ERROR_MASTER((shm_cfg->shm_id_dump_ships = shmget(IPC_PRIVATE, sizeof(dump_ships), 0600)) < 0,
                 "[MASTER] Error while creating shared memory for log ships data")
     CHECK_ERROR_MASTER((shm_dump_ships = shmat(shm_cfg->shm_id_dump_ships, NULL, 0)) == (void*) -1,
                 "[MASTER] Error while trying to attach to log ships data shared memory")
-
     CHECK_ERROR_MASTER((shm_cfg->shm_id_dump_goods = shmget(IPC_PRIVATE, sizeof(dump_goods) * shm_cfg->SO_MERCI, 0600)) < 0,
                 "[MASTER] Error while creating shared memory for log goods_template data")
     CHECK_ERROR_MASTER((shm_dump_goods = shmat(shm_cfg->shm_id_dump_goods, NULL, 0)) == (void*) -1,
                 "[MASTER] Error while trying to attach to log goods_template data shared memory")
-
-
     /* deletes all the contents of shared memory arrays */
     memset(shm_dump_ports, 0, sizeof(dump_ports) * shm_cfg->SO_PORTI);
     memset(shm_dump_ships, 0, sizeof(dump_ships));
@@ -153,55 +114,38 @@ int main(int argc, char **argv) {
    /* create the semaphore array to control access to current requests */
     CHECK_ERROR_MASTER((shm_cfg->sem_id_check_request = semget(IPC_PRIVATE, shm_cfg->SO_PORTI, 0600)) < 0,
                 "[MASTER] Error while creating semaphore array for requests")
-
     /* create the semaphore for process generation control and the dump status */
     CHECK_ERROR_MASTER((shm_cfg->sem_id_gen_precedence = semget(IPC_PRIVATE, 1, 0600)) < 0,
                 "[MASTER] Error while creating semaphore for generation order control")
-
     /* create the semaphore for dock generation control and the dump status */
     CHECK_ERROR_MASTER((shm_cfg->sem_id_dock = semget(IPC_PRIVATE, shm_cfg->SO_PORTI, 0600)) < 0,
                        "[MASTER] Error while creating semaphore for docks control")
 
-    /* WIP: create the semaphore for process generation control and the dump status, 7 is a test number */
-    CHECK_ERROR_MASTER((shm_cfg->sem_id_dump_mutex = semget(IPC_PRIVATE, 7, 0600)) < 0,
-                "[MASTER] Error while creating semaphore for dump control")
-
-    /* i = 0 -> semaforo utilizzato per sincronizzare i dump della nave */
-    /* i = 1 -> semaforo utilizzato per sincronizzare i dump della storm */
-    for (i = 0; i < 7; i++) {
-        CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_dump_mutex, i, SETVAL, 1) < 0,
-                    "[MASTER] Error while setting the semaphore for ports dump control")
-    }
-
-    CHECK_ERROR_MASTER(!(output = fopen("output.txt", "w")),
-                       "[MASTER] Error while trying to create/rewrite output.txt")
+    set_mutex_sem_array(shm_cfg->sem_id_check_request, shm_cfg->SO_PORTI);
 
     /* Initialize generation semaphore at the value of SO_PORTI */
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL, shm_cfg->SO_PORTI),
                 "[MASTER] Error while setting the semaphore for ports generation control")
 
-    /* Initialize requests check semaphore at the value of 1 */
-    for (i = 0; i < shm_cfg->SO_PORTI; i++) {
-        CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_check_request, i, SETVAL, 1),
-                    "[MASTER] Error while setting the semaphore for requests control")
-    }
-
     create_ports();
-
     printf("Waiting for ports generation...\n");
+
     CHECK_ERROR_MASTER(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, 0, 0),
                 "[MASTER] Error while waiting for ports generation")
 
-    /* generates day 0 goods */
-    generate_goods();
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL, shm_cfg->SO_NAVI),
                 "[MASTER] Error while setting the semaphore for ships generation control")
+
     create_ships();
     printf("Waiting for ships generation...\n");
+
     CHECK_ERROR_MASTER(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, 0, 0),
                 "[MASTER] Error while waiting for ships generation")
 
     create_weather();
+
+    /* generates day 0 goods */
+    generate_goods();
 
     printf("INIZIO SIMULAZIONE!\n");
     CHECK_ERROR_MASTER(killpg(0, SIGCONT) && (errno != ESRCH), "[MASTER] Error while trying killpg")
@@ -255,9 +199,6 @@ void clear_all(void) {
                 "[MASTER] Error while removing semaphore for generation order control in clear_all")
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_dock, 0, IPC_RMID, 0),
                 "[MASTER] Error while removing semaphore for docks control in clear_all")
-    CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_dump_mutex, 0, IPC_RMID, 0),
-                "[MASTER] Error while removing semaphore for dump control in clear_all")
-
     CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_check_request, 0, IPC_RMID, 0),
                 "[MASTER] Error while removing semaphore for check request control in clear_all")
 }
@@ -267,7 +208,21 @@ void initialize_so_vars(char* path_cfg_file) {
     char buffer[BUFFER_SIZE];
     int check = 0;
 
+    /* Check if the file path in argv1 exists */
+    if (access(path_cfg_file, F_OK | R_OK)) {
+        perror("[MASTER] Error while trying to access the configuration file");
+        exit(EXIT_FAILURE);
+    }
+
     CHECK_ERROR_MASTER(!(fp = fopen(path_cfg_file, "r")), "Error during: initialize_so_vars->fopen()")
+
+    /* create and attach config shared memory segment */
+    if ((shm_id_config = shmget(IPC_PRIVATE, sizeof(*shm_cfg), 0600)) < 0) {
+        perror("[MASTER] Error while creating shared memory for configuration parameters");
+        exit(EXIT_FAILURE);
+    }
+    CHECK_ERROR_MASTER((shm_cfg = shmat(shm_id_config, NULL, 0)) == (void *) -1,
+                       "[MASTER] Error while trying to attach to configuration shared memory")
 
     while (!feof(fp)) {
         if(fgets(buffer, BUFFER_SIZE, fp) == NULL) {
@@ -349,8 +304,36 @@ void initialize_so_vars(char* path_cfg_file) {
     errno = 0;
 }
 
+/* create and attach goods_template shared memory segment */
+void initialize_goods_template(void) {
+    int i;
+
+    CHECK_ERROR_MASTER((shm_cfg->shm_id_goods_template = shmget(IPC_PRIVATE,
+                                                                sizeof(goods) * shm_cfg->SO_MERCI, 0600)) < 0,
+                       "[MASTER] Error while creating shared memory for goods_template generation")
+    CHECK_ERROR_MASTER((shm_goods_template = shmat(shm_cfg->shm_id_goods_template, NULL, 0)) == (void *) -1,
+                       "[MASTER] Error while trying to attach to goods template shared memory")
+
+    /* initialize goods_template array */
+    for (i = 0; i < shm_cfg->SO_MERCI; i++) {
+        shm_goods_template[i].tons = (int) random() % shm_cfg->SO_SIZE + 1;
+        shm_goods_template[i].lifespan = (int) random() % (shm_cfg->SO_MAX_VITA - shm_cfg->SO_MIN_VITA + 1)
+                                         + shm_cfg->SO_MIN_VITA;
+    }
+    qsort(shm_goods_template, shm_cfg->SO_MERCI, sizeof(goods_template), compare_goods_template);
+
+}
+
 void initialize_ports_coords(void) {
     int i, j;
+
+    /* create and attach ports coordinate shared memory segment */
+    CHECK_ERROR_MASTER((shm_cfg->shm_id_ports_coords = shmget(IPC_PRIVATE,
+                                                              sizeof(*shm_ports_coords) * shm_cfg->SO_PORTI, 0600)) < 0,
+                       "[MASTER] Error while creating shared memory for ports coordinates")
+    CHECK_ERROR_MASTER((shm_ports_coords = shmat(shm_cfg->shm_id_ports_coords, NULL, 0)) == (void *) -1,
+                       "[MASTER] Error while trying to attach to ports coordinates shared memory")
+
 
     /* Hardcode first 4 port coordinates and start the loop at 4 for random coordinates */
     shm_ports_coords[0].x = 0;
@@ -363,15 +346,12 @@ void initialize_ports_coords(void) {
     shm_ports_coords[3].y = shm_cfg->SO_LATO;
 
     for(i = 4; i < shm_cfg->SO_PORTI; i++) {
-        double rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
-        double rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+        shm_ports_coords[i].x = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+        shm_ports_coords[i].y = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
 
-        for(j = 0; j < i && !(shm_ports_coords[j].x == rndx && shm_ports_coords[j].y == rndy); j++);
+        for(j = 0; j < i && !(shm_ports_coords[j].x == shm_ports_coords[i].x && shm_ports_coords[j].y == shm_ports_coords[i].y); j++);
 
-        if(j == i) {
-            shm_ports_coords[i].x = rndx;
-            shm_ports_coords[i].y = rndy;
-        } else i--;
+        if(j < i) i--;
     }
 }
 
@@ -385,6 +365,8 @@ void create_ports(void) {
     CHECK_ERROR_MASTER(asprintf(&args[1], "%d", shm_id_config) < 0,
                 "[MASTER] Error while converting shm_id_config into a string")
     args[3] = NULL;
+
+    initialize_ports_coords();
 
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
         switch(pid_process = fork()) {
@@ -495,40 +477,20 @@ void print_dump(void) {
 }
 
 void selected_prints(void) {
-    int *arraySelected = calloc(shm_cfg->SO_PRINT_PORTS-1, sizeof(int));
-    int *arraySelectedGoods = calloc(shm_cfg->SO_PRINT_GOODS-1, sizeof(int));
-    int i , j, rng;
-    int aus = 0;
+    int *arraySelected = calloc(shm_cfg->SO_PRINT_PORTS, sizeof(int));
+    int *arraySelectedGoods = calloc(shm_cfg->SO_PRINT_GOODS, sizeof(int));
+    int i, j, rng;
     printf("-----------------------------------------------------------------Stampa di %d PORTI: \n", shm_cfg->SO_PRINT_PORTS);
 
     for (i = 0; i < shm_cfg->SO_PRINT_PORTS ; i++) {
-        rng = (int) random()%shm_cfg->SO_PORTI;
+        rng = (int) random() % shm_cfg->SO_PORTI;
         for (j = 0; j < i; j++) {
             if(arraySelected[j] == rng) {
                 break;
             }
         }
-        if (i == j) {
-            arraySelected[i] = rng;
-            /*fprintf(stderr, "arraySelected: %d\n", arraySelected[i]);*/
-        }else{
-            i--;
-        }
-    }
-
-    for (i = 0; i < shm_cfg->SO_PRINT_GOODS ; i++) {
-        rng = (int) random()%shm_cfg->SO_MERCI;
-        for (j = 0; j < i; j++) {
-            if(arraySelectedGoods[j] == rng) {
-                break;
-            }
-        }
-        if (i == j) {
-            arraySelectedGoods[i] = rng;
-            /*fprintf(stderr, "arraySelectedGoods: %d\n", arraySelectedGoods[i]);*/
-        }else{
-            i--;
-        }
+        if (i == j) arraySelected[i] = rng;
+        else i--;
     }
 
     for(i = 0; i < shm_cfg->SO_PRINT_PORTS; i++) {
@@ -539,21 +501,38 @@ void selected_prints(void) {
                shm_dump_ports[arraySelected[i]].good_received, shm_dump_ports[arraySelected[i]].ton_in_excess_offers, shm_dump_ports[arraySelected[i]].ton_in_excess_request);
         printf("----------------------------------------------\n");
     }
+    free(arraySelected);
+
+    for (i = 0; i < shm_cfg->SO_PRINT_GOODS ; i++) {
+        rng = (int) random() % shm_cfg->SO_MERCI;
+        for (j = 0; j < i; j++) {
+            if(arraySelectedGoods[j] == rng) {
+                break;
+            }
+        }
+        if (i == j) arraySelectedGoods[i] = rng;
+        else i--;
+    }
+
     printf("-----------------------------------------------------------------Stampa di %d MERCI: \n", shm_cfg->SO_PRINT_GOODS);
     for (i = 0; i < shm_cfg->SO_PRINT_GOODS ; i++) {
         printf("ID: [%d]\tSTATE: [good_delivered: %d  |  good_in_port: %d  |  good_on_ship: %d  |  good_expired_in_port: %d  |  good_expired_on_ship: %d]\n", arraySelectedGoods[i], shm_dump_goods[arraySelectedGoods[i]].good_delivered,
                shm_dump_goods[arraySelectedGoods[i]].good_in_port, shm_dump_goods[arraySelectedGoods[i]].good_on_ship, shm_dump_goods[arraySelectedGoods[i]].good_expired_in_port, shm_dump_goods[arraySelectedGoods[i]].good_expired_on_ship);
         printf("----------------------------------------------\n");
     }
-    free(arraySelected);
     free(arraySelectedGoods);
 }
 
 void final_print(void) {
     int sum = 0;
     int i;
-    int bestOfferer = INT_MIN;
-    int bestReceiver = INT_MIN;
+    int bestOfferer;
+    int bestReceiver;
+
+    double delivered_goods = 0;
+    double lost_goods = 0;
+    double total_goods = 0;
+
     printf("-------------FINAL DUMPS-------------\n");
     printf("Ships at sea at the end of the simulation: %d\n", (shm_dump_ships->with_cargo_en_route + shm_dump_ships->without_cargo_en_route));
     printf("Number of ships still at sea with a cargo on board: %d\n", shm_dump_ships->with_cargo_en_route);
@@ -563,6 +542,7 @@ void final_print(void) {
     printf("---Final status of goods:\n");
     for (i = 0; i < shm_cfg->SO_PORTI; i++) {
         sum += shm_dump_ports[i].ton_in_excess_offers + shm_dump_ports[i].total_goods_offers;
+        total_goods = shm_dump_ports[i].total_goods_offers;
     }
     printf("Total goods: %d\n", sum);
     fprintf(output,"-------------FINAL DUMPS-------------\n");
@@ -577,6 +557,8 @@ void final_print(void) {
                shm_dump_goods[i].good_in_port, shm_dump_goods[i].good_on_ship, shm_dump_goods[i].good_expired_in_port, shm_dump_goods[i].good_expired_on_ship);
         fprintf(output,"ID: [%d]\tSTATE: [good_delivered: %d  |  good_in_port: %d  |  good_on_ship: %d  |  good_expired_in_port: %d  |  good_expired_on_ship: %d]\n", i, shm_dump_goods[i].good_delivered,
                shm_dump_goods[i].good_in_port, shm_dump_goods[i].good_on_ship, shm_dump_goods[i].good_expired_in_port, shm_dump_goods[i].good_expired_on_ship);
+        delivered_goods += shm_dump_goods[i].good_delivered;
+        lost_goods += shm_dump_goods[i].good_expired_in_port + shm_dump_goods[i].good_expired_on_ship;
     }
     printf("---The best port for generated supply and generated demand: \n");
     fprintf(output, "---The best port for generated supply and generated demand: \n");
@@ -588,6 +570,10 @@ void final_print(void) {
             bestReceiver = i;
         }
     }
+    /*lost goods, delivered goods sunk/expected */
+    printf("Actual sunk / expected sunk: \t[%f%%]\n", (100 * shm_dump_ships->sunk / (24.0 / shm_cfg->SO_MAELSTORM * shm_cfg->SO_DAYS)));
+    printf("Delivered goods: \t[%f%%]\n", (delivered_goods / total_goods));
+    printf("Lost goods: \t[%f%%]\n", (lost_goods / total_goods));
     printf("Best port for the generated offer id: %d  --> %d\n", bestOfferer, shm_dump_ports[bestOfferer].total_goods_offers);
     printf("Best port for the generated request id: %d --> %d\n", bestReceiver, shm_dump_ports[bestReceiver].total_goods_requested);
     fprintf(output,"Best port for the generated offer id: %d  --> %d\n", bestOfferer, shm_dump_ports[bestOfferer].total_goods_offers);

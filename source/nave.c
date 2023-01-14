@@ -4,12 +4,6 @@
 #include "../headers/linked_list.h"
 #include <math.h>
 
-/*se una nave non ha banchine e code di attracco libere allora viene gettata in mare*/
-/*nave deve ricordarsi l'ultimo porto di partenza per evitare che ci ritorni quando viene messa in mare */
-/*una nave in mare cerca sempre una coda di attracco libera (BUSY WAITING!!)*/
-
-/*TODO: GUI!*/
-
 void move(int);
 int get_nearest_port(void);
 void nave_sig_handler(int);
@@ -31,13 +25,9 @@ int     id_actual_port;
 int     id_destination_port;
 struct node *head;
 
-
-/* TODO: Attach to message queues */
 int main(int argc, char** argv) {
     int i;
     int sender_port;
-    double rndx;
-    double rndy;
     double time_to_sleep;
 
     struct sigaction sa;
@@ -86,34 +76,28 @@ int main(int argc, char** argv) {
     CHECK_ERROR_CHILD((shm_dump_ports = shmat(shm_cfg->shm_id_dump_ports, NULL, 0)) == (void*) -1,
                       "[NAVE] Error while trying to attach to dump shm_dump_ports shared memory")
 
-    rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
-    rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+    actual_coordinate.x = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+    actual_coordinate.y = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
 
     /* Avoid placing the ship at the same coordinates of a port */
     for(i = 0; i < shm_cfg->SO_PORTI; i++) {
-        if(shm_ports_coords[i].x == rndx && shm_ports_coords[i].y == rndy) {
+        if(shm_ports_coords[i].x == actual_coordinate.x && actual_coordinate.y) {
             i = -1;
-            rndx = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
-            rndy = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+            actual_coordinate.x = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
+            actual_coordinate.y = (double) random() / RAND_MAX * shm_cfg->SO_LATO;
         }
     }
 
-    actual_coordinate.x = rndx;
-    actual_coordinate.y = rndy;
     id_actual_port = -1;
     id_destination_port = -1; /* ship in sea */
 
     CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
                       "[NAVE] Error while trying to release sem_id_gen_precedence")
 
-    /* Wait until everyone is ready (master will send SIGCONT) */
     pause();
 
     /* now ship have a dock */
     while (1) {
-        /* TODO: Pick a destination port based on the best request the ship can fulfill */
-        /* scelta della tratta, stablita la tratta procedo a chiedere la banchina */
-        /* nella versione definitiva sarà il porto a definire la tratta */
         if(id_actual_port == -1) {
             id_destination_port = get_nearest_port();
         } else {
@@ -128,8 +112,6 @@ int main(int argc, char** argv) {
             id_actual_port = -1;
         }
 
-        /* se si volesse implementare la possibilità che id_Destination_port sia == a -1 (nave va in mare)
-         * basta fare un controllo da qui fino alla fine*/
         sops.sem_num = id_destination_port;
         sops.sem_op = -1;
         sops.sem_flg = SEM_UNDO;
@@ -142,11 +124,6 @@ int main(int argc, char** argv) {
         id_actual_port = id_destination_port;
 
         if (head) {
-            /* Getting permission to load/unload */
-            /* devo ricevere l'id della mq per le comunicazioni e la quantità di merce da leggere*/
-
-            /* unloading goods */
-            /* decrement sem_id_check_request of the port im unloading to */
             while (sem_cmd(shm_cfg->sem_id_check_request, id_actual_port, -1, SEM_UNDO)) {
                 CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while unlocking sem_id_check_request[id_actual_port] semaphore")
             }
@@ -161,7 +138,6 @@ int main(int argc, char** argv) {
                                              head->element->quantity * shm_goods_template[head->element->id].tons);
                         __sync_fetch_and_add(&shm_dump_ports[sender_port].good_send,
                                              head->element->quantity * shm_goods_template[head->element->id].tons);
-                        /*printf("[%d] Ho scaricato: [%d/%d/%d]\n", getpid(), head->element->id, head->element->quantity, head->element->quantity);*/
 
                     }else{
                         __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_on_ship, ((head->element->quantity) - abs(shm_goods[id_actual_port * shm_cfg->SO_MERCI + head->element->id])) * shm_goods_template[head->element->id].tons);
@@ -189,8 +165,6 @@ int main(int argc, char** argv) {
             while (sem_cmd(shm_cfg->sem_id_check_request, id_actual_port, 1, SEM_UNDO)) {
                 CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while unlocking sem_id_check_request[id_actual_port] semaphore")
             }
-
-            /*printf("[%d] Unload operation done!\n", getpid());*/
         }
 
         msg.mtype = id_actual_port + 1;
@@ -205,31 +179,22 @@ int main(int argc, char** argv) {
         }
 
         if (msg.response_pid >= 0) {
-            /*printf("[%d] Sto andando al porto: %d e sto caricando: %d merci\n", getpid(), msg.response_pid, msg.how_many);*/
             for (i = 0, time_to_sleep = 0; i < msg.how_many; i++) {
                 while (msgrcv(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), getpid(), 0) < 0) {
                     CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while waiting good message")
                 }
-                /*printf("[%d] [%d/%d/%d]\n ", getpid(), msg_g.to_add.id, msg_g.to_add.quantity, msg_g.to_add.lifespan);*/
                 __sync_fetch_and_add(&shm_dump_goods[msg_g.to_add.id].good_on_ship, msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons);
                 head = ll_add(head, &msg_g.to_add);
-                /* ll_print(head); */
                 time_to_sleep += msg_g.to_add.quantity * shm_goods_template[msg_g.to_add.id].tons;
             }
 
-            /* printf("[%d] time_to_sleep: %f\n", getpid(), time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED); */
             nanosleep_function(time_to_sleep * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
                                "[NAVE] Generic error while loading the ship");
 
-            /*printf("[%d] Load operation!\n", getpid());*/
-            /* destinazione delle merci se esiste una tratta*/
             id_destination_port = msg.response_pid;
-
-            /*printf("[%d] Choose port no: [%d] from [%d]\n", getpid(), id_destination_port, id_actual_port);*/
         } else {
             /* destinazione delle merci se non esiste una tratta*/
             id_destination_port = get_nearest_port();
-            /*printf("[%d] No route found, ship will go in port [%d] :C\n", getpid(), id_destination_port);*/
         }
     }
 }
@@ -243,12 +208,10 @@ void move(int id_destination) {
     nanosleep_function(navigation_time, "[NAVE] Generic error while moving");
     shm_pid_array[id + shm_cfg->SO_PORTI] = -shm_pid_array[id + shm_cfg->SO_PORTI];
 
-    /*printf("[%d] Arrived in port no: [%d]\tNavigation time: %f\n", getpid(), id_destination, navigation_time);*/
     fflush(stdout);
     actual_coordinate = shm_ports_coords[id_destination];
 }
 
-/* TODO: need improvement */
 int get_nearest_port(void) {
     int i, j, k;
 
@@ -272,14 +235,9 @@ int get_nearest_port(void) {
 
 void dump_ship_data(void) {
     if (id_actual_port < 0) {
-        if (head) {
-            __sync_fetch_and_add(&shm_dump_ships->with_cargo_en_route, 1);
-        } else {
-            __sync_fetch_and_add(&shm_dump_ships->without_cargo_en_route, 1);
-        }
-    } else {
-        __sync_fetch_and_add(&shm_dump_ships->being_loaded_unloaded, 1);
-    }
+        if (head)  __sync_fetch_and_add(&shm_dump_ships->with_cargo_en_route, 1);
+        else __sync_fetch_and_add(&shm_dump_ships->without_cargo_en_route, 1);
+    } else __sync_fetch_and_add(&shm_dump_ships->being_loaded_unloaded, 1);
 }
 
 void nave_sig_handler(int signum) {
@@ -304,21 +262,13 @@ void nave_sig_handler(int signum) {
             break;
         case SIGUSR1:
             /* storm occurred */
-            /*printf("[NAVE] STORM: %d\n", getpid());*/
-            while (sem_cmd(shm_cfg->sem_id_dump_mutex, 1, -1, 0)) {
-                CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while trying to release sem_id_dump_mutex[0]")
-            }
-            shm_dump_ships->slowed++;
-            while (sem_cmd(shm_cfg->sem_id_dump_mutex, 1, 1, 0)) {
-                CHECK_ERROR_CHILD(errno != EINTR, "[NAVE] Error while trying to release sem_id_dump_mutex[0]")
-            }
+            __sync_fetch_and_add(&shm_dump_ships->slowed, 1);
             nanosleep_function(shm_cfg->SO_STORM_DURATION / 24.0 * shm_cfg->SO_DAY_LENGTH,
                                "[NAVE] Generic error while sleeping because of the storm");
             break;
         case SIGUSR2:
-            /* malestorm killed the ship :C*/
+            /* malestorm killed the ship */
             __sync_fetch_and_add(&shm_dump_ships->sunk, 1);
-            /* nave affondata, aggiornare i dump della merce persa */
             if (head) {
                 cur = head;
                 while (cur) {
@@ -328,7 +278,6 @@ void nave_sig_handler(int signum) {
                }
                ll_free(head);
             }
-            /* kill(abs(shm_pid_array[id_actual_port]), SIGUSR2); */
 
             while (msgrcv(shm_cfg->mq_id_ships_goods, &msg_g, sizeof(msg_goods) - sizeof(long), getpid(), IPC_NOWAIT) && errno != ENOMSG);
             while (msgrcv(shm_cfg->mq_id_ships_handshake, &msg, sizeof(msg_handshake) - sizeof(long), getpid(), IPC_NOWAIT) && errno != ENOMSG);
