@@ -145,12 +145,33 @@ int main(int argc, char** argv) {
 
         /* unloading goods */
         while (head) {
-            if (head->element->lifespan >= shm_cfg->CURRENT_DAY) {
-                nanosleep_function((double) head->element->quantity * shm_goods_template[head->element->id].tons * shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
-                                   "[NAVE] Generic error while unloading the ship");
-                __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_delivered, head->element->quantity * shm_goods_template[head->element->id].tons);
-                __sync_fetch_and_add(&shm_dump_ports[sender_port].good_send, head->element->quantity * shm_goods_template[head->element->id].tons);
-                /*printf("[%d] Ho scaricato: [%d/%d/%d]\n", getpid(), head->element->id, head->element->quantity, head->element->quantity);*/
+            if (head->element->lifespan >= shm_cfg->CURRENT_DAY && (shm_goods[id * shm_cfg->SO_MERCI + head->element->id] < 0)) {
+
+                if(head->element->quantity <= -shm_goods[id * shm_cfg->SO_MERCI + head->element->id]) {
+
+                    nanosleep_function((double) head->element->quantity * shm_goods_template[head->element->id].tons *
+                                       shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
+                                       "[NAVE] Generic error while unloading the ship2");
+                    __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_delivered,
+                                         head->element->quantity * shm_goods_template[head->element->id].tons);
+                    __sync_fetch_and_add(&shm_dump_ports[sender_port].good_send,
+                                         head->element->quantity * shm_goods_template[head->element->id].tons);
+                    /*printf("[%d] Ho scaricato: [%d/%d/%d]\n", getpid(), head->element->id, head->element->quantity, head->element->quantity);*/
+
+                }else{
+
+                    __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_on_ship, ((head->element->quantity) - abs(shm_goods[id * shm_cfg->SO_MERCI + head->element->id])) * shm_goods_template[head->element->id].tons);
+                    head->element->quantity = head->element->quantity - ((head->element->quantity) - abs(shm_goods[id * shm_cfg->SO_MERCI + head->element->id]));
+
+                    nanosleep_function((double) head->element->quantity * shm_goods_template[head->element->id].tons *
+                                       shm_cfg->SO_DAY_LENGTH / shm_cfg->SO_LOADSPEED,
+                                       "[NAVE] Generic error while unloading the ship1");
+                    __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_delivered,
+                                         head->element->quantity * shm_goods_template[head->element->id].tons);
+                    __sync_fetch_and_add(&shm_dump_ports[sender_port].good_send,
+                                         head->element->quantity * shm_goods_template[head->element->id].tons);
+                }
+
             } else {
                 /* good lost, update dumps */
                 __sync_fetch_and_add(&shm_dump_goods[head->element->id].good_expired_on_ship, head->element->quantity * shm_goods_template[head->element->id].tons);
