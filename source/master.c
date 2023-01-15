@@ -490,7 +490,7 @@ void selected_prints(void) {
     int *arraySelected = calloc(shm_cfg->SO_PRINT_PORTS, sizeof(int));
     int *arraySelectedGoods = calloc(shm_cfg->SO_PRINT_GOODS, sizeof(int));
     int i, j, rng;
-    printf("-----------------------------------------------------------------Printing %d Ports: \n", shm_cfg->SO_PRINT_PORTS);
+    printf("-----------------------------------------------------------------Printing %d port(s): \n", shm_cfg->SO_PRINT_PORTS);
 
     for (i = 0; i < shm_cfg->SO_PRINT_PORTS ; i++) {
         rng = (int) random() % shm_cfg->SO_PORTI;
@@ -524,7 +524,7 @@ void selected_prints(void) {
         else i--;
     }
 
-    printf("-----------------------------------------------------------------Printing %d goods : \n", shm_cfg->SO_PRINT_GOODS);
+    printf("-----------------------------------------------------------------Printing %d good(s) : \n", shm_cfg->SO_PRINT_GOODS);
     for (i = 0; i < shm_cfg->SO_PRINT_GOODS ; i++) {
         printf("ID: [%d]\tSTATE: [good_delivered: %d  |  good_in_port: %d  |  good_on_ship: %d  |  good_expired_in_port: %d  |  good_expired_on_ship: %d]\n", arraySelectedGoods[i], shm_dump_goods[arraySelectedGoods[i]].good_delivered,
                shm_dump_goods[arraySelectedGoods[i]].good_in_port, shm_dump_goods[arraySelectedGoods[i]].good_on_ship, shm_dump_goods[arraySelectedGoods[i]].good_expired_in_port, shm_dump_goods[arraySelectedGoods[i]].good_expired_on_ship);
