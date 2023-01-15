@@ -1,7 +1,7 @@
 # basic rules
 CC 		= gcc
 LDFLAGS	= -lm
-COMMON 	= common_ipcs.c utils.c
+COMMON 	= common_ipcs.c utils.c linked_list.c
 TARGET 	= master.out nave.out porto.out meteo.out
 SOURCE 	= master.c nave.c porto.c meteo.c
 EXE		= master.out
@@ -18,8 +18,7 @@ DCFLAGS	= $(CFLAGS) -g -O0 -DDEBUG
 RCFLAGS = $(CFLAGS) -O2 -Wall -Wextra -DNDEBUG
 
 # compiling args
-#ARGS 	?= testing config.txt
-ARGS	?= dense, small ships.txt
+ARGS 	?= dense, small ships.txt
 
 # $< is the first prerequisite
 # $@ is the target

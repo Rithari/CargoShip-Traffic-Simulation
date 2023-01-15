@@ -10,7 +10,7 @@ Let's start with the quote from [GNOME developer](https://developer.gnome.org/pr
 >
 > As a maintainer it is dismaying to receive a patch that is obviously in a different coding style to the surrounding code. This is disrespectful, like someone tromping into a spotlessly-clean house with muddy shoes.
 >
-> So, whatever this document recommends, if there is already written code and you are patching it, keep its current style consistent even if it is not your favorite style.
+> So, whatever this document recommends, if there is already written code, and you are patching it, keep its current style consistent even if it is not your favorite style.
 
 ## General rules
 

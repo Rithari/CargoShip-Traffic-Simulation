@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 
 
+/* Constraints based on the build-type. These are passed by makefile targets and used mainly in process executions */
 #ifdef NDEBUG
 #define PATH_NAVE   "release/nave.out"
     #define PATH_PORTO  "release/porto.out"
@@ -43,50 +44,74 @@ typedef struct {
 
 typedef struct {
     int     id;
-    int     quantity;
+    int     tons;
     int     lifespan;
-} goodsOffers;
+} goods_template;
 
 typedef struct {
     int     id;
     int     quantity;
-    int     requestingPort;/*id del porto*/
-} goodsRequests;
+    int     lifespan;
+} goods;
 
 typedef struct {
     double  x;
     double  y;
 } coord;
 
+/* Structs used to track informational dumps */
 typedef struct {
     int     id;
-    int     state;
+    int     good_in_port;
+    int     good_on_ship;
+    int     good_delivered;
+    int     good_expired_in_port;
+    int     good_expired_on_ship;
 } dump_goods;
 
 typedef struct {
-    int    id;
-    int    good_available;
-    int    good_send;
-    int    good_received;
-    int    dock_total;
-    int    dock_available;
+    int     good_available;
+    int     good_send;
+    int     good_received;
+    int     dock_total;
+    int     dock_available;
+    int     total_goods_requested;
+    int     total_goods_offers;
     int     on_swell;
+    int     ton_in_excess_offers;
+    int     ton_in_excess_request;
 } dump_ports;
 
 typedef struct {
-    int     ships_with_cargo_en_route;
-    int     ships_without_cargo_en_route;
-    int     ships_being_loaded_unloaded;
-    int     ships_slowed;
-    int     ships_sunk;
+    int     with_cargo_en_route;
+    int     without_cargo_en_route;
+    int     being_loaded_unloaded;
+    int     slowed;
+    int     sunk;
 } dump_ships;
 
+/* Handshakes
+ * Figuratively speaking, very similar to the concept of handshaking in telecommunications.
+ * Used to synchronize between ships and ports.
+ * The how_many field is used to know how many messages will be sent and received
+*/
 typedef struct {
     long mtype;
     int response_pid;
+    int how_many;
 } msg_handshake;
 
+/* to_add is the goods lot that will be added */
 typedef struct {
+    long mtype;
+    goods to_add;
+} msg_goods;
+
+/* Configuration struct, holds all variables needed in the brief as well as
+ * IPC objects' IDs and a few user-defined variables
+*/
+typedef struct {
+    /* CONFIG VARIABLES */
     int     CURRENT_DAY;
     int     SO_NAVI;
     int     SO_PORTI;
@@ -105,21 +130,27 @@ typedef struct {
     int     SO_STORM_DURATION;
     int     SO_SWELL_DURATION;
     int     SO_MAELSTORM;
+
+    /* USER-DEFINED VARIABLES */
+    int     GENERATING_PORTS;
+    int     SO_PRINT_PORTS;
+    int     SO_PRINT_GOODS;
+
+
+    /* IPC OBJECTS' IDS */
     int     shm_id_goods_template;
     int     shm_id_ports_coords;
     int     shm_id_pid_array;
+    int     shm_id_goods;
     int     shm_id_dump_ports;
     int     shm_id_dump_ships;
     int     shm_id_dump_goods;
-    int     mq_id_request;
-    int     shm_id_mq_offer;
-    int     mq_id_ships;
-    int     mq_id_ports;
-    int     mq_id_handshake;
-    int     sem_id_gen_precedence; /* semaphore used to manage the general precedence */
+    int     mq_id_ports_handshake;
+    int     mq_id_ships_handshake;
+    int     mq_id_ships_goods;
+    int     sem_id_gen_precedence; /* semaphore used to manage the general precedence of process creation */
     int     sem_id_dock;
-    int     sem_id_dump_mutex;
-    int     CHOSEN_PORTS;
+    int     sem_id_check_request; /* lock read/write to goods' status as a request */
 } config;
 
 #endif /*PROGETTOSO_MASTER_H*/

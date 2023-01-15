@@ -1,20 +1,20 @@
 # file di configurazione n.1
-SO_NAVI:            10
-SO_PORTI:           1000
-SO_MERCI:           100
+SO_NAVI:            100
+SO_PORTI:           5
+SO_MERCI:           10
 SO_SIZE:            100
 SO_MIN_VITA:        3
 SO_MAX_VITA:        10
 SO_LATO:            1000
-SO_SPEED:           2000
+SO_SPEED:           500
 SO_CAPACITY:        1000
 SO_BANCHINE:        10
 SO_FILL:            1000000
-SO_LOADSPEED:       500
+SO_LOADSPEED:       200
 SO_DAYS:            10
 SO_DAY_LENGTH:      1
 SO_STORM_DURATION:  6 # hours
 SO_SWELL_DURATION:  24 # hours
-SO_MAELSTORM:       60 # hours
+SO_MAELSTORM:       24 # hours
 SO_PRINT_PORTS:     3
 SO_PRINT_GOODS:     3

@@ -1,6 +1,7 @@
 #include "../headers/utils.h"
 #include "math.h"
 
+/* Will probably be deleted as anprintf is used in its place */
 char* int_to_string(int number) {
     char* s;
     int s_len;
@@ -16,6 +17,7 @@ char* int_to_string(int number) {
     return s;
 }
 
+
 int string_to_int(char *s) {
     char *endptr;
     int val = (int) strtol(s, &endptr, 10);
@@ -26,12 +28,35 @@ int string_to_int(char *s) {
     return val;
 }
 
-struct timespec calculate_sleep_time(double x) {
-    struct timespec t;
+
+/* TODO: find a better name lmao */
+void sleep_ns(double time, char* str) {
+    struct timespec t, rem;
     double d;
-    t.tv_nsec = (long) (modf(x, &d) * 1e9);
+    t.tv_nsec = (long) (modf(time, &d) * 1e9);
     t.tv_sec = (long) d;
-    return t;
+
+    while (nanosleep(&t, &rem)) {
+        switch (errno) {
+            case EINTR:
+                t = rem;
+                continue;
+            default:
+                perror(str);
+                exit(EXIT_FAILURE);
+        }
+    }
+}
+
+/* Returns -1: first element's tons are smaller than the second's
+ * Returns 0: the tons are the same
+ * Returns 1: second element's tons are larger than the first
+*/
+int compare_goods_template(const void *g, const void *g1) {
+    goods_template *s_g = (goods_template*) g;
+    goods_template *s_g1 = (goods_template*) g1;
+
+    return s_g->tons - s_g1->tons;
 }
 
 void print_config(config *cfg) {
