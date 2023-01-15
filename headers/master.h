@@ -36,6 +36,11 @@
 #define PATH_METEO  "debug/meteo.out"
 #endif
 
+typedef struct {
+    int     id;
+    int     ton;
+    int     lifespan;
+} generalGoods;
 
 typedef struct {
     int     id;
