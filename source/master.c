@@ -490,7 +490,7 @@ void selected_prints(void) {
     int *arraySelected = calloc(shm_cfg->SO_PRINT_PORTS, sizeof(int));
     int *arraySelectedGoods = calloc(shm_cfg->SO_PRINT_GOODS, sizeof(int));
     int i, j, rng;
-    printf("-----------------------------------------------------------------Stampa di %d PORTI: \n", shm_cfg->SO_PRINT_PORTS);
+    printf("-----------------------------------------------------------------Printing %d Ports: \n", shm_cfg->SO_PRINT_PORTS);
 
     for (i = 0; i < shm_cfg->SO_PRINT_PORTS ; i++) {
         rng = (int) random() % shm_cfg->SO_PORTI;
@@ -524,7 +524,7 @@ void selected_prints(void) {
         else i--;
     }
 
-    printf("-----------------------------------------------------------------Stampa di %d MERCI: \n", shm_cfg->SO_PRINT_GOODS);
+    printf("-----------------------------------------------------------------Printing %d goods : \n", shm_cfg->SO_PRINT_GOODS);
     for (i = 0; i < shm_cfg->SO_PRINT_GOODS ; i++) {
         printf("ID: [%d]\tSTATE: [good_delivered: %d  |  good_in_port: %d  |  good_on_ship: %d  |  good_expired_in_port: %d  |  good_expired_on_ship: %d]\n", arraySelectedGoods[i], shm_dump_goods[arraySelectedGoods[i]].good_delivered,
                shm_dump_goods[arraySelectedGoods[i]].good_in_port, shm_dump_goods[arraySelectedGoods[i]].good_on_ship, shm_dump_goods[arraySelectedGoods[i]].good_expired_in_port, shm_dump_goods[arraySelectedGoods[i]].good_expired_on_ship);
@@ -583,10 +583,6 @@ void final_print(void) {
             bestReceiver = i;
         }
     }
-    /*lost goods, delivered goods sunk/expected */
-    printf("Actual sunk / expected sunk: \t[%f%%]\n", (100 * shm_dump_ships->sunk / (24.0 / shm_cfg->SO_MAELSTORM * shm_cfg->SO_DAYS)));
-    printf("Delivered goods: \t[%f%%]\n", (100 * delivered_goods / total_goods));
-    printf("Lost goods: \t[%f%%]\n", (100 * lost_goods / total_goods));
     printf("Best port for the generated offer id: %d  --> %d\n", bestOfferer, shm_dump_ports[bestOfferer].total_goods_offers);
     printf("Best port for the generated request id: %d --> %d\n", bestReceiver, shm_dump_ports[bestReceiver].total_goods_requested);
     fprintf(output,"Best port for the generated offer id: %d  --> %d\n", bestOfferer, shm_dump_ports[bestOfferer].total_goods_offers);
@@ -648,8 +644,8 @@ void master_sig_handler(int signum) {
                     CHECK_ERROR_MASTER(kill(abs(shm_pid_array[i]), SIGTERM) && (errno != ESRCH), "[MASTER] Error while sending sigterm to children")
                 }
                 CHECK_ERROR_MASTER(kill(pid_weather, SIGTERM) && (errno != ESRCH), "[MASTER] Error while sending sigterm to meteo")
-                if(!check_port_offers) printf("NEI PORTI NON SONO PRESENTI PIU' OFFERTE\n");
-                else printf("NEI PORTI NON SONO PRESENTI PIU' RICHIESTE\n");
+                if(!check_port_offers) printf("Ports no longer have offers \n");
+                else printf("Neither offers nor requests are present anymore\n");
                 return;
             }
 
