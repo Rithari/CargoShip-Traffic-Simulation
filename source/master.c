@@ -287,8 +287,8 @@ void initialize_so_vars(char* path_cfg_file) {
     CHECK_ERROR_MASTER(check != 0x7FFFF, "[MASTER] Missing config")
     CHECK_ERROR_MASTER(shm_cfg->SO_NAVI < 1, "[MASTER] SO_NAVI is less than 1")
     CHECK_ERROR_MASTER(shm_cfg->SO_PORTI < 4, "[MASTER] SO_PORTI is less than 4")
-    CHECK_ERROR_MASTER(shm_cfg->SO_PORTI + shm_cfg->SO_NAVI + 1 > sysconf(_SC_CHILD_MAX),
-                       "[MASTER] Too many processes than the _SC_CHILD_MAX limit")
+    CHECK_ERROR_MASTER(shm_cfg->SO_PORTI + shm_cfg->SO_NAVI + 1 > sysconf(_SC_CHILD_MAX) - 600,
+   "[MASTER] The  _SC_CHILD_MAX limit for processes has been exceeded") /* -600 is a buffer for already open processes */
     CHECK_ERROR_MASTER(shm_cfg->SO_MERCI <= 0, "[MASTER] SO_MERCI is less or equal than 0")
     CHECK_ERROR_MASTER(shm_cfg->SO_MIN_VITA <= 0, "[MASTER] SO_MIN_VITA is less or equal than 0")
     CHECK_ERROR_MASTER(shm_cfg->SO_MIN_VITA > shm_cfg->SO_MAX_VITA, "[MASTER] SO_MIN_VITA is greater than SO_MAX_VITA")
