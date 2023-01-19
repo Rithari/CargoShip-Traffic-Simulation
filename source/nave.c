@@ -27,7 +27,7 @@ struct node *head;
 
 int main(int argc, char** argv) {
     int i;
-    int sender_port;
+    int sender_port = 0;
     double time_to_sleep;
 
     struct sigaction sa;

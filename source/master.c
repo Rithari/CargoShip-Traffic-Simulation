@@ -652,7 +652,7 @@ void master_sig_handler(int signum) {
 
             CHECK_ERROR_MASTER(kill(pid_weather, SIGALRM) && (errno != ESRCH), "[MASTER] Error while sending sigalarm to meteo")
             print_dump();
-            pick_ports(); /* Generate goods for the next day */
+            pick_ports(); /* Pick new ports that should generate the next day */
 
             CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL,
                                       shm_cfg->SO_PORTI + shm_cfg->SO_NAVI - shm_dump_ships->sunk) < 0,

@@ -9,7 +9,7 @@ typedef struct {
 } route;
 
 void porto_sig_handler(int);
-void pick_ports(void);
+void generate_goods(void);
 route* generate_route(void);
 void dump_port_data(void);
 
@@ -125,8 +125,8 @@ int main(int argc, char *argv[]) {
 }
 
 /* Generate goods and add them to a linked list */
-void pick_ports(void) {
-    int i;
+void generate_goods(void) {
+    int i, j;
     int selected_quantity;
     int tons_per_port_offers = shm_cfg->SO_FILL / shm_cfg->SO_DAYS / shm_cfg->GENERATING_PORTS;
     int tons_per_port_request = tons_per_port_offers;
@@ -138,7 +138,7 @@ void pick_ports(void) {
     shm_dump_ports[id].total_goods_offers += tons_per_port_offers;
     shm_dump_ports[id].total_goods_requested += tons_per_port_request;
 
-    for(i = 0; i < shm_cfg->SO_MERCI; i++) {
+    for(i = (int) random() % shm_cfg->SO_MERCI, j = 0; j < shm_cfg->SO_MERCI; j++, i = (i + 1) % shm_cfg->SO_MERCI) {
         int max_quantity;
 
         if (((random() & 1) && shm_goods[id * shm_cfg->SO_MERCI + i] == 0) || shm_goods[id * shm_cfg->SO_MERCI + i] > 0) {
@@ -304,7 +304,7 @@ void porto_sig_handler(int signum) {
             exit(EXIT_SUCCESS);
         case SIGCONT:
             if (shm_pid_array[id] < 0 && shm_cfg->GENERATING_PORTS > 0) {
-                pick_ports();
+                generate_goods();
                 shm_pid_array[id] = -shm_pid_array[id];
             }
             break;
@@ -315,7 +315,7 @@ void porto_sig_handler(int signum) {
             dump_port_data();
             /*ll_print(head);*/
             if (shm_pid_array[id] < 0 && shm_cfg->GENERATING_PORTS > 0) {
-                pick_ports();
+                generate_goods();
                 shm_pid_array[id] = -shm_pid_array[id];
             }
             while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0)) {
