@@ -23,7 +23,7 @@ void create_weather(void);
 
 void clear_all(void); /* clear all the memory usage by destroying IPC objects */
 void print_dump(void);
-void generate_goods(void);
+void pick_ports(void);
 
 void master_sig_handler(int signum);
 
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
     create_weather();
 
     /* generates day 0 goods */
-    generate_goods();
+    pick_ports();
 
     /* Send SIGCONT to all processes in the group (foreground process group)*/
     printf("SIMULATION STARTED\n");
@@ -575,6 +575,7 @@ void final_print(void) {
     printf("Total goods: %f\n", total_goods);
     printf("---The best port for generated supply and generated demand: \n");
     fprintf(output, "---The best port for generated supply and generated demand: \n");
+
     /*un for che scorre per ogni porto la best quantità totale di merce generata e la quantita totale di merci generate*/
     for(i = 1, bestOfferer = bestReceiver = 0; i < shm_cfg->SO_PORTI; i++){
         if(shm_dump_ports[i].total_goods_offers > shm_dump_ports[bestOfferer].total_goods_offers) {
@@ -589,7 +590,7 @@ void final_print(void) {
     fprintf(output,"Best port for the generated request id: %d --> %d\n", bestReceiver, shm_dump_ports[bestReceiver].total_goods_requested);
 }
 
-void generate_goods(void) {
+void pick_ports(void) {
     int i;
     /* this variable indicates the randomly chosen number of ports that will be marked to generate goods on this day*/
     shm_cfg->GENERATING_PORTS = (int) random() % shm_cfg->SO_PORTI;
@@ -651,7 +652,7 @@ void master_sig_handler(int signum) {
 
             CHECK_ERROR_MASTER(kill(pid_weather, SIGALRM) && (errno != ESRCH), "[MASTER] Error while sending sigalarm to meteo")
             print_dump();
-            generate_goods(); /* Generate goods for the next day */
+            pick_ports(); /* Generate goods for the next day */
 
             CHECK_ERROR_MASTER(semctl(shm_cfg->sem_id_gen_precedence, 0, SETVAL,
                                       shm_cfg->SO_PORTI + shm_cfg->SO_NAVI - shm_dump_ships->sunk) < 0,
@@ -666,7 +667,6 @@ void master_sig_handler(int signum) {
                 CHECK_ERROR_MASTER(errno != EINTR, "[MASTER] Error while waiting the semaphore for dump control in SIGALRM")
             }
 
-            /* Check SO_DAYS against the current day. If they're the same kill everything */
             shm_dump_ships->with_cargo_en_route = 0;
             shm_dump_ships->without_cargo_en_route = 0;
             shm_dump_ships->being_loaded_unloaded = 0;

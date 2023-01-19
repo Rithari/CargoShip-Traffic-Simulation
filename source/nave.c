@@ -31,7 +31,6 @@ int main(int argc, char** argv) {
     double time_to_sleep;
 
     struct sigaction sa;
-    struct sembuf sops;
     msg_handshake msg;
     msg_goods msg_g;
 
@@ -91,8 +90,8 @@ int main(int argc, char** argv) {
         }
     }
 
-    id_actual_port = -1;
-    id_destination_port = -1; /* ship in sea */
+    id_actual_port = -1; /* ship in sea */
+    id_destination_port = -1;
 
     CHECK_ERROR_CHILD(sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0) < 0,
                       "[NAVE] Error while trying to release sem_id_gen_precedence")

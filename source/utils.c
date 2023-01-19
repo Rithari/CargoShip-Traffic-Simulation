@@ -1,7 +1,7 @@
 #include "../headers/utils.h"
 #include "math.h"
 
-/* Will probably be deleted as anprintf is used in its place */
+/* Will probably be deleted as asprintf is used in its place */
 char* int_to_string(int number) {
     char* s;
     int s_len;
@@ -29,7 +29,6 @@ int string_to_int(char *s) {
 }
 
 
-/* TODO: find a better name lmao */
 void sleep_ns(double time, char* str) {
     struct timespec t, rem;
     double d;

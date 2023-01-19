@@ -38,12 +38,6 @@
 
 typedef struct {
     int     id;
-    int     ton;
-    int     lifespan;
-} generalGoods;
-
-typedef struct {
-    int     id;
     int     tons;
     int     lifespan;
 } goods_template;

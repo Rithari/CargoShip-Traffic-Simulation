@@ -9,12 +9,11 @@ typedef struct {
 } route;
 
 void porto_sig_handler(int);
-void generate_goods(void);
+void pick_ports(void);
 route* generate_route(void);
 void dump_port_data(void);
 
 config  *shm_cfg;
-coord   *shm_ports_coords;
 goods_template   *shm_goods_template;
 int*    shm_goods;
 pid_t   *shm_pid_array;
@@ -62,8 +61,6 @@ int main(int argc, char *argv[]) {
                       "[PORTO] Error while trying to attach to pid_array shared memory")
     CHECK_ERROR_CHILD((shm_goods = shmat(shm_cfg->shm_id_goods, NULL, 0)) == (void*) -1,
                       "[PORTO] Error while trying to attach to goods shared memory")
-    CHECK_ERROR_CHILD((shm_ports_coords = shmat(shm_cfg->shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1,
-                      "[PORTO] Error while trying to attach to ports coordinates shared memory")
     CHECK_ERROR_CHILD((shm_goods_template = shmat(shm_cfg->shm_id_goods_template, NULL, SHM_RDONLY)) == (void*) -1,
                       "[PORTO] Error while trying to attach to goods_template shared memory")
     CHECK_ERROR_CHILD((shm_dump_ports = shmat(shm_cfg->shm_id_dump_ports, NULL, 0)) == (void*) -1,
@@ -127,8 +124,8 @@ int main(int argc, char *argv[]) {
     }
 }
 
-/* Generate goods and add them to al inked list */
-void generate_goods(void) {
+/* Generate goods and add them to a linked list */
+void pick_ports(void) {
     int i;
     int selected_quantity;
     int tons_per_port_offers = shm_cfg->SO_FILL / shm_cfg->SO_DAYS / shm_cfg->GENERATING_PORTS;
@@ -307,7 +304,7 @@ void porto_sig_handler(int signum) {
             exit(EXIT_SUCCESS);
         case SIGCONT:
             if (shm_pid_array[id] < 0 && shm_cfg->GENERATING_PORTS > 0) {
-                generate_goods();
+                pick_ports();
                 shm_pid_array[id] = -shm_pid_array[id];
             }
             break;
@@ -318,7 +315,7 @@ void porto_sig_handler(int signum) {
             dump_port_data();
             /*ll_print(head);*/
             if (shm_pid_array[id] < 0 && shm_cfg->GENERATING_PORTS > 0) {
-                generate_goods();
+                pick_ports();
                 shm_pid_array[id] = -shm_pid_array[id];
             }
             while (sem_cmd(shm_cfg->sem_id_gen_precedence, 0, -1, 0)) {
