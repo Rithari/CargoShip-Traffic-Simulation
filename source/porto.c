@@ -14,7 +14,6 @@ route* generate_route(void);
 void dump_port_data(void);
 
 config  *shm_cfg;
-coord   *shm_ports_coords;
 goods_template   *shm_goods_template;
 int*    shm_goods;
 pid_t   *shm_pid_array;
@@ -62,8 +61,6 @@ int main(int argc, char *argv[]) {
                       "[PORTO] Error while trying to attach to pid_array shared memory")
     CHECK_ERROR_CHILD((shm_goods = shmat(shm_cfg->shm_id_goods, NULL, 0)) == (void*) -1,
                       "[PORTO] Error while trying to attach to goods shared memory")
-    CHECK_ERROR_CHILD((shm_ports_coords = shmat(shm_cfg->shm_id_ports_coords, NULL, SHM_RDONLY)) == (void*) -1,
-                      "[PORTO] Error while trying to attach to ports coordinates shared memory")
     CHECK_ERROR_CHILD((shm_goods_template = shmat(shm_cfg->shm_id_goods_template, NULL, SHM_RDONLY)) == (void*) -1,
                       "[PORTO] Error while trying to attach to goods_template shared memory")
     CHECK_ERROR_CHILD((shm_dump_ports = shmat(shm_cfg->shm_id_dump_ports, NULL, 0)) == (void*) -1,
@@ -127,9 +124,9 @@ int main(int argc, char *argv[]) {
     }
 }
 
-/* Generate goods and add them to al inked list */
+/* Generate goods and add them to a linked list */
 void generate_goods(void) {
-    int i;
+    int i, j;
     int selected_quantity;
     int tons_per_port_offers = shm_cfg->SO_FILL / shm_cfg->SO_DAYS / shm_cfg->GENERATING_PORTS;
     int tons_per_port_request = tons_per_port_offers;
@@ -141,7 +138,7 @@ void generate_goods(void) {
     shm_dump_ports[id].total_goods_offers += tons_per_port_offers;
     shm_dump_ports[id].total_goods_requested += tons_per_port_request;
 
-    for(i = 0; i < shm_cfg->SO_MERCI; i++) {
+    for(i = (int) random() % shm_cfg->SO_MERCI, j = 0; j < shm_cfg->SO_MERCI; j++, i = (i + 1) % shm_cfg->SO_MERCI) {
         int max_quantity;
 
         if (((random() & 1) && shm_goods[id * shm_cfg->SO_MERCI + i] == 0) || shm_goods[id * shm_cfg->SO_MERCI + i] > 0) {
