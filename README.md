@@ -2,7 +2,7 @@
 
 # [Project Brief 05/11/2022](https://informatica.i-learn.unito.it/pluginfile.php/353132/mod_folder/content/0/221205_progetto_22_23_final.pdf)
 
-## Installing / Getting started (WIP)
+## Installing / Getting started
 
 A quick introduction of the minimal setup you need to get the program running.
 
@@ -21,16 +21,6 @@ Built using C and makefile, no external libraries are used.
 
 ### Prerequisites
 There are no real requirements other than a machine running macOS or Linux, supporting the execution of C in its ANSI standard (C89).
-
-## Configuration (WIP)
-
-Currently, no configuration is needed. WIP to add a few cycle-depending variables such as the seconds for a day to pass etc.
-
-
-## Tests (WIP)
-
-Describe and show how to run the tests with code examples.
-Explain what these tests test and why.
 
 ```shell
 Give an example
